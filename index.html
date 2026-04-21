@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 가가볼 스코어보드 V26 (클라우드 동기화 에디션)</title>
+    <title>초등 가가볼 스코어보드 V27 (사운드 & 귀요미 아바타 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -21,7 +21,7 @@
         body { font-family: 'Malgun Gothic', sans-serif; background-color: #f0f3f5; margin: 0; padding: 15px; color: var(--dark); overflow-x: hidden; }
         .container { max-width: 98%; margin: 0 auto; background: white; padding: 20px 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-height: 95vh; position: relative;}
         
-        /* 👑 권한 제어 매직 CSS: body에 'is-admin' 클래스가 없으면 .admin-only 요소들은 싹 다 숨김! */
+        /* 👑 권한 제어 매직 CSS */
         body:not(.is-admin) .admin-only { display: none !important; }
         
         /* 상단 로그인 바 */
@@ -50,6 +50,7 @@
         .btn-rank { background: var(--warning); color: var(--dark); font-size: 1.1rem; padding: 10px 15px; }
         .btn-team { background: #8e44ad; color: white; font-size: 1.1rem; padding: 10px 15px; }
         .btn-timer { background: #e67e22; color: white; font-size: 1.1rem; padding: 10px 15px; }
+        .btn-add { background: #2980b9; color: white; font-size: 1.1rem; padding: 10px 15px; }
         .btn-sm { padding: 5px 10px; font-size: 0.9rem; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -72,6 +73,10 @@
         .drawn-badge { display: none; position: absolute; top: -10px; right: -10px; background: var(--dark); color: white; padding: 5px 10px; border-radius: 15px; font-size: 0.9rem;}
         .score-item.drawn .drawn-badge { display: block; }
         
+        /* 학생 개별 삭제(X) 버튼 */
+        .btn-delete-student { position: absolute; top: 5px; left: 5px; background: transparent; border: none; color: #e74c3c; font-size: 1.2rem; cursor: pointer; opacity: 0.5; padding: 0; }
+        .btn-delete-student:hover { opacity: 1; transform: scale(1.2); }
+
         .avatar-img { width: 85px; height: 85px; border-radius: 50%; margin: 0 auto 10px; display: block; background: #fdfdfd; object-fit: cover; }
         .score-item.drawn .avatar-img { filter: grayscale(70%); opacity: 0.9; border-color: #bdc3c7 !important; }
         .score-item .name { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
@@ -124,15 +129,16 @@
         
         <div class="admin-only">
             <div class="input-group">
-                <h3>엑셀 일괄 추가 (학년 | 반 | 번호 | 이름 | 성별)</h3>
+                <h3 style="color:var(--danger);">엑셀 일괄 추가 (여러 반을 한 번에 복붙해도 자동으로 반별로 나누어 저장됩니다!)</h3>
+                <p style="margin-top:-10px; color:#666;">형식: 학년 | 반 | 번호 | 이름 | 성별</p>
                 <textarea id="bulkInput" placeholder="복사한 내용을 여기에 붙여넣으세요."></textarea>
-                <button class="btn-attend" onclick="addBulk()">일괄 등록</button>
+                <button class="btn-attend" onclick="addBulk()">일괄 등록 준비</button>
             </div>
             <div class="input-group">
-                <button class="btn-danger btn-sm" onclick="clearAllStudents()" style="margin-bottom: 10px;">로컬 명단 초기화</button>
-                <h3>현재 대기 명단 (총 <span id="listCount">0</span>명)</h3>
+                <button class="btn-danger btn-sm" onclick="clearAllStudents()" style="margin-bottom: 10px;">로컬 대기명단 지우기</button>
+                <h3>현재 업로드 대기 명단 (총 <span id="listCount">0</span>명)</h3>
                 <table>
-                    <thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>성별</th><th>관리</th></tr></thead>
+                    <thead><tr><th>학년</th><th>반</th><th>번호</th><th>이름</th><th>성별</th></tr></thead>
                     <tbody id="studentListBody"></tbody>
                 </table>
             </div>
@@ -141,7 +147,7 @@
         <div style="text-align: center; margin-top: 20px;">
             <p style="color:var(--danger); font-weight:bold;">※ 클라우드(DB)에 저장된 반 목록을 불러옵니다.</p>
             <div id="classButtons" class="class-grid" style="margin-bottom: 20px;"></div>
-            <button class="btn-nav admin-only" style="padding: 15px 40px; font-size: 1.2rem; background:var(--secondary);" onclick="uploadLocalToDB()">대기 명단을 새 반으로 DB에 등록</button>
+            <button class="btn-nav admin-only" style="padding: 15px 40px; font-size: 1.2rem; background:var(--secondary);" onclick="uploadLocalToDB()">대기 명단을 클라우드에 일괄 등록 (업데이트)</button>
         </div>
     </div>
 
@@ -153,6 +159,7 @@
                     <span class="creator-tag">made by 우석쌤</span>
                 </h2>
                 <div class="header-controls">
+                    <button class="btn-add admin-only" onclick="openAddStudentModal()">➕ 학생 추가</button>
                     <button class="btn-timer" onclick="openTimerSelectModal()">⏱️ 타이머</button>
                     <button class="btn-reset-score admin-only" onclick="resetAllScoresDB()">🔄 점수 초기화</button>
                     <select id="teamCountSelect" class="team-select admin-only"><option value="4">4팀</option><option value="6">6팀</option><option value="8" selected>8팀</option></select>
@@ -201,6 +208,22 @@
     </div>
 </div>
 
+<div id="addStudentModal" class="modal-overlay" onclick="closeAddStudentModal()">
+    <div class="modal-content" style="max-width: 400px; padding: 30px;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--primary); margin-top:0;">👤 새 학생 개별 추가</h2>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            <input type="number" id="newStudentNo" placeholder="번호 (예: 25)">
+            <input type="text" id="newStudentName" placeholder="이름 (예: 홍길동)">
+            <select id="newStudentGender" style="padding: 10px; font-size: 1rem;">
+                <option value="남">남학생</option>
+                <option value="여">여학생</option>
+            </select>
+        </div>
+        <button class="btn-main" style="width: 100%; padding: 15px; font-size: 1.2rem;" onclick="addSingleStudentToDB()">추가하기</button>
+        <button class="btn-sub" style="width: 100%; padding: 10px; margin-top: 10px;" onclick="closeAddStudentModal()">취소</button>
+    </div>
+</div>
+
 <div id="drawModal" class="modal-overlay">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h1 style="color:var(--danger);">🎉 참가 선수 🎉</h1>
@@ -220,6 +243,7 @@
 </div>
 
 <script>
+    // ★★★ 선생님의 파이어베이스 Config로 설정 완료 ★★★
     const firebaseConfig = {
       apiKey: "AIzaSyDWa8zndAQfi97tWFVrvd714gStkjLvKDI",
       authDomain: "gagaball-61671.firebaseapp.com",
@@ -246,15 +270,57 @@
     const ADMIN_EMAIL = "lws5737@gmail.com";
     const fallbackSVG = `data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2250%22%20fill%3D%22%23f1f2f6%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2268%22%20font-size%3D%2245%22%20text-anchor%3D%22middle%22%3E%F0%9F%91%A4%3C%2Ftext%3E%3C%2Fsvg%3E`;
 
-    // Vercel에서도 끄떡없는 아바타 생성 (심플 & 안전한 옵션 조합)
+    // V27: 초귀요미 스마일 이모지(fun-emoji) 아바타 생성기! 
     function generateDiceBearAvatar(name, gender) {
         const seed = encodeURIComponent(name + Math.random().toString(36).substring(7));
         const bgColors = ['b6e3f4','c0aede','d1d4f9','ffdfbf','ffd5dc','b2dfdb','f8bbd0'];
         const bg = bgColors[Math.floor(Math.random() * bgColors.length)];
         
-        let tops = gender === '남' ? 'shortHair' : 'longHair';
-        // API 요청 거절을 막기 위해 가장 단순하고 안정적인 파라미터만 사용
-        return `https://api.dicebear.com/9.x/avataaars/svg?seed=${seed}&backgroundColor=${bg}&facialHairProbability=0`;
+        // 머리카락, 피부색 고민 없이 무조건 귀여운 이모지 얼굴로 렌더링됩니다.
+        return `https://api.dicebear.com/9.x/fun-emoji/svg?seed=${seed}&backgroundColor=${bg}`;
+    }
+
+    // --- 🎮 마리오 게임 사운드 효과 ---
+    function playCoinSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            // 빠른 띠링~! 소리 (B5 -> E6)
+            osc.frequency.setValueAtTime(987.77, ctx.currentTime);
+            osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08);
+            
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.3);
+        } catch(e) {}
+    }
+
+    function playBumpSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            // 둔탁한 띡! 소리
+            osc.frequency.setValueAtTime(150, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.2);
+            
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+            
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.2);
+        } catch(e) {}
     }
 
     // --- 인증 (Auth) 로직 ---
@@ -315,7 +381,7 @@
         }).catch(err => { classBtns.innerHTML = 'DB 연결 오류 (보안 규칙 또는 Config를 확인하세요)'; });
     }
 
-    // --- 1단계: 로컬 명단 준비 (관리자용) ---
+    // --- 1단계: 로컬 명단 준비 및 그룹화 업로드 ---
     function addBulk() {
         if(!isAdmin) return alert("관리자만 명단을 추가할 수 있습니다.");
         const text = document.getElementById('bulkInput').value.trim();
@@ -338,23 +404,35 @@
         const tbody = document.getElementById('studentListBody'); tbody.innerHTML = '';
         document.getElementById('listCount').innerText = localStudents.length;
         localStudents.forEach((s, idx) => {
-            tbody.innerHTML += `<tr><td>${s.grade}</td><td>${s.classNum}</td><td>${s.no}</td><td>${s.name}</td><td>${s.gender}</td><td>-</td></tr>`;
+            tbody.innerHTML += `<tr><td>${s.grade}</td><td>${s.classNum}</td><td>${s.no}</td><td>${s.name}</td><td>${s.gender}</td></tr>`;
         });
     }
     function clearAllStudents() { localStudents = []; renderLocalList(); }
 
-    // 대기 명단을 DB에 업로드하여 새 반 생성
+    // V27: 여러 반이 섞여 있어도 학년/반 기준으로 쪼개서 한 번에 DB 업로드!
     function uploadLocalToDB() {
         if(!isAdmin) return;
         if(localStudents.length === 0) return alert("대기 명단이 비어있습니다.");
         
-        // 첫 번째 학생의 학년 반을 기준으로 문서 ID 생성
-        const docId = `${localStudents[0].grade}-${localStudents[0].classNum}`;
-        db.collection('gagaball_classes').doc(docId).set({
-            students: localStudents
-        }).then(() => {
-            alert(`${docId}반 명단이 클라우드에 등록되었습니다!`);
-            localStudents = []; renderLocalList();
+        const classGroups = {};
+        localStudents.forEach(s => {
+            const docId = `${s.grade}-${s.classNum}`;
+            if(!classGroups[docId]) classGroups[docId] = [];
+            classGroups[docId].push(s);
+        });
+
+        // 각 반별로 DB 전송 명령 모으기
+        const uploadPromises = Object.keys(classGroups).map(docId => {
+            return db.collection('gagaball_classes').doc(docId).set({
+                students: classGroups[docId]
+            });
+        });
+
+        // 한꺼번에 쏘기!
+        Promise.all(uploadPromises).then(() => {
+            alert(`${Object.keys(classGroups).length}개 반의 명단이 클라우드에 완벽하게 등록/업데이트 되었습니다!`);
+            localStudents = []; 
+            renderLocalList();
             loadClassListFromDB();
         }).catch(err => alert("저장 실패: 권한이 없거나 설정이 잘못되었습니다."));
     }
@@ -365,10 +443,8 @@
         document.getElementById('currentClassTitle').innerText = `${docId}반 스코어보드`;
         switchView('scoreView');
 
-        // 기존 리스너가 있다면 해제
         if(unsubscribeSnapshot) unsubscribeSnapshot();
 
-        // 🌟 실시간 DB 동기화 (마법의 시작)
         unsubscribeSnapshot = db.collection('gagaball_classes').doc(docId).onSnapshot(doc => {
             if (doc.exists) {
                 cloudStudents = doc.data().students || [];
@@ -377,7 +453,6 @@
         });
     }
 
-    // DB에 데이터 저장 (업데이트) 함수
     function syncToDB() {
         if(!isAdmin) return alert("수정 권한이 없습니다.");
         db.collection('gagaball_classes').doc(currentDocId).update({
@@ -392,7 +467,6 @@
         
         let availableTotal = 0, availableBoys = 0, availableGirls = 0;
         
-        // 정렬
         cloudStudents.sort((a, b) => parseInt(a.no) - parseInt(b.no));
 
         cloudStudents.forEach((s, idx) => {
@@ -411,11 +485,12 @@
 
             let bgColor = s.isParticipating && !s.isDrawn ? (s.gender === '남' ? 'var(--boy-bg)' : 'var(--girl-bg)') : '#fff';
 
-            // HTML 생성 (admin-only 클래스를 버튼에 적용하여 관전자는 클릭 못하게 숨김 처리)
+            // V27: X 버튼(btn-delete-student) 추가
             const cardHTML = `
                 <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
+                    <button class="btn-delete-student admin-only" onclick="deleteStudentFromDB(${idx})" title="학생 삭제">✖</button>
                     <div class="drawn-badge">완료</div>
-                    <div class="top-actions">
+                    <div class="top-actions" style="margin-left: 20px;">
                         <span class="info">${s.no}번</span>
                         <button class="${btnClass} admin-only" onclick="toggleParticipation(${idx})">${btnText}</button>
                     </div>
@@ -436,20 +511,56 @@
         document.getElementById('drawStatsDisplay').innerText = `대기: 총 ${availableTotal}명 (남 ${availableBoys} / 여 ${availableGirls})`;
     }
 
-    // DB 동기화를 거치는 점수/상태 변경 함수들
+    // 학생 개별 삭제 함수
+    function deleteStudentFromDB(idx) {
+        if(!isAdmin) return;
+        if(confirm(`${cloudStudents[idx].name} 학생을 명단에서 영구 삭제하시겠습니까?`)) {
+            cloudStudents.splice(idx, 1);
+            syncToDB();
+        }
+    }
+
+    // 학생 개별 추가 (모달창 제어)
+    function openAddStudentModal() { document.getElementById('addStudentModal').style.display = 'flex'; }
+    function closeAddStudentModal() { document.getElementById('addStudentModal').style.display = 'none'; }
+    function addSingleStudentToDB() {
+        if(!isAdmin) return;
+        const no = document.getElementById('newStudentNo').value;
+        const name = document.getElementById('newStudentName').value;
+        const gender = document.getElementById('newStudentGender').value;
+        if(!no || !name) return alert("학생 번호와 이름을 모두 입력해주세요.");
+        
+        const grade = currentDocId.split('-')[0];
+        const classNum = currentDocId.split('-')[1];
+
+        cloudStudents.push({
+            grade, classNum, no, name, gender, score: 0, isDrawn: false, isParticipating: true,
+            avatarUrl: generateDiceBearAvatar(name, gender)
+        });
+        
+        syncToDB();
+        closeAddStudentModal();
+        document.getElementById('newStudentNo').value = '';
+        document.getElementById('newStudentName').value = '';
+    }
+
     function toggleParticipation(idx) {
         if(!isAdmin) return;
         cloudStudents[idx].isParticipating = !cloudStudents[idx].isParticipating;
         cloudStudents[idx].isDrawn = false;
-        syncToDB(); // 즉시 DB로 쏘면, onSnapshot이 화면을 다시 그림
+        syncToDB(); 
     }
 
     function changeScore(idx, val) {
         if(!isAdmin) return;
+        
+        // V27: 사운드 효과 실행
+        if (val > 0) playCoinSound();
+        else playBumpSound();
+
         cloudStudents[idx].score = Math.max(0, cloudStudents[idx].score + val);
         syncToDB();
         
-        // 모달창이 열려있을 때 실시간 반영
         const modalSpan = document.getElementById(`modal-score-${idx}`);
         if(modalSpan) modalSpan.innerText = cloudStudents[idx].score;
     }
@@ -477,13 +588,11 @@
         const actualDrawCount = Math.min(drawCount, availableIndices.length);
         const pickedHTML = [];
 
-        // 셔플
         for (let i = availableIndices.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [availableIndices[i], availableIndices[j]] = [availableIndices[j], availableIndices[i]];
         }
 
-        // 뽑힌 학생 DB 상태 변경 및 모달 생성
         for(let i = 0; i < actualDrawCount; i++) {
             const realIdx = availableIndices[i];
             cloudStudents[realIdx].isDrawn = true;
@@ -504,7 +613,7 @@
             `);
         }
 
-        syncToDB(); // 뽑힘 처리 DB 전송
+        syncToDB(); 
         document.getElementById('drawResultGrid').innerHTML = pickedHTML.join('');
         document.getElementById('drawModal').style.display = 'flex';
     }
@@ -517,11 +626,8 @@
         }
     }
 
-    function closeModal() {
-        document.getElementById('drawModal').style.display = 'none';
-    }
+    function closeModal() { document.getElementById('drawModal').style.display = 'none'; }
 
-    // 팀 편성 로직 (로컬에서 화면만 보여줌. 점수 추가 시 DB 갱신)
     function generateTeams() {
         if(!isAdmin) return;
         const numTeams = parseInt(document.getElementById('teamCountSelect').value, 10);
@@ -584,44 +690,31 @@
         const val = parseInt(document.getElementById(`ts-${teamId}`).value, 10);
         if(isNaN(val) || val === 0) return;
         
+        if (val > 0) playCoinSound(); else playBumpSound();
+
         const team = currentRenderedTeams.find(t => t.id === teamId);
         team.members.forEach(m => {
             cloudStudents[m.originalIndex].score = Math.max(0, cloudStudents[m.originalIndex].score + val);
-            m.score = cloudStudents[m.originalIndex].score; // 로컬 화면 갱신용
+            m.score = cloudStudents[m.originalIndex].score;
         });
-        syncToDB(); // DB 반영
-        renderTeamView(); // 팀 대진표 다시 그리기 (점수 텍스트 갱신)
+        syncToDB(); 
+        renderTeamView(); 
     }
 
-    // 올림픽 팡파르 (순위표 전용)
     function playRankingSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const playNote = (f, t, d) => {
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'square'; 
-                osc.connect(gain);
-                gain.connect(ctx.destination);
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'square'; osc.connect(gain); gain.connect(ctx.destination);
                 osc.frequency.value = f;
-                
                 gain.gain.setValueAtTime(0, ctx.currentTime + t);
                 gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + t + 0.1);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + d);
-                
-                osc.start(ctx.currentTime + t);
-                osc.stop(ctx.currentTime + t + d);
+                osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + d);
             };
-
-            playNote(392.00, 0.0, 0.4); 
-            playNote(523.25, 0.3, 0.4); 
-            playNote(659.25, 0.6, 0.4); 
-            
-            playNote(261.63, 0.9, 2.5); 
-            playNote(523.25, 0.9, 2.5); 
-            playNote(659.25, 0.9, 2.5); 
-            playNote(783.99, 0.9, 2.5); 
-            
+            playNote(392.00, 0.0, 0.4); playNote(523.25, 0.3, 0.4); playNote(659.25, 0.6, 0.4); 
+            playNote(261.63, 0.9, 2.5); playNote(523.25, 0.9, 2.5); playNote(659.25, 0.9, 2.5); playNote(783.99, 0.9, 2.5); 
         } catch(e) {}
     }
 
@@ -671,7 +764,6 @@
     function openTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'flex'; }
     function closeTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
-    // 초기 실행 (로컬 명단이 비어있으면 DB에서 불러오기)
     loadClassListFromDB();
 </script>
 </body>
