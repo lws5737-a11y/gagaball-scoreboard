@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>동산초 가가볼 스코어보드 V31</title>
+    <title>동산초 가가볼 스코어보드 V32</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -41,14 +41,14 @@
         textarea { width: 100%; height: 100px; box-sizing: border-box; }
         button { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         
-        /* V31: 숫자 입력창의 기본 상하 화살표(Spinner) 제거 */
+        /* 숫자 입력창의 기본 상하 화살표(Spinner) 완벽 제거 */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
         input[type="number"] {
-            -moz-appearance: textfield; /* Firefox 용 */
+            -moz-appearance: textfield; 
         }
 
         .btn-main { background: var(--dark); color: white; }
@@ -95,7 +95,7 @@
         .score-item.drawn .name { color: #555; }
         .score-item.drawn .score-val { color: #8e44ad; }
         
-        /* 스코어보드 개별 버튼 영역 스타일 (순서 통일을 위한 Flexbox 적용) */
+        /* 스코어보드 개별 버튼 [ - ] [ + ] 통일 */
         .score-ctrl { display: flex; justify-content: center; gap: 5px; }
         .score-ctrl button { font-size: 1.5rem; width: 50px; background: var(--primary); color: white; }
         .score-ctrl button.minus { background: var(--danger); }
@@ -141,13 +141,21 @@
         .member-info b { font-size: 1.4rem; color: var(--dark); margin-bottom: 2px;}
         .member-info span { font-size: 1.3rem; font-weight: 900;}
 
+        /* 🔥 V32: + 버튼 실종사건 완벽 해결 (Flex Layout 1:1 비율 고정) 🔥 */
         .stepper-ctrl { 
-            display: flex; align-items: center; justify-content: space-between; 
-            background: white; border: 2px solid #bdc3c7; border-radius: 8px; overflow: hidden; margin-bottom: 5px;
+            display: flex; align-items: stretch; justify-content: space-between; 
+            background: white; border: 2px solid #bdc3c7; border-radius: 8px; margin-bottom: 5px;
+            width: 100%; box-sizing: border-box; overflow: hidden; /* 모서리 둥글게 유지 */
         }
-        .stepper-btn { background: #ecf0f1; border: none; padding: 5px 12px; font-size: 1.5rem; cursor: pointer; font-weight: bold; color: var(--dark); transition: 0.1s;}
+        .stepper-btn { 
+            background: #ecf0f1; border: none; flex: 1; /* 남은 공간을 똑같이 나누어 가짐 */
+            padding: 5px 0; font-size: 1.5rem; cursor: pointer; font-weight: bold; color: var(--dark); transition: 0.1s;
+        }
         .stepper-btn:hover { background: #bdc3c7; }
-        .team-score-input { width: 35px; border: none; text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--danger); outline: none;}
+        .team-score-input { 
+            width: 40px; flex: 0 0 40px; /* 입력창은 딱 40px로 가운데 고정 */
+            border: none; text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--danger); outline: none; background: transparent; padding: 0; margin: 0;
+        }
         
         .btn-team-add { 
             background: var(--primary); color: white; font-size: 1.2rem; padding: 8px; 
@@ -528,7 +536,6 @@
             let bgColor = s.isParticipating && !s.isDrawn ? (s.gender === '남' ? 'var(--boy-bg)' : 'var(--girl-bg)') : '#fff';
             const cuteAvatar = generateCuteAvatar(s.name); 
 
-            // V31: 스코어보드 점수 조작 버튼 위치 통일 [ - ] [ + ]
             const cardHTML = `
                 <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
                     <button class="btn-delete-student admin-only" onclick="deleteStudentFromDB(${idx})" title="학생 삭제">✖</button>
@@ -692,7 +699,6 @@
                     </div>
                 </div>`).join('');
 
-            // V31: 버튼 이름 '포인트 획득' 변경
             const createPanel = (team) => `
                 <div class="team-card-left">
                     <div class="team-title">${team.id}팀</div>
