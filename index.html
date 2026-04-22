@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 가가볼 스코어보드 V29 (대진표 시인성 & 밸런스 패치 에디션)</title>
+    <title>초등 가가볼 스코어보드 V30 (대진표 UI 완벽 세팅 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -67,7 +67,7 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; }
         .header-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         
-        .draw-panel { background: #fff3cd; padding: 12px 15px; border-radius: 8px; display: flex; justify-content: space-between; }
+        .draw-panel { background: #fff3cd; padding: 12px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
         .scoreboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .score-item { background: #fff; border: 3px solid var(--primary); padding: 15px; border-radius: 12px; text-align: center; position: relative; }
         
@@ -95,54 +95,54 @@
         .ranking-table td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
         .rank-1 { background-color: #fff9c4; } .rank-2 { background-color: #f5f5f5; } .rank-3 { background-color: #ffe0b2; }
 
-        /* V29: 대진표 CSS 대폭 개선 (꽉 차는 화면, 큼직한 UI) */
+        /* V30: 대진표 CSS 대폭 개선 (상하 사이즈 축소, 학생 버튼 크기 고정) */
         #teamMatchupsContainer { 
-            display: flex; flex-direction: column; gap: 20px; 
-            flex: 1; /* 남는 세로 공간을 꽉 채움 */
-            min-height: 70vh;
+            display: flex; flex-direction: column; gap: 10px; /* 상하 간격 축소 */
+            flex: 1; 
         }
         .matchup-row { 
-            flex: 1; /* 대진표 각 줄이 동일한 높이로 쭉쭉 늘어남 */
-            display: flex; gap: 20px; background: white; padding: 20px; 
-            border-radius: 20px; border: 3px solid #ecf0f1; box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            align-items: stretch;
+            display: flex; gap: 12px; background: white; padding: 10px 15px; /* 패딩 축소 */
+            border-radius: 15px; border: 3px solid #ecf0f1; box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            align-items: stretch; margin-bottom: 0;
         }
-        .team-card { flex: 1; display: flex; padding: 15px; border-radius: 15px; }
-        .team-a { background: var(--team-a-bg); border-left: 12px solid var(--team-a-border); }
-        .team-b { background: var(--team-b-bg); border-right: 12px solid var(--team-b-border); }
-        .vs-badge { font-size: 4.5rem; font-weight: 900; display: flex; align-items: center; color: var(--dark); text-shadow: 3px 3px 0px #bdc3c7;}
+        .team-card { flex: 1; display: flex; padding: 8px; border-radius: 10px; }
+        .team-a { background: var(--team-a-bg); border-left: 8px solid var(--team-a-border); }
+        .team-b { background: var(--team-b-bg); border-right: 8px solid var(--team-b-border); }
+        .vs-badge { font-size: 3rem; font-weight: 900; display: flex; align-items: center; color: var(--dark); text-shadow: 2px 2px 0px #bdc3c7;}
         
         .team-card-left { 
-            width: 170px; border-right: 3px dashed rgba(0,0,0,0.2); 
-            padding-right: 15px; margin-right: 15px; 
+            width: 130px; border-right: 2px dashed rgba(0,0,0,0.2); 
+            padding-right: 10px; margin-right: 10px; 
             display: flex; flex-direction: column; justify-content: space-between;
         }
-        .team-title { font-size: 3.5rem; font-weight: 900; margin-bottom: 10px; color: var(--dark); text-align: center;}
+        .team-title { font-size: 2.3rem; font-weight: 900; margin-bottom: 5px; color: var(--dark); text-align: center;}
         
-        .team-card-right { flex: 1; display: flex; flex-wrap: wrap; gap: 15px; align-content: center; justify-content: center;}
+        .team-card-right { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-content: center; justify-content: flex-start;}
         
+        /* 🔥 학생 버튼 크기 고정의 마법 (늘어나지 않음) 🔥 */
         .team-member-badge { 
-            display: flex; align-items: center; padding: 10px 20px; border-radius: 15px; 
-            border: 4px solid; background: white; flex: 1; min-width: 220px; 
-            box-shadow: 0 5px 10px rgba(0,0,0,0.05);
+            display: flex; align-items: center; padding: 6px 12px; border-radius: 10px; 
+            border: 3px solid; background: white; 
+            width: 175px; flex: 0 0 auto; /* 가로 크기를 175px로 고정하고 절대 늘어나지 않게 설정 */
+            box-shadow: 0 3px 5px rgba(0,0,0,0.05); box-sizing: border-box;
         }
-        .team-member-badge img { width: 75px; height: 75px; border-radius: 50%; margin-right: 15px; background: #fdfdfd;}
+        .team-member-badge img { width: 45px; height: 45px; border-radius: 50%; margin-right: 10px; background: #fdfdfd;}
         .member-info { display: flex; flex-direction: column; text-align: left;}
-        .member-info b { font-size: 2rem; color: var(--dark); margin-bottom: 5px;}
-        .member-info span { font-size: 1.8rem; font-weight: 900;}
+        .member-info b { font-size: 1.4rem; color: var(--dark); margin-bottom: 2px;}
+        .member-info span { font-size: 1.3rem; font-weight: 900;}
 
         .stepper-ctrl { 
             display: flex; align-items: center; justify-content: space-between; 
-            background: white; border: 3px solid #bdc3c7; border-radius: 10px; overflow: hidden; margin-bottom: 10px;
+            background: white; border: 2px solid #bdc3c7; border-radius: 8px; overflow: hidden; margin-bottom: 5px;
         }
-        .stepper-btn { background: #ecf0f1; border: none; padding: 10px 15px; font-size: 2rem; cursor: pointer; font-weight: bold; color: var(--dark); transition: 0.1s;}
+        .stepper-btn { background: #ecf0f1; border: none; padding: 5px 12px; font-size: 1.5rem; cursor: pointer; font-weight: bold; color: var(--dark); transition: 0.1s;}
         .stepper-btn:hover { background: #bdc3c7; }
-        .team-score-input { width: 50px; border: none; text-align: center; font-size: 2.2rem; font-weight: 900; color: var(--danger); outline: none;}
+        .team-score-input { width: 35px; border: none; text-align: center; font-size: 1.6rem; font-weight: 900; color: var(--danger); outline: none;}
         
         .btn-team-add { 
-            background: var(--primary); color: white; font-size: 1.6rem; padding: 15px; 
-            border-radius: 10px; border: none; cursor: pointer; font-weight: bold; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; transition: 0.2s;
+            background: var(--primary); color: white; font-size: 1.2rem; padding: 8px; 
+            border-radius: 8px; border: none; cursor: pointer; font-weight: bold; 
+            box-shadow: 0 3px 5px rgba(0,0,0,0.1); width: 100%; transition: 0.2s;
         }
         .btn-team-add:hover { background: #2980b9; transform: translateY(-2px); }
 
@@ -202,25 +202,27 @@
                 </h2>
                 <div class="header-controls">
                     <button class="btn-add admin-only" onclick="openAddStudentModal()">➕ 학생 추가</button>
-                    <button class="btn-timer" onclick="openTimerSelectModal()">⏱️ 타이머</button>
                     <button class="btn-reset-score admin-only" onclick="resetAllScoresDB()">🔄 점수 초기화</button>
-                    <select id="teamCountSelect" class="team-select admin-only"><option value="4">4팀</option><option value="6">6팀</option><option value="8" selected>8팀</option></select>
-                    <button class="btn-team admin-only" onclick="generateTeams()">👥 팀 편성</button>
-                    <button class="btn-rank" onclick="showRanking()">🏆 순위표</button>
                     <button class="btn-nav" onclick="switchView('setupView')">학급 변경</button>
                 </div>
             </div>
             
             <div class="draw-panel admin-only">
-                <div class="draw-controls">
+                <div class="draw-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <strong>🏆 추첨:</strong>
                     <input type="number" id="drawCount" min="1" max="20" value="8" style="width:50px;"> 명
                     <button class="btn-main" onclick="executeDraw('all')">전체</button>
                     <button class="btn-boy" onclick="executeDraw('남')">남학생</button>
                     <button class="btn-girl" onclick="executeDraw('여')">여학생</button>
                     <button class="btn-danger" onclick="resetDrawDB()">추첨 초기화</button>
+                    
+                    <span style="border-left: 2px solid #ccc; margin: 0 5px; height: 24px;"></span>
+                    <select id="teamCountSelect" class="team-select admin-only" style="margin:0;"><option value="4">4팀</option><option value="6">6팀</option><option value="8" selected>8팀</option></select>
+                    <button class="btn-team admin-only" onclick="generateTeams()">👥 팀 편성</button>
+                    <button class="btn-rank" onclick="showRanking()">🏆 순위표</button>
+                    <button class="btn-timer" onclick="openTimerSelectModal()">⏱️ 타이머</button>
                 </div>
-                <div class="draw-stats" id="drawStatsDisplay">대기: 0명</div>
+                <div class="draw-stats" id="drawStatsDisplay" style="margin-left: auto; font-weight:bold;">대기: 0명</div>
             </div>
         </div>
         
@@ -242,7 +244,7 @@
 
     <div id="teamView" class="view-section">
         <div class="header-info" style="text-align: center; position: relative;">
-            <h1 style="margin: 0; color: var(--dark); font-size: 2.8rem;"><span id="teamClassTitle">대진표</span> <span class="creator-tag">made by 우석쌤</span></h1>
+            <h1 style="margin: 0; color: var(--dark); font-size: 2.5rem;"><span id="teamClassTitle">대진표</span> <span class="creator-tag">made by 우석쌤</span></h1>
             <button class="btn-team admin-only" onclick="generateTeams()">🔄 다시 편성</button>
             <button class="btn-nav" style="position: absolute; right: 0; top: -10px;" onclick="switchView('scoreView')">◀ 스코어보드</button>
         </div>
@@ -621,7 +623,7 @@
 
     function closeModal() { document.getElementById('drawModal').style.display = 'none'; }
 
-    // V29: 대결 밸런스 매칭 팀 편성 로직 (4v4, 3v3 매칭 보장)
+    // 대결 밸런스 매칭 로직 (4v4, 3v3 매칭 보장)
     function generateTeams() {
         if(!isAdmin) return;
         const numTeams = parseInt(document.getElementById('teamCountSelect').value, 10);
@@ -635,13 +637,11 @@
         const baseSize = Math.floor(totalParticipants / numTeams);
         const remainder = totalParticipants % numTeams;
         
-        // 팀별 정원(Target Size)을 미리 계산하여 배열에 담습니다. (나머지 인원을 앞에서부터 1명씩 분배)
         let targetSizes = new Array(numTeams).fill(baseSize);
         for(let i = 0; i < remainder; i++) {
             targetSizes[i]++;
         }
 
-        // 각 팀은 자신만의 정원(targetSize)을 가집니다.
         const teams = Array.from({length: numTeams}, (_, i) => ({ id: i + 1, members: [], score: 0, targetSize: targetSizes[i] }));
 
         let boys = available.filter(s => s.gender === '남').sort((a, b) => b.score - a.score);
@@ -649,10 +649,7 @@
 
         function distribute(group) {
             group.forEach(student => {
-                // 아직 정원이 다 차지 않은 팀만 후보로 올립니다.
                 let eligibleTeams = teams.filter(t => t.members.length < t.targetSize);
-                
-                // 후보 팀들 중에서 현재 인원이 가장 적은 팀들을 우선적으로 골라 골고루 분배되도록 합니다.
                 let minMembers = Math.min(...eligibleTeams.map(t => t.members.length));
                 eligibleTeams = eligibleTeams.filter(t => t.members.length === minMembers);
                 
