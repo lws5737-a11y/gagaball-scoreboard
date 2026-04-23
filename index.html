@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>동산초 가가볼 스코어보드 V34 (동글동글 귀요미 폰트 에디션)</title>
+    <title>초등 가가볼 스코어보드 V36 (룰렛 효과음 탑재 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
-        /* 🔥 V34: 구글 폰트(배달의민족 주아체) 불러오기 🔥 */
+        /* 동글동글 귀여운 구글 폰트(배달의민족 주아체) 불러오기 */
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
         :root {
@@ -22,10 +22,7 @@
             --team-b-bg: #f4ff81; --team-b-border: #76ff03;
         }
 
-        /* 🔥 V34: 웹페이지 전체와 모든 버튼, 입력창에 귀여운 주아체 강제 적용 🔥 */
-        body, button, input, select, textarea { 
-            font-family: 'Jua', sans-serif; 
-        }
+        body, button, input, select, textarea { font-family: 'Jua', sans-serif; }
 
         body { background-color: #f0f3f5; margin: 0; padding: 15px; color: var(--dark); overflow-x: hidden; letter-spacing: 0.5px; }
         .container { max-width: 98%; margin: 0 auto; background: white; padding: 20px 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); min-height: 95vh; display: flex; flex-direction: column;}
@@ -50,15 +47,9 @@
         textarea { width: 100%; height: 100px; box-sizing: border-box; }
         button { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; font-size: 1.1rem;}
         
-        /* 숫자 입력창의 기본 상하 화살표(Spinner) 완벽 제거 */
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield; 
-        }
+        /* 숫자 입력창의 기본 상하 화살표 제거 */
+        input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
 
         .btn-main { background: var(--dark); color: white; }
         .btn-sub { background: var(--gray); color: white; }
@@ -70,6 +61,7 @@
         .btn-team { background: #8e44ad; color: white; font-size: 1.2rem; padding: 10px 15px; }
         .btn-timer { background: #e67e22; color: white; font-size: 1.2rem; padding: 10px 15px; }
         .btn-add { background: #2980b9; color: white; font-size: 1.2rem; padding: 10px 15px; }
+        .btn-roulette { background: #e84393; color: white; font-size: 1.2rem; padding: 10px 15px; }
         .btn-sm { padding: 5px 10px; font-size: 1rem; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -115,66 +107,43 @@
         .ranking-table td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
         .rank-1 { background-color: #fff9c4; } .rank-2 { background-color: #f5f5f5; } .rank-3 { background-color: #ffe0b2; }
 
-        #teamMatchupsContainer { 
-            display: flex; flex-direction: column; gap: 10px; 
-            flex: 1; 
-        }
-        .matchup-row { 
-            display: flex; gap: 12px; background: white; padding: 10px 15px; 
-            border-radius: 15px; border: 3px solid #ecf0f1; box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            align-items: stretch; margin-bottom: 0;
-        }
+        #teamMatchupsContainer { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .matchup-row { display: flex; gap: 12px; background: white; padding: 10px 15px; border-radius: 15px; border: 3px solid #ecf0f1; box-shadow: 0 4px 8px rgba(0,0,0,0.05); align-items: stretch; margin-bottom: 0; }
         .team-card { flex: 1; display: flex; padding: 8px; border-radius: 10px; }
         .team-a { background: var(--team-a-bg); border-left: 8px solid var(--team-a-border); }
         .team-b { background: var(--team-b-bg); border-right: 8px solid var(--team-b-border); }
         .vs-badge { font-size: 3.5rem; display: flex; align-items: center; color: var(--dark); text-shadow: 2px 2px 0px #bdc3c7;}
         
-        .team-card-left { 
-            width: 130px; border-right: 2px dashed rgba(0,0,0,0.2); 
-            padding-right: 10px; margin-right: 10px; 
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
+        .team-card-left { width: 130px; border-right: 2px dashed rgba(0,0,0,0.2); padding-right: 10px; margin-right: 10px; display: flex; flex-direction: column; justify-content: space-between; }
         .team-title { font-size: 2.8rem; margin-bottom: 5px; color: var(--dark); text-align: center;}
         
         .team-card-right { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-content: center; justify-content: flex-start;}
         
-        .team-member-badge { 
-            display: flex; align-items: center; padding: 6px 12px; border-radius: 10px; 
-            border: 3px solid; background: white; 
-            width: 175px; flex: 0 0 auto; 
-            box-shadow: 0 3px 5px rgba(0,0,0,0.05); box-sizing: border-box;
-        }
+        .team-member-badge { display: flex; align-items: center; padding: 6px 12px; border-radius: 10px; border: 3px solid; background: white; width: 175px; flex: 0 0 auto; box-shadow: 0 3px 5px rgba(0,0,0,0.05); box-sizing: border-box; }
         .team-member-badge img { width: 45px; height: 45px; border-radius: 50%; margin-right: 10px; background: #fdfdfd;}
         .member-info { display: flex; flex-direction: column; text-align: left;}
         .member-info b { font-size: 1.6rem; color: var(--dark); margin-bottom: 2px;}
         .member-info span { font-size: 1.4rem; color: var(--danger); }
 
-        .stepper-ctrl { 
-            display: flex; align-items: stretch; justify-content: space-between; 
-            background: white; border: 2px solid #bdc3c7; border-radius: 8px; margin-bottom: 5px;
-            width: 100%; box-sizing: border-box; overflow: hidden;
-        }
-        .stepper-btn { 
-            background: #ecf0f1; border: none; flex: 1; 
-            padding: 5px 0; font-size: 1.8rem; cursor: pointer; color: var(--dark); transition: 0.1s;
-        }
+        .stepper-ctrl { display: flex; align-items: stretch; justify-content: space-between; background: white; border: 2px solid #bdc3c7; border-radius: 8px; margin-bottom: 5px; width: 100%; box-sizing: border-box; overflow: hidden; }
+        .stepper-btn { background: #ecf0f1; border: none; flex: 1; padding: 5px 0; font-size: 1.8rem; cursor: pointer; color: var(--dark); transition: 0.1s; }
         .stepper-btn:hover { background: #bdc3c7; }
-        .team-score-input { 
-            width: 40px; flex: 0 0 40px; 
-            border: none; text-align: center; font-size: 1.8rem; color: var(--danger); outline: none; background: transparent; padding: 0; margin: 0;
-        }
+        .team-score-input { width: 40px; flex: 0 0 40px; border: none; text-align: center; font-size: 1.8rem; color: var(--danger); outline: none; background: transparent; padding: 0; margin: 0; }
         
-        .btn-team-add { 
-            background: var(--primary); color: white; font-size: 1.3rem; padding: 8px; 
-            border-radius: 8px; border: none; cursor: pointer; 
-            box-shadow: 0 3px 5px rgba(0,0,0,0.1); width: 100%; transition: 0.2s;
-        }
+        .btn-team-add { background: var(--primary); color: white; font-size: 1.3rem; padding: 8px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 3px 5px rgba(0,0,0,0.1); width: 100%; transition: 0.2s; }
         .btn-team-add:hover { background: #2980b9; transform: translateY(-2px); }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 900px; width: 90%; }
         .draw-result-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; margin-bottom: 20px; }
         .drawn-name-card { border: 5px solid var(--dark); padding: 15px; border-radius: 15px; text-align: center; }
+
+        /* 룰렛 전용 CSS */
+        .roulette-container { position: relative; width: 300px; height: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center;}
+        #rouletteCanvas { border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .roulette-pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 3rem; text-shadow: 0 2px 4px rgba(0,0,0,0.3); z-index: 10;}
+        .mission-btn { display: block; width: 100%; padding: 12px; margin-bottom: 8px; font-size: 1.4rem; border: 2px solid rgba(0,0,0,0.1); border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
+        .mission-btn:hover { transform: scale(1.02); }
     </style>
 </head>
 <body>
@@ -246,6 +215,7 @@
                     <button class="btn-team admin-only" onclick="generateTeams()">👥 팀 편성</button>
                     <button class="btn-rank" onclick="showRanking()">🏆 순위표</button>
                     <button class="btn-timer" onclick="openTimerSelectModal()">⏱️ 타이머</button>
+                    <button class="btn-roulette" onclick="openRouletteModal()">🎡 미션 룰렛</button>
                 </div>
                 <div class="draw-stats" id="drawStatsDisplay" style="margin-left: auto; font-size:1.2rem;">대기: 0명</div>
             </div>
@@ -308,6 +278,34 @@
             <button class="btn-main" style="padding: 20px; background: #e67e22; font-size: 1.5rem;" onclick="window.open('https://youtu.be/Nn9Exxw5Gg4', '_blank'); closeTimerSelectModal();">99초 타이머</button>
             <button class="btn-main" style="padding: 20px; background: #d35400; font-size: 1.5rem;" onclick="window.open('https://youtu.be/eVGSsArJF6k', '_blank'); closeTimerSelectModal();">60초 타이머</button>
         </div>
+    </div>
+</div>
+
+<div id="rouletteModal" class="modal-overlay" onclick="closeRouletteModal()">
+    <div class="modal-content" style="max-width: 500px;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--dark); font-size: 2.8rem; margin-top: 0;">🎡 오늘의 미션 룰렛</h2>
+        
+        <div class="roulette-container">
+            <div class="roulette-pointer">🔽</div>
+            <canvas id="rouletteCanvas" width="300" height="300"></canvas>
+        </div>
+        
+        <button class="btn-main" style="width: 100%; padding: 15px; font-size: 1.8rem; margin-top: 20px; background: #e84393; border-radius: 15px;" onclick="spinRoulette()">🎯 룰렛 돌리기!</button>
+
+        <div style="margin-top: 25px; background: #fdfdfd; padding: 15px; border-radius: 15px; border: 2px dashed #ccc; text-align: left;">
+            <h3 style="margin-top: 0; text-align: center; color: #555;">👇 미션 이름을 누르면 설명을 볼 수 있어요 👇</h3>
+            <button class="mission-btn" style="background:#81ecec; color:#2d3436;" onclick="showMissionDesc(0)">✨ 그냥 가가볼 (70%)</button>
+            <button class="mission-btn" style="background:#ff7675; color:#fff;" onclick="showMissionDesc(1)">🔥 체육쌤 레이드 미션 (10%)</button>
+            <button class="mission-btn" style="background:#ffeaa7; color:#2d3436;" onclick="showMissionDesc(2)">💰 포인트 X2 미션 (20%)</button>
+        </div>
+    </div>
+</div>
+
+<div id="missionDescModal" class="modal-overlay" style="z-index: 1001;" onclick="closeMissionDescModal()">
+    <div class="modal-content" style="max-width: 400px;" onclick="event.stopPropagation()">
+        <h2 id="missionDescTitle" style="color:var(--primary); font-size: 2.2rem; margin-top: 0;"></h2>
+        <p id="missionDescText" style="font-size: 1.5rem; line-height: 1.5; color: #333; background: #f9f9f9; padding: 20px; border-radius: 10px;"></p>
+        <button class="btn-main" style="width: 100%; padding: 15px; font-size: 1.5rem;" onclick="closeMissionDescModal()">확인</button>
     </div>
 </div>
 
@@ -381,6 +379,53 @@
             };
             playTone(392.00, 0.0, 0.15); playTone(392.00, 0.15, 0.15);
             playTone(392.00, 0.3, 0.15); playTone(523.25, 0.45, 0.8);
+        } catch(e) {}
+    }
+
+    // 🔥 V36: 룰렛 회전 시 점점 느려지는 '틱틱틱틱' 효과음 🔥
+    function playRouletteSpinSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            let startTime = ctx.currentTime;
+            // 4초 동안 서서히 느려지는 틱틱틱 사운드 (총 35회 타격음)
+            for(let i=0; i<35; i++) {
+                let t = i / 35; 
+                // cubic ease-out 곡선: 처음엔 간격이 좁고 나중엔 간격이 넓어짐
+                let tickTime = startTime + 4 * (1 - Math.pow(1 - t, 3)); 
+                
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle'; // 너무 날카롭지 않은 소리
+                osc.frequency.setValueAtTime(800 - (i*10), tickTime); // 갈수록 소리가 살짝 낮아지며 멈추는 느낌 부여
+                gain.gain.setValueAtTime(0.1, tickTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, tickTime + 0.05); // 짧게 끊어지는 타격음
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(tickTime);
+                osc.stop(tickTime + 0.05);
+            }
+        } catch(e) {}
+    }
+
+    // 🔥 V36: 룰렛 미션 당첨 시 나오는 '뾰로롱~ 빰!' 잭팟 사운드 🔥
+    function playJackpotSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const playTone = (f, t, d) => {
+                const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'square'; osc.connect(gain); gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(f, ctx.currentTime + t);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + t);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + d);
+                osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + d);
+            };
+            // 도미솔도! 로 이어지는 경쾌한 아르페지오 사운드
+            playTone(523.25, 0.0, 0.1); // C5
+            playTone(659.25, 0.1, 0.1); // E5
+            playTone(783.99, 0.2, 0.1); // G5
+            playTone(1046.50, 0.3, 0.6); // C6 (길게)
         } catch(e) {}
     }
 
@@ -801,6 +846,115 @@
 
     function openTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'flex'; }
     function closeTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'none'; }
+
+    const rouletteMissions = [
+        { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." },
+        { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 함께 참여합니다. 체육쌤을 아웃시키면 체육 도장 1장 적립! 체육쌤이 아웃되면 평소처럼 가가볼을 즐깁니다." },
+        { text: "포인트 X2", weight: 20, color: "#ffeaa7", desc: "최종 승자에게는 평소보다 2배의 포인트가 주어집니다." }
+    ];
+
+    let currentRouletteRotation = 0;
+    let isSpinning = false;
+
+    function openRouletteModal() {
+        document.getElementById('rouletteModal').style.display = 'flex';
+        setTimeout(drawRoulette, 50); 
+    }
+
+    function closeRouletteModal() {
+        if(isSpinning) return; 
+        document.getElementById('rouletteModal').style.display = 'none';
+    }
+
+    function drawRoulette() {
+        const canvas = document.getElementById("rouletteCanvas");
+        if (!canvas.getContext) return;
+        const ctx = canvas.getContext("2d");
+        const cw = canvas.width;
+        const ch = canvas.height;
+        ctx.clearRect(0, 0, cw, ch);
+        
+        let startAngle = -0.5 * Math.PI; 
+        
+        for(let i=0; i<rouletteMissions.length; i++) {
+            let sliceAngle = (rouletteMissions[i].weight / 100) * 2 * Math.PI;
+            
+            ctx.beginPath();
+            ctx.moveTo(cw/2, ch/2);
+            ctx.arc(cw/2, ch/2, cw/2, startAngle, startAngle + sliceAngle);
+            ctx.fillStyle = rouletteMissions[i].color;
+            ctx.fill();
+            
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(cw/2, ch/2);
+            ctx.rotate(startAngle + sliceAngle / 2);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#2d3436";
+            ctx.font = "bold 22px Jua";
+            ctx.fillText(rouletteMissions[i].text, cw/2 - 15, 8);
+            ctx.restore();
+            
+            startAngle += sliceAngle;
+        }
+    }
+
+    function spinRoulette() {
+        if(isSpinning) return;
+        isSpinning = true;
+
+        const canvas = document.getElementById("rouletteCanvas");
+        const spinAngle = Math.floor(Math.random() * 360) + (360 * 5); 
+        currentRouletteRotation += spinAngle;
+        
+        canvas.style.transition = "transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)"; 
+        canvas.style.transform = `rotate(${currentRouletteRotation}deg)`;
+
+        // V36: 룰렛 전용 회전 사운드 재생
+        playRouletteSpinSound();
+
+        setTimeout(() => {
+            isSpinning = false;
+            
+            const normalizedRotation = currentRouletteRotation % 360;
+            let pointerAngle = (360 - normalizedRotation) % 360;
+            
+            let currentPos = 0;
+            let winner = null;
+            
+            for(let i=0; i<rouletteMissions.length; i++) {
+                let sliceSize = (rouletteMissions[i].weight / 100) * 360;
+                if(pointerAngle >= currentPos && pointerAngle < currentPos + sliceSize) {
+                    winner = rouletteMissions[i];
+                    break;
+                }
+                currentPos += sliceSize;
+            }
+
+            // V36: 당첨 결과 발표 시 잭팟 사운드 재생
+            playJackpotSound();
+            showMissionDescModal(winner.text, winner.desc);
+            
+        }, 4000);
+    }
+
+    function showMissionDesc(index) {
+        const m = rouletteMissions[index];
+        showMissionDescModal(m.text, m.desc);
+    }
+
+    function showMissionDescModal(title, text) {
+        document.getElementById("missionDescTitle").innerText = "🎯 " + title;
+        document.getElementById("missionDescText").innerText = text;
+        document.getElementById("missionDescModal").style.display = "flex";
+    }
+
+    function closeMissionDescModal() {
+        document.getElementById("missionDescModal").style.display = "none";
+    }
 
     loadClassListFromDB();
 </script>
