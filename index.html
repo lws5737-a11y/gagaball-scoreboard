@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 가가볼 스코어보드 V37 (대형 룰렛 & 리얼 사운드 에디션)</title>
+    <title>초등 가가볼 스코어보드 V38 (초대형 룰렛 시원시원 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -133,15 +133,34 @@
         .btn-team-add { background: var(--primary); color: white; font-size: 1.3rem; padding: 8px; border-radius: 8px; border: none; cursor: pointer; box-shadow: 0 3px 5px rgba(0,0,0,0.1); width: 100%; transition: 0.2s; }
         .btn-team-add:hover { background: #2980b9; transform: translateY(-2px); }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 900px; width: 90%; }
         .draw-result-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 20px; margin-bottom: 20px; }
         .drawn-name-card { border: 5px solid var(--dark); padding: 15px; border-radius: 15px; text-align: center; }
 
-        /* 🔥 V37: 대형 룰렛 전용 CSS (설명칸 삭제 및 크기 극대화) 🔥 */
-        .roulette-container { position: relative; width: 100%; max-width: 450px; aspect-ratio: 1 / 1; margin: 0 auto; display: flex; justify-content: center; align-items: center;}
-        #rouletteCanvas { border-radius: 50%; box-shadow: 0 8px 25px rgba(0,0,0,0.3); width: 100%; height: 100%; }
-        .roulette-pointer { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); font-size: 4.5rem; text-shadow: 0 3px 6px rgba(0,0,0,0.4); z-index: 10;}
+        /* 🔥 V38: 초대형 룰렛 전용 CSS (크기, 위치 최적화) 🔥 */
+        .roulette-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 650px; /* 기존 450px -> 650px 대폭 확대 */
+            aspect-ratio: 1 / 1; 
+            margin: 0 auto; 
+            display: flex; justify-content: center; align-items: center;
+        }
+        #rouletteCanvas { 
+            border-radius: 50%; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            width: 100%; height: 100%; 
+        }
+        .roulette-pointer { 
+            position: absolute; 
+            top: -45px; /* 포인터 위치 조정 */
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 6rem; /* 포인터 크기 대폭 확대 */
+            text-shadow: 0 5px 10px rgba(0,0,0,0.4); 
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -263,9 +282,9 @@
 
 <div id="drawModal" class="modal-overlay">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h1 style="color:var(--danger); font-size: 3rem;">🎉 참가 선수 🎉</h1>
+        <h1 style="color:var(--danger); font-size: 4rem;">🎉 참가 선수 🎉</h1>
         <div id="drawResultGrid" class="draw-result-grid"></div>
-        <button class="btn-main" style="padding: 15px 40px; font-size: 1.8rem;" onclick="closeModal()">확인 및 닫기</button>
+        <button class="btn-main" style="padding: 20px 50px; font-size: 2rem;" onclick="closeModal()">확인 및 닫기</button>
     </div>
 </div>
 
@@ -280,23 +299,23 @@
 </div>
 
 <div id="rouletteModal" class="modal-overlay" onclick="closeRouletteModal()">
-    <div class="modal-content" style="max-width: 550px; padding: 30px;" onclick="event.stopPropagation()">
-        <h2 style="color: var(--dark); font-size: 2.8rem; margin-top: 0; margin-bottom: 30px;">🎡 오늘의 미션 룰렛</h2>
+    <div class="modal-content" style="max-width: 800px; padding: 40px;" onclick="event.stopPropagation()">
+        <h2 style="color: var(--dark); font-size: 3.5rem; margin-top: 0; margin-bottom: 40px;">🎡 오늘의 미션 룰렛</h2>
         
         <div class="roulette-container">
             <div class="roulette-pointer">🔽</div>
-            <canvas id="rouletteCanvas" width="450" height="450"></canvas>
+            <canvas id="rouletteCanvas" width="650" height="650"></canvas>
         </div>
         
-        <button class="btn-main" style="width: 100%; padding: 20px; font-size: 2rem; margin-top: 40px; background: #e84393; border-radius: 15px; box-shadow: 0 5px 10px rgba(232,67,147,0.3);" onclick="spinRoulette()">🎯 룰렛 돌리기!</button>
+        <button class="btn-main" style="width: 100%; padding: 25px; font-size: 2.5rem; margin-top: 50px; background: #e84393; border-radius: 20px; box-shadow: 0 8px 15px rgba(232,67,147,0.3);" onclick="spinRoulette()">🎯 룰렛 돌리기!</button>
     </div>
 </div>
 
 <div id="missionDescModal" class="modal-overlay" style="z-index: 1001;" onclick="closeMissionDescModal()">
-    <div class="modal-content" style="max-width: 450px;" onclick="event.stopPropagation()">
-        <h2 id="missionDescTitle" style="color:var(--primary); font-size: 2.5rem; margin-top: 0;"></h2>
-        <p id="missionDescText" style="font-size: 1.6rem; line-height: 1.6; color: #333; background: #f9f9f9; padding: 25px; border-radius: 15px;"></p>
-        <button class="btn-main" style="width: 100%; padding: 15px; font-size: 1.8rem;" onclick="closeMissionDescModal()">미션 확인!</button>
+    <div class="modal-content" style="max-width: 500px; padding: 40px;" onclick="event.stopPropagation()">
+        <h2 id="missionDescTitle" style="color:var(--primary); font-size: 2.8rem; margin-top: 0;"></h2>
+        <p id="missionDescText" style="font-size: 1.8rem; line-height: 1.6; color: #333; background: #f9f9f9; padding: 30px; border-radius: 15px; margin-bottom: 30px;"></p>
+        <button class="btn-main" style="width: 100%; padding: 20px; font-size: 2rem; border-radius: 15px;" onclick="closeMissionDescModal()">미션 확인!</button>
     </div>
 </div>
 
@@ -357,7 +376,7 @@
         } catch(e) {}
     }
 
-    // 🔥 V37: 리얼 룰렛 회전음 (틱틱틱틱) 🔥
+    // 리얼 룰렛 회전음 (틱틱틱틱)
     function playRouletteSpinSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -366,13 +385,12 @@
             let ticks = 45;
             for(let i=0; i<ticks; i++) {
                 let t = i / ticks; 
-                // 회전이 점점 느려지는 곡선 (ease-out)
                 let tickTime = startTime + totalDuration * (1 - Math.pow(1 - t, 3.5)); 
                 
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(600 - (i*5), tickTime); // 타격음 톤
+                osc.frequency.setValueAtTime(600 - (i*5), tickTime); 
                 gain.gain.setValueAtTime(0, tickTime);
                 gain.gain.linearRampToValueAtTime(0.3, tickTime + 0.01);
                 gain.gain.exponentialRampToValueAtTime(0.01, tickTime + 0.05);
@@ -386,7 +404,7 @@
         } catch(e) {}
     }
 
-    // 🔥 V37: 잭팟 축하음 (빰빰빰 빠라빰~) 🔥
+    // 잭팟 축하음 (빰빰빰 빠라빰~) 
     function playJackpotSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -403,7 +421,7 @@
             playTone(523.25, 0.2, 0.2); // C5
             playTone(523.25, 0.4, 0.2); // C5
             playTone(659.25, 0.6, 0.2); // E5
-            playTone(783.99, 0.8, 0.6); // G5 (길게 환호)
+            playTone(783.99, 0.8, 0.6); // G5 
         } catch(e) {}
     }
 
@@ -658,7 +676,6 @@
 
         syncToDB(); 
         
-        // 당첨 효과음 재사용 (팡파르)
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const playTone = (f, t, d) => {
@@ -691,7 +708,6 @@
 
         if(available.length < numTeams) return alert(`참가 학생이 너무 적습니다.`);
 
-        // 팀 편성 효과음
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const playTone = (f, t, d) => {
@@ -831,7 +847,6 @@
         });
         
         switchView('rankingView'); 
-        // 순위표 전용 팡파르
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const playNote = (f, t, d) => {
@@ -852,7 +867,7 @@
     function openTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'flex'; }
     function closeTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
-    // 🔥 V37: 대형 룰렛 자바스크립트 🔥
+    // 🔥 V38: 초대형 룰렛 자바스크립트 🔥
     const rouletteMissions = [
         { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." },
         { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 함께 참여합니다. 체육쌤을 아웃시키면 체육 도장 1장 적립! 체육쌤이 아웃되면 평소처럼 가가볼을 즐깁니다." },
@@ -882,7 +897,6 @@
         
         let startAngle = -0.5 * Math.PI; 
         
-        // 조각 그리기
         for(let i=0; i<rouletteMissions.length; i++) {
             let sliceAngle = (rouletteMissions[i].weight / 100) * 2 * Math.PI;
             
@@ -892,7 +906,7 @@
             ctx.fillStyle = rouletteMissions[i].color;
             ctx.fill();
             
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 6; // 선 굵기 증가
             ctx.strokeStyle = "#ffffff";
             ctx.stroke();
 
@@ -901,25 +915,28 @@
             ctx.rotate(startAngle + sliceAngle / 2);
             ctx.textAlign = "right";
             ctx.fillStyle = "#2d3436";
-            ctx.font = "bold 30px Jua"; // 글씨 크기 확대
-            ctx.fillText(rouletteMissions[i].text, cw/2 - 30, 10);
+            
+            // 캔버스 크기에 맞춰 폰트 사이즈 대폭 증가
+            ctx.font = "bold 45px Jua"; 
+            ctx.fillText(rouletteMissions[i].text, cw/2 - 40, 15);
             ctx.restore();
             
             startAngle += sliceAngle;
         }
 
-        // V37: 중앙 스핀(장식용) 원 그리기
+        // 중앙 검은색 원 디자인 (크기 확대)
         ctx.beginPath();
-        ctx.arc(cw/2, ch/2, 45, 0, 2 * Math.PI);
+        ctx.arc(cw/2, ch/2, 65, 0, 2 * Math.PI);
         ctx.fillStyle = "#2d3436";
         ctx.fill();
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.strokeStyle = "#ffffff";
         ctx.stroke();
+        
         ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = "bold 24px Jua";
+        ctx.font = "bold 35px Jua";
         ctx.fillText("미션", cw/2, ch/2);
     }
 
@@ -934,7 +951,6 @@
         canvas.style.transition = "transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)"; 
         canvas.style.transform = `rotate(${currentRouletteRotation}deg)`;
 
-        // V37: 리얼 회전음 재생
         playRouletteSpinSound();
 
         setTimeout(() => {
@@ -955,7 +971,6 @@
                 currentPos += sliceSize;
             }
 
-            // V37: 잭팟 사운드 재생 후 팝업 띄우기
             playJackpotSound();
             showMissionDescModal(winner.text, winner.desc);
             
