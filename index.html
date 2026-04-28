@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 가가볼 스코어보드 V40 (듀얼 룰렛 & 편의성 개선 에디션)</title>
+    <title>초등 가가볼 스코어보드 V41 (상황별 룰렛/타이머 동선 최적화 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -44,7 +44,7 @@
         .input-group { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         input, select, textarea { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; font-size: 1.1rem; }
         
-        /* 🔥 V40: 추첨 숫자 화살표는 남겨두고 팀 대진표용 화살표만 제거 */
+        /* 추첨 숫자 화살표는 남겨두고 팀 대진표용 화살표만 제거 */
         input[type="number"] { width: 80px; }
         .team-score-input::-webkit-outer-spin-button, .team-score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .team-score-input { -moz-appearance: textfield; }
@@ -260,7 +260,13 @@
     <div id="teamView" class="view-section">
         <div class="header-info" style="text-align: center; position: relative;">
             <h1 style="margin: 0; color: var(--dark); font-size: 3rem;"><span id="teamClassTitle">대진표</span> <span class="creator-tag">made by 우석쌤</span></h1>
-            <button class="btn-team admin-only" onclick="generateTeams()">🔄 다시 편성</button>
+            
+            <div style="margin-top: 15px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                <button class="btn-team admin-only" style="padding: 12px 25px; font-size: 1.6rem; border-radius: 12px;" onclick="generateTeams()">🔄 다시 편성</button>
+                <button class="btn-timer" style="padding: 12px 25px; font-size: 1.6rem; border-radius: 12px;" onclick="openTimerSelectModal()">⏱️ 타이머</button>
+                <button class="btn-roulette" style="background: #9b59b6; padding: 12px 25px; font-size: 1.6rem; border-radius: 12px;" onclick="openRouletteModal('team')">🎡 팀전 룰렛</button>
+            </div>
+
             <button class="btn-nav" style="position: absolute; right: 0; top: -10px;" onclick="switchView('scoreView')">◀ 스코어보드</button>
         </div>
         <div id="teamMatchupsContainer"></div>
@@ -287,6 +293,12 @@
     <div class="modal-content" onclick="event.stopPropagation()">
         <h1 style="color:var(--danger); font-size: 4rem;">🎉 참가 선수 🎉</h1>
         <div id="drawResultGrid" class="draw-result-grid"></div>
+        
+        <div style="display:flex; justify-content:center; gap:15px; margin-bottom:25px;">
+            <button class="btn-timer" style="padding: 15px 35px; font-size: 1.8rem; border-radius: 12px;" onclick="openTimerSelectModal()">⏱️ 타이머</button>
+            <button class="btn-roulette" style="padding: 15px 35px; font-size: 1.8rem; border-radius: 12px;" onclick="openRouletteModal('individual')">🎡 개인전 룰렛</button>
+        </div>
+
         <button class="btn-main" style="padding: 20px 50px; font-size: 2rem;" onclick="closeModal()">확인 및 닫기</button>
     </div>
 </div>
@@ -867,7 +879,6 @@
     function openTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'flex'; }
     function closeTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
-    // 🔥 V40: 개인전/팀전 듀얼 룰렛 로직 🔥
     const individualMissions = [
         { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." },
         { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 경기장에 등장했습니다! 체육쌤을 아웃시키면 체육 도장 1장이 상품으로 주어집니다! 체육쌤이 아웃이되면 평소처럼 가가볼 게임을 즐겨주세요." },
@@ -884,7 +895,6 @@
     let currentRouletteRotation = 0;
     let isSpinning = false;
 
-    // 룰렛 열 때 종류를 받아서 세팅
     function openRouletteModal(type) {
         if(type === 'team') {
             currentMissions = teamMissions;
@@ -912,7 +922,6 @@
         
         let startAngle = -0.5 * Math.PI; 
         
-        // 현재 선택된 룰렛 배열(currentMissions)을 기준으로 그림
         for(let i=0; i<currentMissions.length; i++) {
             let sliceAngle = (currentMissions[i].weight / 100) * 2 * Math.PI;
             
@@ -976,7 +985,6 @@
             let currentPos = 0;
             let winner = null;
             
-            // 결과도 currentMissions 기준으로 판별
             for(let i=0; i<currentMissions.length; i++) {
                 let sliceSize = (currentMissions[i].weight / 100) * 360;
                 if(pointerAngle >= currentPos && pointerAngle < currentPos + sliceSize) {
