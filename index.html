@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 가가볼 스코어보드 V42 (도장판 듀얼DB + 동선 최적화 완전체)</title>
+    <title>초등 가가볼 스코어보드 V44 (완전체 최종 에디션)</title>
     
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -44,6 +44,7 @@
         .input-group { background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
         input, select, textarea { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; font-size: 1.1rem; }
         
+        /* 추첨 숫자 화살표는 남겨두고 팀 대진표용 화살표만 제거 */
         input[type="number"] { width: 80px; }
         .team-score-input::-webkit-outer-spin-button, .team-score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .team-score-input { -moz-appearance: textfield; }
@@ -140,9 +141,28 @@
         .drawn-name-card { border: 5px solid var(--dark); padding: 15px; border-radius: 15px; text-align: center; }
 
         /* 초대형 룰렛 전용 CSS */
-        .roulette-container { position: relative; width: 100%; max-width: 800px; aspect-ratio: 1 / 1; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
-        #rouletteCanvas { border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; height: 100%; }
-        .roulette-pointer { position: absolute; top: -55px; left: 50%; transform: translateX(-50%); font-size: 7rem; text-shadow: 0 5px 10px rgba(0,0,0,0.4); z-index: 10; }
+        .roulette-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 800px; 
+            aspect-ratio: 1 / 1; 
+            margin: 0 auto; 
+            display: flex; justify-content: center; align-items: center;
+        }
+        #rouletteCanvas { 
+            border-radius: 50%; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            width: 100%; height: 100%; 
+        }
+        .roulette-pointer { 
+            position: absolute; 
+            top: -55px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 7rem; 
+            text-shadow: 0 5px 10px rgba(0,0,0,0.4); 
+            z-index: 10;
+        }
 
         /* 🏆 도장판 애니메이션 및 CSS 🏆 */
         .stamp-cell {
@@ -431,11 +451,14 @@
     let smartClassDataDoc = null;
     let classStamps = {};
     const TOTAL_STAMP_CELLS = 20;
+    
+    // 🔥 V44: 스마트 학급 앱의 원본 '참 잘했어요' 도장 Base64 적용 🔥
     const defaultStampImg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWY0NDQ0IiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1kYXNoYXJyYXk9IjYgNCIvPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjM4IiBmaWxsPSJub25lIiBzdHJva2U9IiNlZjQ0NDQiIHN0cm9rZS13aWR0aD0iMSIvPgogIDx0ZXh0IHg9IjUwIiB5PSI0NSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiNlZjQ0NDQiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7ssLg8L3RleHQ+CiAgPHRleHQgeD0iNTAiIHk9IjcwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2VmNDQ0NCIgZm9udC13ZWlnaHQ9ImJvbGQiIHRleHQtYW5jaG9yPSJtaWRkbGUiPueemO2WiOyWtOyalDwvdGV4dD4KPC9zdmc+";
+    
     let globalStampImage = localStorage.getItem('customStamp') || defaultStampImg;
     let smartClassListenerUnsubscribe = null;
 
-    let audioCtx = null; // 오디오 컨텍스트 전역 변수 복구
+    let audioCtx = null; 
 
     let isAdmin = false;
     let localStudents = []; 
@@ -451,6 +474,10 @@
         const seed = encodeURIComponent(name);
         return `https://robohash.org/${seed}?set=set4&size=150x150`;
     }
+
+    // --- 빠져있던 타이머 모달 함수 복구 ---
+    function openTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'flex'; }
+    function closeTimerSelectModal() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
     // --- 기본 사운드 효과 ---
     function playCoinSound() {
