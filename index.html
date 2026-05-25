@@ -120,6 +120,25 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 }
 .animate-shake { animation: shake 0.3s infinite; }
 
+/* 팀 포인트 변동 애니메이션 CSS 추가 */
+@keyframes floatScoreAnim {
+    0% { transform: translateY(0) scale(1); opacity: 1; }
+    100% { transform: translateY(-25px) scale(1.4); opacity: 0; }
+}
+.float-score-anim {
+    position: absolute;
+    right: -30px;
+    top: -5px;
+    font-size: 1.6rem;
+    font-weight: 900;
+    animation: floatScoreAnim 0.7s ease-out forwards;
+    pointer-events: none;
+    z-index: 10;
+    text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+}
+.float-score-plus { color: #3b82f6; }
+.float-score-minus { color: #ef4444; }
+
 /* 스마트폰 세로 화면 최적화 */
 @media screen and (max-width: 640px) {
     #gagaball-section .scoreboard-grid { 
@@ -162,7 +181,6 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 
 <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[9999] hidden"></canvas>
 
-<!-- 로그인 화면 -->
 <div id="login-screen" class="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
 <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full mx-4 text-center">
 <div class="text-4xl mb-4">🏟️</div>
@@ -175,7 +193,6 @@ Google 계정으로 시작하기
 </div>
 </div>
 
-<!-- 학급 선택 화면 (초기 화면) -->
 <div id="class-selection-screen" class="fixed inset-0 bg-slate-100 z-[150] hidden flex-col items-center justify-center p-4">
     <div class="text-center max-w-4xl w-full">
         <h2 class="text-5xl sm:text-7xl font-black text-slate-800 mb-4 font-jua">🏫 동산초 가가볼 콜로세움</h2>
@@ -184,8 +201,7 @@ Google 계정으로 시작하기
         <h3 class="text-xl sm:text-2xl text-slate-600 mb-10 font-bold">플레이할 학급을 선택해주세요</h3>
         
         <div id="startup-class-list" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[100px]">
-            <!-- JS에서 학급 목록 생성 -->
-        </div>
+            </div>
         
         <button onclick="window.openManageModal()" class="text-slate-500 hover:text-blue-600 font-bold underline transition flex items-center justify-center gap-2 mx-auto">
             ⚙️ 학급 설정 및 명단 관리
@@ -221,7 +237,6 @@ Google 계정으로 시작하기
 
 <main id="main-container" class="max-w-[98%] mx-auto p-2 sm:p-4 space-y-6 mt-1 w-full transition-all duration-300">
 
-<!-- 하단 고정 내비게이션 바 -->
 <div id="tab-navigation" class="flex flex-row justify-center items-center fixed w-full bg-white/95 backdrop-blur-sm border-t border-slate-200 px-2 py-2 sm:px-4 sm:py-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] print-hide" style="bottom: 0; left: 0; z-index: 50; padding-bottom: max(env(safe-area-inset-bottom), 10px);">
 <div class="max-w-2xl w-full flex flex-row justify-center gap-3 sm:gap-6" id="tab-inner-container">
 <button onclick="window.showTab('gagaball')" id="tab-gagaball" class="flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 rounded-xl font-bold text-sm transition text-white bg-slate-800 shadow-md border border-slate-800 transform scale-105 z-10 whitespace-nowrap">
@@ -235,7 +250,6 @@ Google 계정으로 시작하기
 </div>
 </div>
 
-<!-- 가가볼 모드 -->
 <section id="gagaball-section" class="bg-white p-4 sm:p-8 rounded-2xl shadow-sm border border-slate-100 w-full">
 <div class="flex justify-center gap-3 mb-8 border-b-4 border-slate-800 pb-5">
 <button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-6 py-3 font-black text-xl sm:text-3xl rounded-xl bg-slate-800 text-white shadow-md transition transform hover:scale-105">🏆 스코어보드</button>
@@ -275,7 +289,6 @@ Google 계정으로 시작하기
 <h2 class="text-4xl font-black text-amber-500 mb-6 text-center drop-shadow-md">🏆 가가볼 명예의 전당 🏆</h2>
 <div class="text-center mb-6 text-slate-500 font-bold">학생을 선택하여 왕중왕전을 시작할 수 있습니다.</div>
 <div id="gaga-hall-of-fame-grid" class="flex flex-col gap-4 max-w-3xl mx-auto"></div>
-<!-- 왕중왕전 플로팅 버튼 -->
 <div id="champions-fab-container" class="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100] hidden">
     <button onclick="window.startChampionsTournament()" class="bg-purple-600 text-white px-8 py-4 rounded-full font-black text-2xl shadow-[0_10px_25px_rgba(147,51,234,0.5)] hover:bg-purple-700 hover:scale-105 transition flex items-center gap-2 border-4 border-purple-300">
         👑 <span id="champions-fab-text">왕중왕전 시작 (0명)</span>
@@ -303,7 +316,6 @@ Google 계정으로 시작하기
 </div>
 </section>
 
-<!-- 도장판 모드 -->
 <section id="stamp-section" class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 hidden mx-auto max-w-4xl">
 <div class="bg-green-50 rounded-2xl shadow-sm border-2 border-green-400 p-6 font-jua relative overflow-hidden flex flex-col items-center">
 <div class="text-center mb-6">
@@ -345,7 +357,6 @@ Google 계정으로 시작하기
 </main>
 </div> 
 
-<!-- 학급 관리 모달 -->
 <div id="manage-modal" class="fixed inset-0 bg-slate-900/60 hidden items-start justify-center z-[250] backdrop-blur-sm overflow-y-auto pt-10 pb-10 px-4">
 <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl relative animate-pop-in p-4 sm:p-8 my-auto border border-slate-200">
 <div class="flex justify-between items-center mb-4 border-b pb-2 pr-8">
@@ -382,7 +393,6 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<!-- 공용 모달창 모음 -->
 <div id="drawResultModal" class="fixed inset-0 bg-slate-900/80 hidden items-center justify-center z-[1100] backdrop-blur-sm transition-opacity" onclick="window.closeDrawResultModal()">
     <div class="bg-white p-6 sm:p-8 rounded-3xl shadow-2xl max-w-2xl w-full mx-4 text-center transform scale-100 transition-transform animate-pop-in" onclick="event.stopPropagation()">
         <h2 id="drawResultTitle" class="text-3xl sm:text-4xl font-black text-purple-600 mb-6 font-jua">🎉 뽑기 결과 🎉</h2>
@@ -447,7 +457,6 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<!-- 🖼️ 도장 선택 모달 -->
 <div id="stampSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeStampSelectModal()">
     <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; padding: 25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100">
@@ -458,7 +467,6 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     </div>
 </div>
 
-<!-- 🖼️ 아바타 선택 모달 -->
 <div id="avatarSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeAvatarSelectModal()">
     <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; max-height: 85vh; padding: 25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100 shrink-0">
@@ -667,6 +675,9 @@ let groupRecords = {};
 let classStamps = {}; 
 let currentTab = 'gagaball'; 
 window.championsSelection = []; // 왕중왕전 선택된 학생 번호 배열
+
+// 점수 애니메이션 트래킹 전역 객체 추가
+window.lastTeamScoreChange = { teamId: null, val: 0, time: 0 };
 
 const TOTAL_STAMP_CELLS = 20;
 let defaultStampImg = "images/stamps/stamp01.jpg";
@@ -1328,18 +1339,35 @@ window.executeGagaTeams = function(numTeams, available) {
 
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
+    const now = Date.now();
+    const showAnim = (window.lastTeamScoreChange && (now - window.lastTeamScoreChange.time < 100));
+
     for(let i = 0; i < currentGagaTeams.length; i += 2) {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
-        const createBadges = (members) => members.map(m => `
+        
+        const createBadges = (team) => team.members.map(m => {
+            let animHTML = '';
+            // 팀 점수 변동이 있었고, 현재 렌더링 중인 학생이 해당 팀에 속해있을 경우 애니메이션 추가
+            if (showAnim && team.id === window.lastTeamScoreChange.teamId) {
+                const val = window.lastTeamScoreChange.val;
+                const sign = val > 0 ? '+' : '';
+                const colorClass = val > 0 ? 'float-score-plus' : 'float-score-minus';
+                animHTML = `<span class="float-score-anim ${colorClass}">${sign}${val}</span>`;
+            }
+            return `
             <div class="team-member-badge" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'};">
                 <img src="${window.generateCuteAvatar(m)}" class="cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="member-info"><b>${m.name}</b><span>${m.score || 0}점</span></div>
-            </div>`).join('');
+                <div class="member-info">
+                    <b>${m.name}</b>
+                    <span style="position:relative; display:inline-block;">${m.score || 0}점${animHTML}</span>
+                </div>
+            </div>`;
+        }).join('');
+        
         const createPanel = (team) => `
             <div class="team-card-left w-32 sm:w-40 border-r-4 border-dashed border-slate-200 pr-4 mr-4 flex flex-col justify-between shrink-0">
                 <div class="team-title text-5xl font-black text-center text-slate-700">${team.id}팀</div>
                 <div class="mt-auto flex flex-col items-center gap-2">
-                    <div class="text-2xl font-black text-slate-600 bg-slate-100 px-4 py-1 rounded-full shadow-inner mb-2">${team.score}점</div>
                     <div class="flex justify-center gap-3">
                         <button class="bg-red-500 text-white w-14 h-14 rounded-xl text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
                         <button class="bg-blue-500 text-white w-14 h-14 rounded-xl text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
@@ -1349,8 +1377,8 @@ window.renderGagaTeamView = function() {
 
         teamHTML += `
             <div class="matchup-row">
-                <div class="team-card team-a">${createPanel(teamA)} <div class="team-card-right">${createBadges(teamA.members)}</div></div>
-                ${teamB ? `<div class="vs-badge">VS</div><div class="team-card team-b">${createPanel(teamB)} <div class="team-card-right">${createBadges(teamB.members)}</div></div>` : ''}
+                <div class="team-card team-a">${createPanel(teamA)} <div class="team-card-right">${createBadges(teamA)}</div></div>
+                ${teamB ? `<div class="vs-badge">VS</div><div class="team-card team-b">${createPanel(teamB)} <div class="team-card-right">${createBadges(teamB)}</div></div>` : ''}
             </div>`;
     }
     container.innerHTML = teamHTML;
@@ -1364,6 +1392,9 @@ window.addGagaTeamScore = function(teamId, val) {
         const student = classData[currentClass].find(s => s.no === m.no);
         if(student) { student.score = Math.max(0, (student.score || 0) + val); m.score = student.score; }
     });
+    
+    // 점수 변동 타이머 및 팀 정보 저장
+    window.lastTeamScoreChange = { teamId: teamId, val: val, time: Date.now() };
     
     saveData(); window.renderGagaTeamView(); window.renderGagaball(); window.renderGagaRanking();
 }
