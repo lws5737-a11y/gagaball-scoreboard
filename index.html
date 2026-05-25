@@ -196,20 +196,21 @@ Google 계정으로 시작하기
 </div>
 
 <div id="class-selection-screen" class="fixed inset-0 z-[150] hidden flex-col items-center justify-center p-4 overflow-hidden">
-    <div class="absolute inset-0 bg-[url('image_0.png')] bg-cover bg-center blur-md transform scale-110 opacity-80"></div>
     
-    <div class="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 bg-[url('image_0.png')] bg-cover bg-center opacity-90"></div>
+    
+    <div class="absolute inset-0 bg-white/20"></div>
 
-    <div class="relative z-10 text-center max-w-4xl w-full bg-white/70 p-8 sm:p-12 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-md">
+    <div class="relative z-10 text-center max-w-4xl w-full bg-white/80 p-8 sm:p-12 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-md">
         <h2 class="text-5xl sm:text-7xl font-black text-slate-800 mb-4 font-jua drop-shadow-sm">🏫 동산초 가가볼 콜로세움</h2>
         <h3 class="text-2xl sm:text-3xl font-black text-slate-600 mb-8 font-sans drop-shadow-sm">MADE BY 우석쌤</h3>
         
         <h3 class="text-xl sm:text-2xl text-slate-700 mb-8 font-bold">플레이할 학급을 선택해주세요</h3>
         
         <div id="startup-class-list" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[100px]">
-        </div>
+            </div>
         
-        <button onclick="window.openManageModal()" class="text-slate-600 hover:text-blue-700 hover:bg-white/90 font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/60 rounded-2xl border border-slate-300 shadow-sm backdrop-blur-sm">
+        <button onclick="window.openManageModal()" class="text-slate-700 hover:text-blue-700 hover:bg-white font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/80 rounded-2xl border border-slate-300 shadow-sm">
             ⚙️ 학급 설정 및 명단 관리
         </button>
     </div>
