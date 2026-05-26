@@ -29,20 +29,20 @@ Google 계정으로 시작하기
 </div>
 </div>
 
-<div id="class-selection-screen" class="fixed inset-0 z-[150] hidden flex-col items-center justify-start pt-24 sm:pt-32 p-4 overflow-hidden">
-    <div class="absolute inset-0 bg-[url('image_0.png')] bg-cover bg-center opacity-90"></div>
-    <div class="absolute inset-0 bg-white/20"></div>
+<div id="class-selection-screen" class="fixed inset-0 z-[150] hidden flex-col items-center justify-start pt-12 sm:pt-24 p-4 overflow-y-auto">
+    <div class="fixed inset-0 bg-[url('image_0.png')] bg-cover bg-center opacity-90 -z-10"></div>
+    <div class="fixed inset-0 bg-white/20 -z-10"></div>
 
-    <div class="relative z-10 text-center max-w-4xl w-full bg-white/30 p-8 sm:p-12 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-md">
-        <h2 class="text-5xl sm:text-7xl font-black text-slate-800 mb-4 font-jua drop-shadow-sm">🏫 동산초 가가볼 콜로세움</h2>
-        <h3 class="text-2xl sm:text-3xl font-black text-slate-600 mb-8 font-sans drop-shadow-sm">MADE BY 우석쌤</h3>
+    <div class="relative z-10 text-center max-w-4xl w-full bg-white/30 p-6 sm:p-12 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-md my-4 sm:my-0">
+        <h2 class="text-4xl sm:text-7xl font-black text-slate-800 mb-4 font-jua drop-shadow-sm">🏫 동산초 가가볼 콜로세움</h2>
+        <h3 class="text-xl sm:text-3xl font-black text-slate-600 mb-8 font-sans drop-shadow-sm">MADE BY 우석쌤</h3>
         
-        <h3 class="text-xl sm:text-2xl text-slate-700 mb-8 font-bold">플레이할 학급을 선택해주세요</h3>
+        <h3 class="text-lg sm:text-2xl text-slate-700 mb-6 font-bold">플레이할 학급을 선택해주세요</h3>
         
-        <div id="startup-class-list" class="flex flex-wrap justify-center gap-4 mb-10 min-h-[100px]">
+        <div id="startup-class-list" class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8 min-h-[100px] max-h-[50vh] overflow-y-auto p-4 bg-white/20 rounded-2xl">
         </div>
         
-        <button onclick="window.openManageModal()" class="text-slate-700 hover:text-blue-700 hover:bg-white font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/80 rounded-2xl border border-slate-300 shadow-sm">
+        <button onclick="window.openManageModal()" class="text-slate-700 hover:text-blue-700 hover:bg-white font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/80 rounded-2xl border border-slate-300 shadow-sm text-sm sm:text-base">
             ⚙️ 학급 설정 및 명단 관리
         </button>
     </div>
@@ -212,7 +212,7 @@ Google 계정으로 시작하기
      ondragleave="this.classList.remove('bg-slate-200', 'border-slate-500')" 
      ondrop="window.dropToHideClass(event); this.classList.remove('bg-slate-200', 'border-slate-500')">
     <button onclick="window.toggleHiddenClasses()" class="w-full text-slate-500 font-bold text-sm flex items-center justify-center gap-2 outline-none hover:text-slate-700">
-        <span id="hidden-class-toggle-icon">👁️</span> 숨긴 학급 보기 / 📥 여기에 학급을 드래그해서 숨기기
+        <span id="hidden-class-toggle-icon">👁️</span> 숨긴 학급 보기 / 📥 여기에 학급 초록색 뱃지를 드래그해서 숨기기
     </button>
     <div id="hidden-class-list" class="flex flex-wrap gap-2 mt-3 hidden"></div>
 </div>
