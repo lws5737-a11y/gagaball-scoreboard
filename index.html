@@ -39,10 +39,10 @@ Google 계정으로 시작하기
         
         <h3 class="text-lg sm:text-2xl text-slate-700 mb-6 font-bold">플레이할 학급을 선택해주세요</h3>
         
-        <div id="startup-class-list" class="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8 min-h-[100px] max-h-[50vh] overflow-y-auto p-4 bg-white/20 rounded-2xl">
+        <div id="startup-class-list" class="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-center sm:gap-4 mb-8 min-h-[100px] max-h-[50vh] overflow-y-auto p-3 sm:p-4 bg-white/20 rounded-2xl w-full">
         </div>
         
-        <button onclick="window.openManageModal()" class="text-slate-700 hover:text-blue-700 hover:bg-white font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/80 rounded-2xl border border-slate-300 shadow-sm text-sm sm:text-base">
+        <button onclick="window.openManageModal()" class="text-slate-700 hover:text-blue-700 hover:bg-white font-bold transition flex items-center justify-center gap-2 mx-auto px-6 py-3 bg-white/80 rounded-2xl border border-slate-300 shadow-sm text-sm sm:text-base w-full sm:w-auto">
             ⚙️ 학급 설정 및 명단 관리
         </button>
     </div>
@@ -89,66 +89,66 @@ Google 계정으로 시작하기
 </div>
 </div>
 
-<section id="gagaball-section" class="bg-white p-4 sm:p-8 rounded-2xl shadow-sm border border-slate-100 w-full">
-<div class="flex justify-center gap-3 mb-8 border-b-4 border-slate-800 pb-5">
-<button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-6 py-3 font-black text-xl sm:text-3xl rounded-xl bg-slate-800 text-white shadow-md transition transform hover:scale-105">🏆 스코어보드</button>
-<button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-6 py-3 font-black text-xl sm:text-3xl rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition transform hover:scale-105">🥇 명예의 전당</button>
-<button onclick="window.switchGagaTab('team')" id="gaga-btn-team" class="px-6 py-3 font-black text-xl sm:text-3xl rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition transform hover:scale-105">⚔️ 대진표</button>
+<section id="gagaball-section" class="bg-white p-3 sm:p-8 rounded-2xl shadow-sm border border-slate-100 w-full">
+<div class="flex justify-center gap-2 sm:gap-3 mb-8 border-b-4 border-slate-800 pb-5">
+<button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-3 sm:px-6 py-2 sm:py-3 font-black text-sm sm:text-3xl rounded-xl bg-slate-800 text-white shadow-md transition transform hover:scale-105 flex-1 sm:flex-none">🏆<br class="sm:hidden"> 스코어보드</button>
+<button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-3 sm:px-6 py-2 sm:py-3 font-black text-sm sm:text-3xl rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition transform hover:scale-105 flex-1 sm:flex-none">🥇<br class="sm:hidden"> 명예의전당</button>
+<button onclick="window.switchGagaTab('team')" id="gaga-btn-team" class="px-3 sm:px-6 py-2 sm:py-3 font-black text-sm sm:text-3xl rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition transform hover:scale-105 flex-1 sm:flex-none">⚔️<br class="sm:hidden"> 대진표</button>
 </div>
 
 <div id="gaga-view-score">
-<div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-amber-50 p-6 rounded-2xl border-2 border-amber-200 shadow-sm">
-<div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-<span class="font-black text-amber-800 text-2xl">🎯 가가볼 뽑기:</span>
-<input type="number" id="gaga-draw-count" min="1" max="30" value="8" class="w-20 p-2 rounded-lg border-2 border-amber-300 font-bold text-center text-xl">
-<span class="font-bold text-amber-800 text-xl">명</span>
-<button onclick="window.triggerGagaDraw('all')" class="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-700 text-xl transition transform hover:scale-105">전체</button>
-<button onclick="window.triggerGagaDraw('남')" class="bg-blue-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-600 text-xl transition transform hover:scale-105">남학생</button>
-<button onclick="window.triggerGagaDraw('여')" class="bg-pink-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-pink-600 text-xl transition transform hover:scale-105">여학생</button>
-<button onclick="window.resetGagaDraw()" class="bg-red-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-sm hover:bg-red-600 text-xl transition transform hover:scale-105">🔄 초기화</button>
+<div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-amber-50 p-4 sm:p-6 rounded-2xl border-2 border-amber-200 shadow-sm">
+<div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
+<span class="font-black text-amber-800 text-lg sm:text-2xl">🎯 가가볼 뽑기:</span>
+<input type="number" id="gaga-draw-count" min="1" max="30" value="8" class="w-16 sm:w-20 p-2 rounded-lg border-2 border-amber-300 font-bold text-center text-lg sm:text-xl">
+<span class="font-bold text-amber-800 text-lg sm:text-xl mr-2">명</span>
+<button onclick="window.triggerGagaDraw('all')" class="bg-slate-800 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-700 text-sm sm:text-xl transition transform hover:scale-105">전체</button>
+<button onclick="window.triggerGagaDraw('남')" class="bg-blue-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-600 text-sm sm:text-xl transition transform hover:scale-105">남학생</button>
+<button onclick="window.triggerGagaDraw('여')" class="bg-pink-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-pink-600 text-sm sm:text-xl transition transform hover:scale-105">여학생</button>
+<button onclick="window.resetGagaDraw()" class="bg-red-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-red-600 text-sm sm:text-xl transition transform hover:scale-105 w-full sm:w-auto mt-2 sm:mt-0">🔄 초기화</button>
 </div>
-<div id="gaga-draw-stats" class="font-bold text-amber-700 text-xl sm:text-2xl">대기: 0명</div>
+<div id="gaga-draw-stats" class="font-bold text-amber-700 text-base sm:text-2xl text-center">대기: 0명</div>
 </div>
 
 <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
-<h3 class="text-3xl font-black text-blue-600 tracking-wide">🏃 생존 / 참가 학생</h3>
-<div class="flex flex-wrap gap-3">
-<button onclick="window.openRouletteModal('individual')" class="bg-purple-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-xl transition transform hover:scale-105">🎡 미션 룰렛</button>
-<button onclick="window.openTimerSelectModal()" class="bg-orange-500 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-xl transition transform hover:scale-105">⏱️ 타이머</button>
-<button onclick="window.resetAllScoresDB()" class="bg-slate-200 text-slate-700 px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-xl transition transform hover:scale-105">점수 초기화</button>
+<h3 class="text-2xl sm:text-3xl font-black text-blue-600 tracking-wide">🏃 생존 / 참가 학생</h3>
+<div class="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
+<button onclick="window.openRouletteModal('individual')" class="flex-1 sm:flex-none bg-purple-500 text-white px-3 sm:px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-sm sm:text-xl transition transform hover:scale-105">🎡 미션 룰렛</button>
+<button onclick="window.openTimerSelectModal()" class="flex-1 sm:flex-none bg-orange-500 text-white px-3 sm:px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105">⏱️ 타이머</button>
+<button onclick="window.resetAllScoresDB()" class="w-full sm:w-auto bg-slate-200 text-slate-700 px-3 sm:px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-sm sm:text-xl transition transform hover:scale-105">점수 초기화</button>
 </div>
 </div>
 <div id="gaga-active-grid" class="scoreboard-grid"></div>
 
-<h3 class="text-3xl font-black text-slate-500 mt-12 mb-6 tracking-wide">🛑 탈락 / 불참 학생</h3>
+<h3 class="text-2xl sm:text-3xl font-black text-slate-500 mt-12 mb-6 tracking-wide">🛑 탈락 / 불참 학생</h3>
 <div id="gaga-inactive-grid" class="scoreboard-grid inactive-grid"></div>
 </div>
 
 <div id="gaga-view-rank" class="hidden relative pb-32">
-<h2 class="text-4xl font-black text-amber-500 mb-6 text-center drop-shadow-md">🏆 가가볼 명예의 전당 🏆</h2>
-<div class="text-center mb-6 text-slate-500 font-bold">학생을 선택하여 왕중왕전을 시작할 수 있습니다.</div>
-<div id="gaga-hall-of-fame-grid" class="flex flex-col gap-4 max-w-3xl mx-auto"></div>
-<div id="champions-fab-container" class="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100] hidden">
-    <button onclick="window.startChampionsTournament()" class="bg-purple-600 text-white px-8 py-4 rounded-full font-black text-2xl shadow-[0_10px_25px_rgba(147,51,234,0.5)] hover:bg-purple-700 hover:scale-105 transition flex items-center gap-2 border-4 border-purple-300">
+<h2 class="text-3xl sm:text-4xl font-black text-amber-500 mb-6 text-center drop-shadow-md">🏆 가가볼 명예의 전당 🏆</h2>
+<div class="text-center mb-6 text-sm sm:text-base text-slate-500 font-bold">학생을 선택하여 왕중왕전을 시작할 수 있습니다.</div>
+<div id="gaga-hall-of-fame-grid" class="flex flex-col gap-3 sm:gap-4 max-w-3xl mx-auto"></div>
+<div id="champions-fab-container" class="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100] hidden w-[90%] sm:w-auto">
+    <button onclick="window.startChampionsTournament()" class="w-full sm:w-auto justify-center bg-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-black text-xl sm:text-2xl shadow-[0_10px_25px_rgba(147,51,234,0.5)] hover:bg-purple-700 hover:scale-105 transition flex items-center gap-2 border-4 border-purple-300">
         👑 <span id="champions-fab-text">왕중왕전 시작 (0명)</span>
     </button>
 </div>
 </div>
 
 <div id="gaga-view-team" class="hidden">
-<div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-slate-50 p-6 rounded-2xl border-2 border-slate-200 shadow-sm">
-<div class="flex items-center gap-3">
-<select id="gaga-team-count" class="p-3 rounded-xl border-2 border-slate-300 font-bold text-2xl">
+<div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-slate-50 p-4 sm:p-6 rounded-2xl border-2 border-slate-200 shadow-sm">
+<div class="flex w-full sm:w-auto items-center gap-2 sm:gap-3">
+<select id="gaga-team-count" class="p-2 sm:p-3 rounded-xl border-2 border-slate-300 font-bold text-lg sm:text-2xl">
 <option value="2">2팀</option>
 <option value="4" selected>4팀</option>
 <option value="6">6팀</option>
 <option value="8">8팀</option>
 </select>
-<button onclick="window.triggerGagaTeams()" class="bg-purple-600 text-white px-6 py-3 rounded-xl font-black shadow-md hover:bg-purple-700 text-2xl transition transform hover:scale-105">👥 밸런스 편성</button>
+<button onclick="window.triggerGagaTeams()" class="flex-1 bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black shadow-md hover:bg-purple-700 text-lg sm:text-2xl transition transform hover:scale-105 whitespace-nowrap">👥 밸런스 편성</button>
 </div>
-<div class="flex gap-3">
-<button onclick="window.openRouletteModal('team')" class="bg-pink-600 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-pink-700 text-xl transition transform hover:scale-105">🎡 팀 미션 룰렛</button>
-<button onclick="window.openTimerSelectModal()" class="bg-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-orange-600 text-xl transition transform hover:scale-105">⏱️ 타이머</button>
+<div class="flex w-full sm:w-auto gap-2 sm:gap-3">
+<button onclick="window.openRouletteModal('team')" class="flex-1 bg-pink-600 text-white px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold shadow-md hover:bg-pink-700 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🎡 팀 미션 룰렛</button>
+<button onclick="window.openTimerSelectModal()" class="flex-1 bg-orange-500 text-white px-3 sm:px-6 py-2.5 sm:py-3 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">⏱️ 타이머</button>
 </div>
 </div>
 <div id="gaga-team-matchups" class="flex flex-col gap-4"></div>
@@ -159,8 +159,8 @@ Google 계정으로 시작하기
 <div class="bg-green-50 rounded-2xl shadow-sm border-2 border-green-400 p-6 font-jua relative overflow-hidden flex flex-col items-center">
 <div class="text-center mb-6">
 <h2 class="text-3xl md:text-4xl text-green-600 mb-3">🏃‍♂️ 체육 수업 미션 도장판 🏃‍♀️</h2>
-<div class="relative inline-flex flex-col items-center print-hide">
-    <button onclick="window.toggleStampDropdown(event)" class="inline-flex items-center justify-between gap-3 text-xl text-gray-700 bg-white py-2.5 px-6 rounded-full border-2 border-green-200 shadow-sm hover:bg-green-50 hover:border-green-300 transition cursor-pointer font-bold focus:outline-none min-w-[200px]">
+<div class="relative inline-flex flex-col items-center print-hide w-full sm:w-auto">
+    <button onclick="window.toggleStampDropdown(event)" class="inline-flex items-center justify-between gap-3 text-lg sm:text-xl text-gray-700 bg-white py-2.5 px-6 rounded-full border-2 border-green-200 shadow-sm hover:bg-green-50 hover:border-green-300 transition cursor-pointer font-bold focus:outline-none min-w-[200px] w-full">
         <span id="stamp-class-title" class="font-black text-green-700 flex-1 text-center">학급을 선택해주세요</span>
         <span class="text-sm text-green-600 bg-green-100 rounded-full w-6 h-6 flex items-center justify-center shrink-0">▼</span>
     </button>
@@ -169,21 +169,21 @@ Google 계정으로 시작하기
 </div>
 
 <div class="w-full max-w-xl mb-6 bg-white/70 p-4 rounded-xl border border-green-100 flex flex-col md:flex-row items-center justify-between gap-4">
-<div class="text-sm text-gray-600 font-sans font-bold">💡 커스텀 도장: 다양한 디자인의 도장 이미지로 변경할 수 있습니다.</div>
-<button onclick="window.openStampSelectModal()" class="px-4 py-2 bg-green-100 text-green-700 font-bold rounded-xl hover:bg-green-200 transition text-sm flex items-center gap-2 font-sans">
+<div class="text-xs sm:text-sm text-gray-600 font-sans font-bold">💡 커스텀 도장: 다양한 디자인의 도장 이미지로 변경할 수 있습니다.</div>
+<button onclick="window.openStampSelectModal()" class="w-full sm:w-auto px-4 py-2 bg-green-100 text-green-700 font-bold rounded-xl hover:bg-green-200 transition text-sm flex items-center justify-center gap-2 font-sans">
     🎨 커스텀 도장 선택
 </button>
 </div>
 
 <div class="relative w-full max-w-2xl">
-<div id="stampBoard" class="grid grid-cols-5 gap-3 md:gap-4 mb-8"></div>
+<div id="stampBoard" class="grid grid-cols-5 gap-2 sm:gap-4 mb-8"></div>
 <div id="missionBadgeContainer" class="absolute inset-0 flex items-center justify-center z-40 pointer-events-none hidden bg-white/60 backdrop-blur-sm rounded-2xl">
-    <img src="image_66ce79.jpg" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5610/5610944.png'" class="w-full max-w-[350px] drop-shadow-2xl object-contain" alt="미션 완료">
+    <img src="image_66ce79.jpg" onerror="this.src='https://cdn-icons-png.flaticon.com/512/5610/5610944.png'" class="w-full max-w-[250px] sm:max-w-[350px] drop-shadow-2xl object-contain" alt="미션 완료">
 </div>
 </div>
 
 <div class="flex flex-col sm:flex-row justify-between items-center w-full max-w-2xl mt-4 gap-4">
-<div class="text-green-700 text-lg bg-white px-6 py-2 rounded-xl border border-green-200 shadow-sm">
+<div class="text-green-700 text-base sm:text-lg bg-white px-6 py-2 rounded-xl border border-green-200 shadow-sm w-full sm:w-auto text-center">
 현재 달성도: <span id="progressCount" class="font-black">0</span> / 20
 </div>
 <button onclick="window.resetStampBoard()" class="w-full sm:w-auto px-6 py-2.5 bg-red-50 text-red-500 rounded-xl border border-red-200 hover:bg-red-100 transition font-bold shadow-sm font-sans">
@@ -204,14 +204,13 @@ Google 계정으로 시작하기
 <button onclick="window.closeManageModal()" class="absolute top-2 right-2 text-slate-500 hover:text-red-500 text-4xl font-black transition p-2 z-10">&times;</button>
 
 <div class="mb-6">
-<div id="modal-class-list" class="flex flex-wrap gap-2 mb-4">
-</div>
+<div id="modal-class-list" class="flex flex-wrap gap-2 mb-4"></div>
 
 <div id="hidden-class-dropzone" class="mb-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-3 transition-colors"
      ondragover="event.preventDefault(); this.classList.add('bg-slate-200', 'border-slate-500')" 
      ondragleave="this.classList.remove('bg-slate-200', 'border-slate-500')" 
      ondrop="window.dropToHideClass(event); this.classList.remove('bg-slate-200', 'border-slate-500')">
-    <button onclick="window.toggleHiddenClasses()" class="w-full text-slate-500 font-bold text-sm flex items-center justify-center gap-2 outline-none hover:text-slate-700">
+    <button onclick="window.toggleHiddenClasses()" class="w-full text-slate-500 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 sm:gap-2 outline-none hover:text-slate-700">
         <span id="hidden-class-toggle-icon">👁️</span> 숨긴 학급 보기 / 📥 여기에 학급 초록색 뱃지를 드래그해서 숨기기
     </button>
     <div id="hidden-class-list" class="flex flex-wrap gap-2 mt-3 hidden"></div>
@@ -255,8 +254,8 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     <div class="gaga-modal-content" style="max-width: 400px; padding:30px;" onclick="event.stopPropagation()">
         <h2 class="text-3xl font-black text-orange-500 mb-6">⏱️ 가가볼 타이머</h2>
         <div class="flex flex-col gap-4 font-sans">
-            <button class="bg-orange-500 text-white py-4 rounded-xl font-bold text-2xl shadow-md hover:bg-orange-600 transition" onclick="window.open('https://youtu.be/Nn9Exxw5Gg4', '_blank'); window.closeTimerSelectModal();">99초 타이머</button>
-            <button class="bg-orange-700 text-white py-4 rounded-xl font-bold text-2xl shadow-md hover:bg-orange-800 transition" onclick="window.open('https://youtu.be/eVGSsArJF6k', '_blank'); window.closeTimerSelectModal();">60초 타이머</button>
+            <button class="bg-orange-500 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-600 transition" onclick="window.open('https://youtu.be/Nn9Exxw5Gg4', '_blank'); window.closeTimerSelectModal();">99초 타이머</button>
+            <button class="bg-orange-700 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-800 transition" onclick="window.open('https://youtu.be/eVGSsArJF6k', '_blank'); window.closeTimerSelectModal();">60초 타이머</button>
         </div>
     </div>
 </div>
@@ -264,73 +263,73 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div id="rouletteModal" class="gaga-modal-overlay" style="z-index: 1002;" onclick="window.closeRouletteModal()">
 <div class="gaga-modal-content" style="max-width: 950px; padding: 50px;" onclick="event.stopPropagation()">
     <div class="flex justify-between items-center mb-8">
-        <h2 id="rouletteModalTitle" class="text-4xl sm:text-5xl font-black text-slate-800">🎡 오늘의 미션 룰렛</h2>
-        <button onclick="window.openRouletteEditModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 font-sans">편집</button>
+        <h2 id="rouletteModalTitle" class="text-3xl sm:text-5xl font-black text-slate-800">🎡 오늘의 미션 룰렛</h2>
+        <button onclick="window.openRouletteEditModal()" class="px-3 sm:px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 font-sans text-sm">편집</button>
     </div>
     <div class="roulette-container">
         <div class="roulette-pointer">🔽</div>
         <canvas id="rouletteCanvas" width="800" height="800"></canvas>
     </div>
-    <button class="w-full mt-10 py-6 text-4xl font-black bg-pink-500 text-white rounded-3xl shadow-xl hover:bg-pink-600 transition transform hover:scale-105" onclick="window.spinRoulette()">🎯 룰렛 돌리기!</button>
+    <button class="w-full mt-10 py-4 sm:py-6 text-2xl sm:text-4xl font-black bg-pink-500 text-white rounded-3xl shadow-xl hover:bg-pink-600 transition transform hover:scale-105" onclick="window.spinRoulette()">🎯 룰렛 돌리기!</button>
 </div>
 </div>
 
 <div id="rouletteEditModal" class="gaga-modal-overlay" style="z-index: 1005;" onclick="window.closeRouletteEditModal()">
-    <div class="gaga-modal-content font-sans" style="max-width: 600px; padding: 30px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
+    <div class="gaga-modal-content font-sans" style="max-width: 600px; padding: 20px sm:padding-30px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-black text-slate-800 font-jua">룰렛 내용 편집</h2>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 font-jua">룰렛 내용 편집</h2>
             <button class="text-3xl text-slate-400 hover:text-red-500 font-black leading-none" onclick="window.closeRouletteEditModal()">&times;</button>
         </div>
-        <div id="roulette-edit-list" class="flex flex-col gap-3 mb-6"></div>
+        <div id="roulette-edit-list" class="flex flex-col gap-3 mb-6 text-sm sm:text-base"></div>
         <button onclick="window.addRouletteItem()" class="w-full py-3 border-2 border-dashed border-blue-400 text-blue-500 font-bold rounded-xl mb-4 hover:bg-blue-50">+ 항목 추가</button>
-        <button onclick="window.saveRouletteEdit()" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 text-xl">저장하기</button>
+        <button onclick="window.saveRouletteEdit()" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 text-lg sm:text-xl">저장하기</button>
     </div>
 </div>
 
 <div id="missionDescModal" class="gaga-modal-overlay" style="z-index: 1003;" onclick="window.closeMissionDescModal()">
-<div class="gaga-modal-content font-sans" style="max-width: 550px; padding: 40px;" onclick="event.stopPropagation()">
-<h2 id="missionDescTitle" class="text-3xl sm:text-4xl font-black text-blue-500 mb-4 font-jua"></h2>
-<p id="missionDescText" class="text-xl sm:text-2xl leading-relaxed text-slate-700 bg-slate-50 p-6 rounded-2xl mb-8 border border-slate-200"></p>
-<button class="w-full py-4 text-2xl font-black bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition" onclick="window.closeMissionDescModal()">미션 확인!</button>
+<div class="gaga-modal-content font-sans" style="max-width: 550px; padding: 30px sm:padding-40px;" onclick="event.stopPropagation()">
+<h2 id="missionDescTitle" class="text-2xl sm:text-4xl font-black text-blue-500 mb-4 font-jua"></h2>
+<p id="missionDescText" class="text-lg sm:text-2xl leading-relaxed text-slate-700 bg-slate-50 p-4 sm:p-6 rounded-2xl mb-8 border border-slate-200"></p>
+<button class="w-full py-4 text-xl sm:text-2xl font-black bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition" onclick="window.closeMissionDescModal()">미션 확인!</button>
 </div>
 </div>
 
 <div id="gagaDrawModal" class="gaga-modal-overlay" onclick="window.closeGagaDrawModal()">
 <div class="gaga-modal-content font-sans" style="max-width: 1200px;" onclick="event.stopPropagation()">
-<h1 id="gagaDrawMainTitle" class="text-5xl sm:text-6xl font-black text-red-500 mb-8 font-jua">🎉 참가 선수 🎉</h1>
-<div id="gagaDrawResultGrid" class="flex flex-wrap justify-center gap-6 mb-10"></div>
-<div class="flex justify-center gap-6 mb-10">
-<button class="bg-purple-500 text-white px-8 py-4 rounded-2xl font-bold text-3xl shadow-lg hover:bg-purple-600 transition" onclick="window.openRouletteModal('individual')">🎡 개인전 룰렛</button>
-<button class="bg-orange-500 text-white px-8 py-4 rounded-2xl font-bold text-3xl shadow-lg hover:bg-orange-600 transition" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>
+<h1 id="gagaDrawMainTitle" class="text-4xl sm:text-6xl font-black text-red-500 mb-8 font-jua">🎉 참가 선수 🎉</h1>
+<div id="gagaDrawResultGrid" class="flex flex-wrap justify-center gap-4 sm:gap-6 mb-10 max-h-[50vh] overflow-y-auto p-2"></div>
+<div class="flex flex-col sm:flex-row justify-center gap-4 sm:gap-6 mb-10">
+<button class="bg-purple-500 text-white px-8 py-3 sm:py-4 rounded-2xl font-bold text-xl sm:text-3xl shadow-lg hover:bg-purple-600 transition" onclick="window.openRouletteModal('individual')">🎡 개인전 룰렛</button>
+<button class="bg-orange-500 text-white px-8 py-3 sm:py-4 rounded-2xl font-bold text-xl sm:text-3xl shadow-lg hover:bg-orange-600 transition" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>
 </div>
-<button class="bg-slate-800 text-white w-full py-6 rounded-2xl font-black text-3xl shadow-xl hover:bg-slate-700 transition" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
+<button class="bg-slate-800 text-white w-full py-4 sm:py-6 rounded-2xl font-black text-xl sm:text-3xl shadow-xl hover:bg-slate-700 transition" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
 </div>
 
 <div id="stampSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeStampSelectModal()">
     <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; padding: 25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100">
-            <h2 class="text-2xl font-black text-slate-800 font-jua">🎨 도장 선택</h2>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-800 font-jua">🎨 도장 선택</h2>
             <button class="text-3xl text-slate-400 hover:text-red-500 font-black leading-none" onclick="window.closeStampSelectModal()">&times;</button>
         </div>
-        <div id="stamp-grid-container" class="grid grid-cols-4 sm:grid-cols-5 gap-4 overflow-y-auto pr-2 max-h-[60vh]"></div>
+        <div id="stamp-grid-container" class="grid grid-cols-4 sm:grid-cols-5 gap-3 sm:gap-4 overflow-y-auto pr-2 max-h-[60vh]"></div>
     </div>
 </div>
 
 <div id="avatarSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeAvatarSelectModal()">
-    <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; max-height: 85vh; padding: 25px;" onclick="event.stopPropagation()">
+    <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; max-height: 85vh; padding: 15px sm:padding-25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100 shrink-0">
-            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 font-jua">🖼️ 아바타 선택</h2>
+            <h2 class="text-xl sm:text-3xl font-black text-slate-800 font-jua">🖼️ 아바타 선택</h2>
             <button class="text-3xl text-slate-400 hover:text-red-500 font-black leading-none" onclick="window.closeAvatarSelectModal()">&times;</button>
         </div>
         <div class="flex gap-2 mb-4 shrink-0">
-            <button onclick="window.renderAvatarGrid('boy')" class="flex-1 py-2.5 bg-blue-100 text-blue-600 font-bold rounded-xl hover:bg-blue-200 transition text-lg">👦 남학생 아바타</button>
-            <button onclick="window.renderAvatarGrid('girl')" class="flex-1 py-2.5 bg-pink-100 text-pink-600 font-bold rounded-xl hover:bg-pink-200 transition text-lg">👧 여학생 아바타</button>
+            <button onclick="window.renderAvatarGrid('boy')" class="flex-1 py-2 sm:py-2.5 bg-blue-100 text-blue-600 font-bold rounded-xl hover:bg-blue-200 transition text-sm sm:text-lg">👦 남학생 아바타</button>
+            <button onclick="window.renderAvatarGrid('girl')" class="flex-1 py-2 sm:py-2.5 bg-pink-100 text-pink-600 font-bold rounded-xl hover:bg-pink-200 transition text-sm sm:text-lg">👧 여학생 아바타</button>
         </div>
-        <div id="avatar-grid-container" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 overflow-y-auto pr-2 pb-2 content-start flex-1" style="min-height: 0;"></div>
+        <div id="avatar-grid-container" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-3 overflow-y-auto pr-2 pb-2 content-start flex-1" style="min-height: 0;"></div>
     </div>
 </div>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="./app.js"></script>
 </body>
 </html>
