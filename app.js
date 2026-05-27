@@ -318,6 +318,7 @@ window.openClassSelection = function() {
     window.renderStartupClassList();
 };
 
+// [모바일 수정] 학급 선택 버튼 크기 조정 및 한줄 텍스트 유지
 window.renderStartupClassList = function() {
     const listEl = document.getElementById('startup-class-list');
     const classes = Object.keys(classData).sort().filter(cls => !(hiddenClasses || []).includes(cls));
@@ -330,7 +331,7 @@ window.renderStartupClassList = function() {
 
     classes.forEach(cls => {
         const btn = document.createElement('button');
-        btn.className = "px-6 py-4 bg-white/40 backdrop-blur-sm border-2 border-white/60 text-slate-800 font-black text-2xl rounded-2xl shadow-md hover:bg-white/60 hover:border-white hover:scale-105 transition-all w-40";
+        btn.className = "px-1 py-3 sm:px-6 sm:py-4 bg-white/40 backdrop-blur-sm border-2 border-white/60 text-slate-800 font-black text-sm sm:text-2xl rounded-xl shadow-md hover:bg-white/60 hover:border-white transition-all w-full flex items-center justify-center break-keep";
         btn.innerText = cls;
         btn.onclick = () => window.selectClass(cls);
         listEl.appendChild(btn);
@@ -416,13 +417,13 @@ window.renderGagaball = function() {
 
         const cardHTML = `
             <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
-                ${isDrawn ? '<div class="absolute -top-3 -right-3 bg-slate-800 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow">완료</div>' : ''}
-                <div class="flex justify-between items-center mb-3">
-                    <span class="font-mono font-bold text-slate-500 text-lg">${s.no}번</span>
-                    <button class="${btnClass} px-3 py-1 rounded-md text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})">${btnText}</button>
+                ${isDrawn ? '<div class="absolute -top-3 -right-3 bg-slate-800 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold shadow">완료</div>' : ''}
+                <div class="flex justify-between items-center mb-2 sm:mb-3">
+                    <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
+                    <button class="${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})">${btnText}</button>
                 </div>
                 <img src="${cuteAvatar}" alt="avatar" class="avatar-img cursor-pointer hover:scale-105 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
-                <div class="name">${s.name} <span class="text-lg">(${s.gender})</span></div>
+                <div class="name">${s.name} <span class="text-xs sm:text-lg">(${s.gender})</span></div>
                 <div class="score-val">${s.score || 0}</div>
                 <div class="score-ctrl">
                     <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
@@ -475,6 +476,7 @@ window.toggleChampionSelection = function(no) {
     window.renderGagaRanking();
 }
 
+// [모바일 수정] 명예의 전당: 글자 겹침 방지 및 크기 조절
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -487,10 +489,10 @@ window.renderGagaRanking = function() {
         if (i > 0 && (studentsForRank[i].score || 0) < (studentsForRank[i-1].score || 0)) rank = i + 1;
         let cardStyle = "bg-white border-2 border-slate-200 text-slate-700";
         let rankBadge = `${rank}위`;
-        let nameStyle = "text-2xl"; let scoreStyle = "text-3xl text-slate-600";
-        if (rank === 1) { cardStyle = "bg-gradient-to-r from-yellow-100 to-yellow-300 border-4 border-yellow-400 shadow-xl my-2"; rankBadge = "🥇 1위"; nameStyle = "text-4xl text-yellow-900"; scoreStyle = "text-5xl text-red-600"; }
-        else if (rank === 2) { cardStyle = "bg-gradient-to-r from-gray-100 to-gray-300 border-4 border-gray-400 shadow-lg my-1"; rankBadge = "🥈 2위"; nameStyle = "text-3xl text-gray-800"; scoreStyle = "text-4xl text-gray-800"; }
-        else if (rank === 3) { cardStyle = "bg-gradient-to-r from-orange-100 to-orange-200 border-4 border-orange-400 shadow-md"; rankBadge = "🥉 3위"; nameStyle = "text-3xl text-orange-900"; scoreStyle = "text-4xl text-orange-700"; }
+        let nameStyle = "text-xl sm:text-2xl"; let scoreStyle = "text-2xl sm:text-3xl text-slate-600";
+        if (rank === 1) { cardStyle = "bg-gradient-to-r from-yellow-100 to-yellow-300 border-4 border-yellow-400 shadow-xl my-2"; rankBadge = "🥇 1위"; nameStyle = "text-2xl sm:text-4xl text-yellow-900"; scoreStyle = "text-3xl sm:text-5xl text-red-600"; }
+        else if (rank === 2) { cardStyle = "bg-gradient-to-r from-gray-100 to-gray-300 border-4 border-gray-400 shadow-lg my-1"; rankBadge = "🥈 2위"; nameStyle = "text-xl sm:text-3xl text-gray-800"; scoreStyle = "text-2xl sm:text-4xl text-gray-800"; }
+        else if (rank === 3) { cardStyle = "bg-gradient-to-r from-orange-100 to-orange-200 border-4 border-orange-400 shadow-md"; rankBadge = "🥉 3위"; nameStyle = "text-xl sm:text-3xl text-orange-900"; scoreStyle = "text-2xl sm:text-4xl text-orange-700"; }
         
         const cuteAvatar = window.generateCuteAvatar(s);
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
@@ -502,16 +504,16 @@ window.renderGagaRanking = function() {
         const finalCardStyle = `${cardStyle} ${highlightClass} cursor-pointer hover:scale-[1.02]`;
 
         html += `
-        <div class="flex items-center justify-between p-4 sm:p-6 rounded-2xl ${finalCardStyle} transition-all" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="flex items-center gap-4 sm:gap-6 flex-1">
-                <div class="font-black text-2xl sm:text-3xl min-w-[70px] text-center">${rankBadge}</div>
-                <img src="${cuteAvatar}" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 bg-white object-cover">
-                <div class="${nameStyle} font-black drop-shadow-sm">${s.name}</div>
+        <div class="flex items-center justify-between p-3 sm:p-6 rounded-2xl ${finalCardStyle} transition-all" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="flex items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                <div class="font-black text-xl sm:text-3xl min-w-[50px] sm:min-w-[70px] text-center whitespace-nowrap shrink-0">${rankBadge}</div>
+                <img src="${cuteAvatar}" class="w-12 h-12 sm:w-20 sm:h-20 rounded-full border-2 bg-white object-cover shrink-0">
+                <div class="${nameStyle} font-black drop-shadow-sm truncate">${s.name}</div>
             </div>
-            <div class="flex items-center gap-4 sm:gap-8">
-                <div class="${scoreStyle} font-black drop-shadow-sm">${s.score || 0}점</div>
+            <div class="flex items-center gap-3 sm:gap-8 shrink-0">
+                <div class="${scoreStyle} font-black drop-shadow-sm whitespace-nowrap">${s.score || 0}점</div>
                 <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 ${refStampColor} border-dashed flex items-center justify-center font-black text-lg sm:text-xl transform -rotate-12 bg-white shadow-sm">
+                    <div class="w-10 h-10 sm:w-16 sm:h-16 rounded-full border-2 sm:border-4 ${refStampColor} border-dashed flex items-center justify-center font-black text-xs sm:text-xl transform -rotate-12 bg-white shadow-sm">
                         심판
                     </div>
                 </div>
@@ -542,20 +544,20 @@ window.startChampionsTournament = function() {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[6px] p-6 rounded-3xl text-center shadow-xl bg-white w-64 transform transition hover:scale-105" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-32 h-32 rounded-full mx-auto mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="text-4xl font-black text-slate-800 mb-4">${s.name}</div>
-                <div class="text-3xl font-bold text-red-500 flex items-center justify-center gap-4">
-                    <button class="bg-red-500 text-white rounded-xl w-14 h-14 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-16 text-center">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-xl w-14 h-14 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+            <div class="border-[6px] p-6 rounded-3xl text-center shadow-xl bg-white w-48 sm:w-64 transform transition hover:scale-105" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                <div class="text-2xl sm:text-4xl font-black text-slate-800 mb-4">${s.name}</div>
+                <div class="text-xl sm:text-3xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
     });
 
     document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
-    document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-6xl font-black text-purple-600 mb-8 font-jua";
+    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-purple-600 mb-8 font-jua";
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join('');
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
@@ -607,7 +609,7 @@ window.renderRouletteEditList = function() {
                 <div class="flex items-center gap-2 pr-12">
                     <input type="color" value="${m.color || colors[i%colors.length]}" id="r-edit-color-${i}" class="w-8 h-8 rounded cursor-pointer" onchange="window.updateRouletteItem(${i})">
                     <input type="text" value="${m.text}" id="r-edit-text-${i}" placeholder="미션명" class="flex-1 p-2 border rounded font-bold" onchange="window.updateRouletteItem(${i})">
-                    <input type="number" value="${m.weight}" id="r-edit-weight-${i}" placeholder="확률" class="w-16 p-2 border rounded" onchange="window.updateRouletteItem(${i})">
+                    <input type="number" value="${m.weight}" id="r-edit-weight-${i}" placeholder="확률" class="w-12 sm:w-16 p-2 border rounded" onchange="window.updateRouletteItem(${i})">
                 </div>
                 <textarea id="r-edit-desc-${i}" placeholder="설명" class="w-full p-2 border rounded text-sm" onchange="window.updateRouletteItem(${i})">${m.desc}</textarea>
             </div>
@@ -727,13 +729,13 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[6px] p-6 rounded-3xl text-center shadow-xl bg-white w-64 transform transition hover:scale-105" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-32 h-32 rounded-full mx-auto mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="text-4xl font-black text-slate-800 mb-4">${s.name}</div>
-                <div class="text-3xl font-bold text-red-500 flex items-center justify-center gap-4">
-                    <button class="bg-red-500 text-white rounded-xl w-14 h-14 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-16 text-center">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-xl w-14 h-14 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+            <div class="border-[6px] p-6 rounded-3xl text-center shadow-xl bg-white w-48 sm:w-64 transform transition hover:scale-105" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-24 h-24 sm:w-32 sm:h-32 rounded-full mx-auto mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                <div class="text-2xl sm:text-4xl font-black text-slate-800 mb-4">${s.name}</div>
+                <div class="text-xl sm:text-3xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
@@ -741,7 +743,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     
     // 모달창 타이틀 원래 뽑기용으로 복구
     document.getElementById('gagaDrawMainTitle').innerText = "🎉 참가 선수 🎉";
-    document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-6xl font-black text-red-500 mb-8 font-jua";
+    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-red-500 mb-8 font-jua";
 
     saveData(); window.renderGagaball();
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join(''); document.getElementById('gagaDrawModal').style.display = 'flex';
@@ -838,6 +840,7 @@ window.executeGagaTeams = function(numTeams, available) {
     window.playCasinoJackpot(); window.fireConfetti();
 }
 
+// [모바일 수정] 팀 대진표: 유연한 Tailwind 레이아웃 적용으로 모바일 겹침 방지
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
     const now = Date.now();
@@ -856,30 +859,38 @@ window.renderGagaTeamView = function() {
                 animHTML = `<span class="float-score-anim ${colorClass}">${sign}${val}</span>`;
             }
             return `
-            <div class="team-member-badge" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'};">
-                <img src="${window.generateCuteAvatar(m)}" class="cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="member-info">
-                    <b>${m.name}</b>
-                    <span style="position:relative; display:inline-block;">${m.score || 0}점${animHTML}</span>
+            <div class="flex items-center p-2 sm:p-3 rounded-xl sm:rounded-2xl border-2 sm:border-4 bg-white flex-1 min-w-[110px] sm:min-w-[180px] shadow-sm" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'};">
+                <img src="${window.generateCuteAvatar(m)}" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full mr-2 sm:mr-3 bg-gray-50 cursor-pointer hover:scale-110 transition-transform shrink-0" onclick="window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                <div class="flex flex-col text-left leading-tight min-w-0">
+                    <b class="text-sm sm:text-2xl text-slate-800 truncate">${m.name}</b>
+                    <span class="text-xs sm:text-xl text-red-500 font-black relative whitespace-nowrap">${m.score || 0}점${animHTML}</span>
                 </div>
             </div>`;
         }).join('');
         
         const createPanel = (team) => `
-            <div class="team-card-left w-32 sm:w-40 border-r-4 border-dashed border-slate-200 pr-4 mr-4 flex flex-col justify-between shrink-0">
-                <div class="team-title text-5xl font-black text-center text-slate-700">${team.id}팀</div>
-                <div class="mt-auto flex flex-col items-center gap-2">
-                    <div class="flex justify-center gap-3">
-                        <button class="bg-red-500 text-white w-14 h-14 rounded-xl text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
-                        <button class="bg-blue-500 text-white w-14 h-14 rounded-xl text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
-                    </div>
+            <div class="w-full sm:w-40 border-b-2 sm:border-b-0 sm:border-r-4 border-dashed border-slate-300 pb-2 mb-2 sm:pb-0 sm:mb-0 sm:pr-4 sm:mr-4 flex flex-row sm:flex-col justify-between items-center shrink-0">
+                <div class="text-2xl sm:text-5xl font-black text-slate-700 whitespace-nowrap">${team.id}팀</div>
+                <div class="flex gap-2 sm:gap-3 mt-0 sm:mt-auto">
+                    <button class="bg-red-500 text-white w-8 h-8 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-xl sm:text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
+                    <button class="bg-blue-500 text-white w-8 h-8 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-xl sm:text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
                 </div>
             </div>`;
 
+        let teamBgA = "bg-orange-50 border-orange-400";
+        let teamBgB = "bg-lime-50 border-lime-400";
+
         teamHTML += `
-            <div class="matchup-row">
-                <div class="team-card team-a">${createPanel(teamA)} <div class="team-card-right">${createBadges(teamA)}</div></div>
-                ${teamB ? `<div class="vs-badge">VS</div><div class="team-card team-b">${createPanel(teamB)} <div class="team-card-right">${createBadges(teamB)}</div></div>` : ''}
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-2xl border-2 sm:border-4 border-slate-100 shadow-md items-stretch mb-4">
+                <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgA} border-t-8 sm:border-t-0 sm:border-l-8">
+                    ${createPanel(teamA)} 
+                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-4 align-center justify-start content-start">${createBadges(teamA)}</div>
+                </div>
+                ${teamB ? `<div class="text-xl sm:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm my-1 sm:my-0">VS</div>
+                <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 sm:border-t-0 sm:border-r-8">
+                    ${createPanel(teamB)} 
+                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-4 align-center justify-start content-start">${createBadges(teamB)}</div>
+                </div>` : ''}
             </div>`;
     }
     container.innerHTML = teamHTML;
