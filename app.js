@@ -305,7 +305,6 @@ function saveData() {
     }
 }
 
-
 // ==========================================
 // 4. 앱 UI 제어 및 학급 선택 로직
 // ==========================================
@@ -326,7 +325,6 @@ window.renderStartupClassList = function() {
         return;
     }
 
-    // 학급명의 맨 앞 숫자(학년)를 기준으로 그룹화
     const grouped = {};
     classes.forEach(cls => {
         const match = cls.match(/^\d+/);
@@ -335,14 +333,12 @@ window.renderStartupClassList = function() {
         grouped[grade].push(cls);
     });
 
-    // 그룹화된 학급들을 줄(Row) 단위로 렌더링
     Object.keys(grouped).sort((a,b) => (a==='기타'?1:0) - (b==='기타'?1:0) || parseInt(a) - parseInt(b)).forEach(grade => {
         const rowDiv = document.createElement('div');
         rowDiv.className = "flex flex-wrap justify-center gap-2 sm:gap-4 w-full";
         
         grouped[grade].forEach(cls => {
             const btn = document.createElement('button');
-            // 폭을 줄이고 텍스트를 크게
             btn.className = "px-4 py-2 sm:px-6 sm:py-3 bg-white/70 backdrop-blur-sm border-2 border-white/80 text-slate-800 font-black text-lg sm:text-3xl rounded-xl shadow-md hover:bg-white hover:scale-105 transition-all min-w-[100px] sm:min-w-[140px] shrink-0";
             btn.innerText = cls;
             btn.onclick = () => window.selectClass(cls);
@@ -384,7 +380,6 @@ window.showTab = function(tabName) {
         window.renderStampBoard();
     }
 }
-
 
 // ==========================================
 // 5. 가가볼 스코어보드 & 대진표
@@ -429,17 +424,26 @@ window.renderGagaball = function() {
         let bgColor = s.attendance && !isDrawn ? (s.gender === '남' ? '#e3f2fd' : '#ffebee') : '#fff';
         const cuteAvatar = window.generateCuteAvatar(s); 
 
+        // 선발 완료된 학생용 오버레이 도장
+        const drawnOverlay = isDrawn ? `
+            <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-2xl bg-white/40">
+                <div class="transform -rotate-12 border-[5px] border-slate-700 text-slate-700 px-4 py-2 rounded-xl text-2xl sm:text-4xl font-black tracking-widest bg-white/90 shadow-lg font-jua uppercase">
+                    선발완료
+                </div>
+            </div>
+        ` : '';
+
         const cardHTML = `
             <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
-                ${isDrawn ? '<div class="absolute -top-3 -right-3 bg-slate-800 text-white px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-bold shadow">완료</div>' : ''}
-                <div class="flex justify-between items-center mb-2 sm:mb-3">
+                ${drawnOverlay}
+                <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
                     <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
                     <button class="${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})">${btnText}</button>
                 </div>
-                <img src="${cuteAvatar}" alt="avatar" class="avatar-img cursor-pointer hover:scale-105 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
-                <div class="name">${s.name} <span class="text-xs sm:text-lg">(${s.gender})</span></div>
-                <div class="score-val">${s.score || 0}</div>
-                <div class="score-ctrl">
+                <img src="${cuteAvatar}" alt="avatar" class="avatar-img cursor-pointer hover:scale-105 transition-transform relative z-20" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
+                <div class="name relative z-20">${s.name} <span class="text-xs sm:text-lg">(${s.gender})</span></div>
+                <div class="score-val relative z-20">${s.score || 0}</div>
+                <div class="score-ctrl relative z-20">
                     <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
                     <button class="hover:bg-blue-600" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
@@ -562,6 +566,7 @@ window.renderGagaRanking = function() {
     }
 }
 
+// 왕중왕전 모달: 4x2 스크롤 없이 꽉 채우기
 window.startChampionsTournament = function() {
     if(window.championsSelection.length === 0) return;
     let selectedStudents = window.championsSelection.map(no => classData[currentClass].find(s => s.no === no)).filter(Boolean);
@@ -571,22 +576,25 @@ window.startChampionsTournament = function() {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[4px] sm:border-[6px] p-3 sm:p-5 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-16 h-16 sm:w-28 sm:h-28 rounded-full mx-auto mb-2 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+            <div class="border-[6px] sm:border-[8px] p-2 sm:p-4 rounded-3xl text-center shadow-2xl bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
                 
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 mb-2 sm:mb-4 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2">
+                    <img src="${cuteAvatar}" class="h-full max-h-[160px] lg:max-h-[220px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-105 transition-transform object-cover shadow-sm" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                </div>
                 
-                <div class="text-xl sm:text-3xl lg:text-4xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4 w-full">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center shrink-0">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] font-black text-slate-800 my-2 lg:my-4 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${s.name}</div>
+                
+                <div class="text-3xl sm:text-4xl lg:text-6xl font-black text-red-500 flex items-center justify-center gap-4 w-full shrink-0 pb-2">
+                    <button class="bg-red-500 text-white rounded-2xl w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center hover:bg-red-600 transition shadow-md pb-1" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-16 lg:w-24 text-center tracking-tighter drop-shadow-sm">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-2xl w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center hover:bg-blue-600 transition shadow-md pb-1" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
     });
 
     document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
-    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-purple-600 mb-6 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
+    document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-purple-600 mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join('');
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
@@ -597,13 +605,7 @@ window.startChampionsTournament = function() {
     window.renderGagaRanking(); 
 }
 
-window.toggleAttendance = function(studentNo) {
-    const student = classData[currentClass].find(s => s.no == studentNo);
-    if (student) { student.attendance = !student.attendance; saveData(); window.renderGagaball(); window.renderGagaRanking();}
-}
-
-
-// --- 룰렛, 미션 관련 ---
+// 룰렛, 미션 관련
 let defaultIndividualMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 경기장에 등장했습니다! 체육쌤을 아웃시키면 체육 도장 1장이 주어집니다!" }, { text: "포인트 X2", weight: 20, color: "#ffeaa7", desc: "최종 승자에게는 평소보다 2배의 포인트가 주어집니다." } ];
 let defaultTeamMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "왕을 잡아라!", weight: 15, color: "#a29bfe", desc: "양팀은 우리팀 왕을 한명 정해주세요. 상대팀 왕을 먼저 아웃시키는 팀이 승리합니다." }, { text: "포인트 X2", weight: 15, color: "#ffeaa7", desc: "최종 승리팀 전원에게 평소보다 2배의 포인트가 주어집니다." } ];
 
@@ -744,6 +746,7 @@ window.triggerGagaDraw = function(targetGender) {
     }, 2500);
 }
 
+// 참가선수 뽑기 모달: 4x2 스크롤 없이 꽉 채우기
 window.executeGagaDraw = function(targetGender, drawCount, available) {
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
@@ -764,22 +767,25 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[4px] sm:border-[6px] p-3 sm:p-5 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-16 h-16 sm:w-28 sm:h-28 rounded-full mx-auto mb-2 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+            <div class="border-[6px] sm:border-[8px] p-2 sm:p-4 rounded-3xl text-center shadow-2xl bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
                 
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 mb-2 sm:mb-4 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2">
+                    <img src="${cuteAvatar}" class="h-full max-h-[160px] lg:max-h-[220px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-105 transition-transform object-cover shadow-sm" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                </div>
                 
-                <div class="text-xl sm:text-3xl lg:text-4xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4 w-full">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center shrink-0">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] font-black text-slate-800 my-2 lg:my-4 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${s.name}</div>
+                
+                <div class="text-3xl sm:text-4xl lg:text-6xl font-black text-red-500 flex items-center justify-center gap-4 w-full shrink-0 pb-2">
+                    <button class="bg-red-500 text-white rounded-2xl w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center hover:bg-red-600 transition shadow-md pb-1" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-16 lg:w-24 text-center tracking-tighter drop-shadow-sm">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-2xl w-14 h-14 lg:w-20 lg:h-20 flex items-center justify-center hover:bg-blue-600 transition shadow-md pb-1" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
     });
     
     document.getElementById('gagaDrawMainTitle').innerText = "🎉 참가 선수 🎉";
-    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-white mb-6 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
+    document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
 
     saveData(); window.renderGagaball();
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join(''); document.getElementById('gagaDrawModal').style.display = 'flex';
@@ -941,7 +947,6 @@ window.addGagaTeamScore = function(teamId, val) {
 
 window.openTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'flex'; }
 window.closeTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'none'; }
-
 
 // ==========================================
 // 6. 도장판 모드
