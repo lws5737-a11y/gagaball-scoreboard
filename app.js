@@ -326,12 +326,29 @@ window.renderStartupClassList = function() {
         return;
     }
 
+    // 학급명의 맨 앞 숫자(학년)를 기준으로 그룹화
+    const grouped = {};
     classes.forEach(cls => {
-        const btn = document.createElement('button');
-        btn.className = "px-1 py-3 sm:px-6 sm:py-4 bg-white/40 backdrop-blur-sm border-2 border-white/60 text-slate-800 font-black text-sm sm:text-2xl rounded-xl shadow-md hover:bg-white/60 hover:border-white transition-all w-full flex items-center justify-center break-keep";
-        btn.innerText = cls;
-        btn.onclick = () => window.selectClass(cls);
-        listEl.appendChild(btn);
+        const match = cls.match(/^\d+/);
+        const grade = match ? match[0] : '기타';
+        if (!grouped[grade]) grouped[grade] = [];
+        grouped[grade].push(cls);
+    });
+
+    // 그룹화된 학급들을 줄(Row) 단위로 렌더링
+    Object.keys(grouped).sort((a,b) => (a==='기타'?1:0) - (b==='기타'?1:0) || parseInt(a) - parseInt(b)).forEach(grade => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = "flex flex-wrap justify-center gap-2 sm:gap-4 w-full";
+        
+        grouped[grade].forEach(cls => {
+            const btn = document.createElement('button');
+            // 폭을 줄이고 텍스트를 크게
+            btn.className = "px-4 py-2 sm:px-6 sm:py-3 bg-white/70 backdrop-blur-sm border-2 border-white/80 text-slate-800 font-black text-lg sm:text-3xl rounded-xl shadow-md hover:bg-white hover:scale-105 transition-all min-w-[100px] sm:min-w-[140px] shrink-0";
+            btn.innerText = cls;
+            btn.onclick = () => window.selectClass(cls);
+            rowDiv.appendChild(btn);
+        });
+        listEl.appendChild(rowDiv);
     });
 };
 
@@ -545,7 +562,6 @@ window.renderGagaRanking = function() {
     }
 }
 
-// [모바일/TV 수정] 왕중왕전 모달: 1행 2명(grid-cols-2) 그리드 꽉 채우기
 window.startChampionsTournament = function() {
     if(window.championsSelection.length === 0) return;
     let selectedStudents = window.championsSelection.map(no => classData[currentClass].find(s => s.no === no)).filter(Boolean);
@@ -555,15 +571,15 @@ window.startChampionsTournament = function() {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[4px] sm:border-[6px] p-4 sm:p-6 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-20 h-20 sm:w-32 sm:h-32 rounded-full mx-auto mb-3 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+            <div class="border-[4px] sm:border-[6px] p-3 sm:p-5 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-16 h-16 sm:w-28 sm:h-28 rounded-full mx-auto mb-2 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 
-                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-2 sm:mb-6 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 mb-2 sm:mb-4 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
                 
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-6 w-full">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-12 sm:w-20 text-center shrink-0">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                <div class="text-xl sm:text-3xl lg:text-4xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4 w-full">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center shrink-0">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
@@ -728,7 +744,6 @@ window.triggerGagaDraw = function(targetGender) {
     }, 2500);
 }
 
-// [모바일/TV 수정] 참가선수 뽑기 모달: 1행 2명(grid-cols-2) 그리드 꽉 채우기
 window.executeGagaDraw = function(targetGender, drawCount, available) {
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
@@ -749,15 +764,15 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[4px] sm:border-[6px] p-4 sm:p-6 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
-                <img src="${cuteAvatar}" class="w-20 h-20 sm:w-32 sm:h-32 rounded-full mx-auto mb-3 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+            <div class="border-[4px] sm:border-[6px] p-3 sm:p-5 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-16 h-16 sm:w-28 sm:h-28 rounded-full mx-auto mb-2 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 
-                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-2 sm:mb-6 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 mb-2 sm:mb-4 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
                 
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-6 w-full">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-12 sm:w-20 text-center shrink-0">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                <div class="text-xl sm:text-3xl lg:text-4xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-4 w-full">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-16 text-center shrink-0">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
