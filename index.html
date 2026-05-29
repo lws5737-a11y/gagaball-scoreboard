@@ -230,11 +230,11 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="gagaDrawModal" class="gaga-modal-overlay flex-col">
+<div id="gagaDrawModal" class="gaga-modal-overlay flex-col overflow-hidden">
 <div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-[98vh] w-[98vw] max-w-none mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
 
-<div id="gagaDrawResultGrid" class="grid grid-cols-2 lg:grid-cols-4 grid-rows-4 lg:grid-rows-2 gap-3 sm:gap-5 w-full flex-1 h-full min-h-0 overflow-hidden px-2 pb-2"></div>
+<div id="gagaDrawResultGrid" class="flex flex-wrap justify-center content-center items-center gap-y-6 sm:gap-y-10 w-full flex-1 min-h-0 px-6 sm:px-10 pb-8 pt-4"></div>
 
 <button class="bg-slate-800 text-white w-full max-w-4xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-3xl sm:text-5xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
