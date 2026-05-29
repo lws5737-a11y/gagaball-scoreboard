@@ -43,7 +43,7 @@ Google 계정으로 시작하기
 </div>
 
 <div id="app-container" class="hidden">
-<header class="bg-slate-800 text-white p-3 sm:p-4 w-full print-hide relative z-50 shadow-md">
+<header id="main-header" class="bg-slate-800 text-white p-3 sm:p-4 w-full print-hide fixed top-0 left-0 z-[9999] shadow-xl">
 <div class="max-w-[98%] mx-auto flex flex-col md:flex-row justify-between gap-3 items-center" id="header-inner-container">
 <div class="flex items-center gap-2 shrink-0">
 <h1 class="text-lg sm:text-2xl font-bold flex items-center gap-2 whitespace-nowrap font-jua tracking-wide">
@@ -71,7 +71,7 @@ Google 계정으로 시작하기
 </div>
 </header>
 
-<main id="main-container" class="max-w-[98%] mx-auto p-2 sm:p-4 space-y-6 mt-1 w-full transition-all duration-300">
+<main id="main-container" class="max-w-[98%] mx-auto p-2 sm:p-4 space-y-6 mt-32 sm:mt-24 w-full transition-all duration-300">
 
 <div id="tab-navigation" class="flex flex-row justify-center items-center fixed w-full bg-white/95 backdrop-blur-sm border-t border-slate-200 px-2 py-2 sm:px-4 sm:py-4 shadow-[0_-5px_15px_rgba(0,0,0,0.05)] print-hide" style="bottom: 0; left: 0; z-index: 50; padding-bottom: max(env(safe-area-inset-bottom), 10px);">
 <div class="max-w-2xl w-full flex flex-row justify-center gap-3 sm:gap-6" id="tab-inner-container">
@@ -230,15 +230,17 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="gagaDrawModal" class="gaga-modal-overlay flex-col" onclick="window.closeGagaDrawModal()">
-<div class="gaga-modal-content font-sans bg-transparent shadow-none" style="max-width: 95vw; padding: 10px;" onclick="event.stopPropagation()">
-<h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-10 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">🎉 참가 선수 🎉</h1>
-<div id="gagaDrawResultGrid" class="flex flex-nowrap justify-start lg:justify-center items-center gap-4 sm:gap-8 mb-10 overflow-x-auto pb-8 pt-4 px-4 w-full" style="scroll-snap-type: x mandatory;"></div>
-<button class="bg-slate-800 text-white w-full max-w-2xl mx-auto py-4 sm:py-6 rounded-2xl font-black text-2xl sm:text-4xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
+<div id="gagaDrawModal" class="gaga-modal-overlay flex-col">
+<div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-full max-h-[90vh] w-full max-w-5xl mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
+<h1 id="gagaDrawMainTitle" class="text-4xl sm:text-6xl font-black text-white mb-6 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
+
+<div id="gagaDrawResultGrid" class="grid grid-cols-2 gap-3 sm:gap-6 w-full overflow-y-auto px-2 pb-4 flex-1 content-start"></div>
+
+<button class="bg-slate-800 text-white w-full max-w-2xl mx-auto py-4 sm:py-6 rounded-2xl font-black text-2xl sm:text-4xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
 </div>
 
-<div id="timerSelectModal" class="gaga-modal-overlay" style="z-index: 1050;" onclick="window.closeTimerSelectModal()">
+<div id="timerSelectModal" class="gaga-modal-overlay" onclick="window.closeTimerSelectModal()">
     <div class="gaga-modal-content" style="max-width: 400px; padding:30px;" onclick="event.stopPropagation()">
         <h2 class="text-3xl font-black text-orange-500 mb-6">⏱️ 가가볼 타이머</h2>
         <div class="flex flex-col gap-4 font-sans">
@@ -248,7 +250,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     </div>
 </div>
 
-<div id="rouletteModal" class="gaga-modal-overlay" style="z-index: 1002;" onclick="window.closeRouletteModal()">
+<div id="rouletteModal" class="gaga-modal-overlay" onclick="window.closeRouletteModal()">
 <div class="gaga-modal-content" style="max-width: 950px; padding: 50px;" onclick="event.stopPropagation()">
     <div class="flex justify-between items-center mb-8">
         <h2 id="rouletteModalTitle" class="text-3xl sm:text-5xl font-black text-slate-800">🎡 오늘의 미션 룰렛</h2>
@@ -262,7 +264,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="rouletteEditModal" class="gaga-modal-overlay" style="z-index: 1005;" onclick="window.closeRouletteEditModal()">
+<div id="rouletteEditModal" class="gaga-modal-overlay" onclick="window.closeRouletteEditModal()">
     <div class="gaga-modal-content font-sans" style="max-width: 600px; padding: 20px sm:padding-30px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl sm:text-3xl font-black text-slate-800 font-jua">룰렛 내용 편집</h2>
@@ -274,7 +276,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     </div>
 </div>
 
-<div id="missionDescModal" class="gaga-modal-overlay" style="z-index: 1003;" onclick="window.closeMissionDescModal()">
+<div id="missionDescModal" class="gaga-modal-overlay" onclick="window.closeMissionDescModal()">
 <div class="gaga-modal-content font-sans" style="max-width: 550px; padding: 30px sm:padding-40px;" onclick="event.stopPropagation()">
 <h2 id="missionDescTitle" class="text-2xl sm:text-4xl font-black text-blue-500 mb-4 font-jua"></h2>
 <p id="missionDescText" class="text-lg sm:text-2xl leading-relaxed text-slate-700 bg-slate-50 p-4 sm:p-6 rounded-2xl mb-8 border border-slate-200"></p>
@@ -282,7 +284,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="stampSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeStampSelectModal()">
+<div id="stampSelectModal" class="gaga-modal-overlay" onclick="window.closeStampSelectModal()">
     <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; padding: 25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100">
             <h2 class="text-xl sm:text-2xl font-black text-slate-800 font-jua">🎨 도장 선택</h2>
@@ -292,7 +294,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     </div>
 </div>
 
-<div id="avatarSelectModal" class="gaga-modal-overlay" style="z-index: 1500;" onclick="window.closeAvatarSelectModal()">
+<div id="avatarSelectModal" class="gaga-modal-overlay" onclick="window.closeAvatarSelectModal()">
     <div class="gaga-modal-content flex flex-col font-sans" style="max-width: 600px; max-height: 85vh; padding: 15px sm:padding-25px;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4 pb-2 border-b-2 border-slate-100 shrink-0">
             <h2 class="text-xl sm:text-3xl font-black text-slate-800 font-jua">🖼️ 아바타 선택</h2>
