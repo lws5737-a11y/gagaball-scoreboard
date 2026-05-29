@@ -545,7 +545,7 @@ window.renderGagaRanking = function() {
     }
 }
 
-// [모바일/TV 수정] 왕중왕전 모달: 1열 스크롤 배치 및 크기 극대화
+// [모바일/TV 수정] 왕중왕전 모달: 1행 2명(grid-cols-2) 그리드 꽉 채우기
 window.startChampionsTournament = function() {
     if(window.championsSelection.length === 0) return;
     let selectedStudents = window.championsSelection.map(no => classData[currentClass].find(s => s.no === no)).filter(Boolean);
@@ -555,18 +555,22 @@ window.startChampionsTournament = function() {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[6px] p-6 sm:p-8 rounded-3xl text-center shadow-xl bg-white min-w-[180px] sm:min-w-[320px] shrink-0 transform transition hover:scale-105" style="border-color: ${borderColor}; scroll-snap-align: center;">
-                <img src="${cuteAvatar}" class="w-24 h-24 sm:w-40 sm:h-40 rounded-full mx-auto mb-4 sm:mb-6 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-4 sm:mb-8 whitespace-nowrap truncate leading-tight">${s.name}</div>
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-3 sm:gap-6">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-16 sm:w-24 text-center">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+            <div class="border-[4px] sm:border-[6px] p-4 sm:p-6 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-20 h-20 sm:w-32 sm:h-32 rounded-full mx-auto mb-3 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                
+                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-2 sm:mb-6 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                
+                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-6 w-full">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-20 text-center shrink-0">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
     });
 
+    document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
+    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-purple-600 mb-6 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join('');
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
@@ -595,7 +599,6 @@ let editMissionsTemp = [];
 
 let currentRouletteRotation = 0; let isSpinning = false;
 
-// 스마트 룰렛 로직 (현재 화면 감지하여 룰렛 타입 결정)
 window.openSmartRouletteModal = function() {
     const teamView = document.getElementById('gaga-view-team');
     if (teamView && !teamView.classList.contains('hidden')) {
@@ -710,7 +713,6 @@ window.showMissionDescModal = function(title, text) {
 }
 window.closeMissionDescModal = function() { document.getElementById("missionDescModal").style.display = "none"; }
 
-// --- 가가볼 조작 로직 (뽑기 & 타이머) ---
 window.triggerGagaDraw = function(targetGender) {
     if(!currentClass) return;
     const drawCount = parseInt(document.getElementById('gaga-draw-count').value, 10);
@@ -726,7 +728,7 @@ window.triggerGagaDraw = function(targetGender) {
     }, 2500);
 }
 
-// [모바일/TV 수정] 참가선수 뽑기 모달: 1열 스크롤 배치 및 크기 극대화
+// [모바일/TV 수정] 참가선수 뽑기 모달: 1행 2명(grid-cols-2) 그리드 꽉 채우기
 window.executeGagaDraw = function(targetGender, drawCount, available) {
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
@@ -747,18 +749,23 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
         pickedHTML.push(`
-            <div class="border-[6px] p-6 sm:p-8 rounded-3xl text-center shadow-xl bg-white min-w-[180px] sm:min-w-[320px] shrink-0 transform transition hover:scale-105" style="border-color: ${borderColor}; scroll-snap-align: center;">
-                <img src="${cuteAvatar}" class="w-24 h-24 sm:w-40 sm:h-40 rounded-full mx-auto mb-4 sm:mb-6 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-4 sm:mb-8 whitespace-nowrap truncate leading-tight">${s.name}</div>
-                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-3 sm:gap-6">
-                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <span id="modal-score-${s.no}" class="w-16 sm:w-24 text-center">${s.score || 0}</span>
-                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+            <div class="border-[4px] sm:border-[6px] p-4 sm:p-6 rounded-3xl text-center shadow-xl bg-white w-full flex flex-col items-center justify-center" style="border-color: ${borderColor};">
+                <img src="${cuteAvatar}" class="w-20 h-20 sm:w-32 sm:h-32 rounded-full mx-auto mb-3 sm:mb-4 bg-slate-50 border-4 border-slate-100 cursor-pointer hover:scale-110 transition-transform object-cover" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                
+                <div class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-800 mb-2 sm:mb-6 whitespace-nowrap truncate leading-tight w-full">${s.name}</div>
+                
+                <div class="text-2xl sm:text-4xl lg:text-5xl font-bold text-red-500 flex items-center justify-center gap-2 sm:gap-6 w-full">
+                    <button class="bg-red-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-red-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 sm:w-20 text-center shrink-0">${s.score || 0}</span>
+                    <button class="bg-blue-500 text-white rounded-lg sm:rounded-2xl w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center hover:bg-blue-600 transition shrink-0" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `);
     });
     
+    document.getElementById('gagaDrawMainTitle').innerText = "🎉 참가 선수 🎉";
+    document.getElementById('gagaDrawMainTitle').className = "text-4xl sm:text-6xl font-black text-white mb-6 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
+
     saveData(); window.renderGagaball();
     document.getElementById('gagaDrawResultGrid').innerHTML = pickedHTML.join(''); document.getElementById('gagaDrawModal').style.display = 'flex';
     window.playCasinoJackpot(); window.fireConfetti();
@@ -850,7 +857,6 @@ window.executeGagaTeams = function(numTeams, available) {
     window.playCasinoJackpot(); window.fireConfetti();
 }
 
-// [모바일/TV 수정] 팀 대진표: 텍스트 최대화 및 레이아웃 정리
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
     const now = Date.now();
