@@ -523,65 +523,109 @@ window.toggleChampionSelection = function(no) {
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
-    const studentsForRank = [...(classData[currentClass] || [])].filter(s => s.attendance).sort((a, b) => (b.score || 0) - (a.score || 0));
+    
+    const studentsForRank = [...(classData[currentClass] || [])]
+        .filter(s => s.attendance)
+        .sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    let html = ''; let rank = 1;
+    let rankedStudents = [];
+    let currentRank = 1;
+    studentsForRank.forEach((s, i) => {
+        if (i > 0 && (studentsForRank[i].score || 0) < (studentsForRank[i-1].score || 0)) {
+            currentRank = i + 1;
+        }
+        rankedStudents.push({ ...s, rank: currentRank });
+    });
+
+    let podiumHTML = '';
+    let gridHTML = '';
+    
     window.championsSelection = window.championsSelection || [];
 
-    studentsForRank.forEach((s, i) => {
-        if (i > 0 && (studentsForRank[i].score || 0) < (studentsForRank[i-1].score || 0)) rank = i + 1;
-        let cardStyle = "bg-white border-2 border-slate-200 text-slate-700";
-        let rankBadge = `${rank}위`;
+    const createCard = (s, place, isPodium) => {
+        const isSelected = window.championsSelection.includes(s.no);
+        const highlightClass = isSelected ? "ring-4 ring-purple-500 bg-purple-50" : "";
         
-        let nameStyle = "text-lg sm:text-2xl"; 
-        let scoreStyle = "text-xl sm:text-3xl text-slate-600";
-        
-        if (rank === 1) { 
-            cardStyle = "bg-gradient-to-r from-yellow-100 to-yellow-300 border-4 border-yellow-400 shadow-xl my-2"; 
+        let cardStyle = "bg-white border-2 border-slate-200";
+        let rankBadge = `${s.rank}위`;
+        let badgeStyle = "bg-slate-500 text-white";
+        let sizeClass = isPodium ? "p-4 sm:p-6" : "p-3 sm:p-4";
+        let avatarSize = isPodium ? "w-20 h-20 sm:w-28 sm:h-28" : "w-16 h-16 sm:w-24 sm:h-24";
+        let nameSize = isPodium ? "text-2xl sm:text-4xl" : "text-xl sm:text-3xl";
+        let scoreSize = isPodium ? "text-xl sm:text-3xl" : "text-lg sm:text-2xl";
+        let transformClass = isSelected ? "scale-[1.05]" : "hover:scale-[1.02]";
+
+        if (s.rank === 1) { 
+            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-200 border-[4px] border-yellow-400 shadow-xl"; 
             rankBadge = "🥇 1위"; 
-            nameStyle = "text-xl sm:text-4xl text-yellow-900"; 
-            scoreStyle = "text-2xl sm:text-5xl text-red-600"; 
-        }
-        else if (rank === 2) { 
-            cardStyle = "bg-gradient-to-r from-gray-100 to-gray-300 border-4 border-gray-400 shadow-lg my-1"; 
+            badgeStyle = "bg-yellow-500 text-white shadow-md";
+            if(isPodium) { 
+                avatarSize = "w-24 h-24 sm:w-36 sm:h-36"; 
+                nameSize = "text-3xl sm:text-5xl"; 
+                transformClass += " z-10"; 
+            }
+        } else if (s.rank === 2) { 
+            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-200 border-[4px] border-gray-400 shadow-lg"; 
             rankBadge = "🥈 2위"; 
-            nameStyle = "text-lg sm:text-3xl text-gray-800"; 
-            scoreStyle = "text-xl sm:text-4xl text-gray-800"; 
-        }
-        else if (rank === 3) { 
-            cardStyle = "bg-gradient-to-r from-orange-100 to-orange-200 border-4 border-orange-400 shadow-md"; 
+            badgeStyle = "bg-gray-500 text-white shadow-md";
+        } else if (s.rank === 3) { 
+            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-200 border-[4px] border-orange-400 shadow-md"; 
             rankBadge = "🥉 3위"; 
-            nameStyle = "text-lg sm:text-3xl text-orange-900"; 
-            scoreStyle = "text-xl sm:text-4xl text-orange-700"; 
+            badgeStyle = "bg-orange-600 text-white shadow-md";
         }
-        
+
         const cuteAvatar = window.generateCuteAvatar(s);
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
-        const isSelected = window.championsSelection.includes(s.no);
-        const highlightClass = isSelected ? "ring-4 ring-purple-500 bg-purple-50 scale-[1.03] z-10" : "";
-        const finalCardStyle = `${cardStyle} ${highlightClass} cursor-pointer hover:scale-[1.02]`;
-
-        html += `
-        <div class="flex items-center justify-between p-3 sm:p-6 rounded-2xl ${finalCardStyle} transition-all gap-2" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="flex items-center gap-2 sm:gap-6 flex-1 min-w-0">
-                <div class="font-black text-lg sm:text-3xl w-10 sm:w-16 text-center whitespace-nowrap shrink-0">${rankBadge}</div>
-                <img src="${cuteAvatar}" class="w-10 h-10 sm:w-20 sm:h-20 rounded-full border-2 bg-white object-cover shrink-0">
-                <div class="${nameStyle} font-black drop-shadow-sm whitespace-nowrap shrink-0">${s.name}</div>
+        return `
+        <div class="flex flex-col items-center justify-between rounded-3xl ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} h-full relative" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2 px-3 sm:px-5 py-1 sm:py-1.5 rounded-full text-xs sm:text-lg font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
+            
+            <div class="relative mt-2 sm:mt-4 mb-2 sm:mb-4">
+                <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[4px] bg-white object-cover border-white shadow-sm">
             </div>
-            <div class="flex items-center gap-2 sm:gap-8 shrink-0">
-                <div class="${scoreStyle} font-black drop-shadow-sm whitespace-nowrap">${s.score || 0}점</div>
-                <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                    <div class="w-10 h-10 sm:w-16 sm:h-16 rounded-full border-2 sm:border-4 ${refStampColor} border-dashed flex items-center justify-center font-black text-xs sm:text-xl transform -rotate-12 bg-white shadow-sm shrink-0">
-                        심판
-                    </div>
+            
+            <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap mb-1">${s.name}</div>
+            <div class="${scoreSize} font-black text-red-600 drop-shadow-sm mb-2 sm:mb-4">${s.score || 0}점</div>
+            
+            <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} mt-auto" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
+                <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 sm:border-[3px] ${refStampColor} border-dashed flex items-center justify-center font-black text-xs sm:text-base transform -rotate-12 bg-white/80 shadow-sm shrink-0">
+                    심판
                 </div>
             </div>
         </div>
         `;
-    });
-    container.innerHTML = html;
+    };
+
+    // 올림픽 시상대 구성 (최상위 3명)
+    let top3 = rankedStudents.slice(0, 3);
+    let others = rankedStudents.slice(3);
+
+    if (top3.length > 0) {
+        let podiumArr = [];
+        if(top3[1]) podiumArr.push({ s: top3[1], place: 2 }); // 좌측 2위
+        if(top3[0]) podiumArr.push({ s: top3[0], place: 1 }); // 중앙 1위
+        if(top3[2]) podiumArr.push({ s: top3[2], place: 3 }); // 우측 3위
+
+        podiumHTML = `<div class="flex justify-center items-end gap-3 sm:gap-8 mb-12 sm:mb-20 pt-8">`;
+        podiumArr.forEach(item => {
+            let orderClass = item.place === 1 ? "order-2 z-10 w-[140px] sm:w-[260px] pb-4" : (item.place === 2 ? "order-1 w-[120px] sm:w-[220px] pb-0 sm:pb-4" : "order-3 w-[120px] sm:w-[220px] pb-0 sm:pb-4");
+            podiumHTML += `<div class="${orderClass}">${createCard(item.s, item.place, true)}</div>`;
+        });
+        podiumHTML += `</div>`;
+    }
+
+    // 나머지 4열 그리드
+    if (others.length > 0) {
+        gridHTML = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 max-w-6xl mx-auto px-2">`;
+        others.forEach(s => {
+            gridHTML += `<div>${createCard(s, s.rank, false)}</div>`;
+        });
+        gridHTML += `</div>`;
+    }
+
+    container.innerHTML = podiumHTML + gridHTML;
 
     const fab = document.getElementById('champions-fab-container');
     const fabText = document.getElementById('champions-fab-text');
@@ -934,7 +978,7 @@ window.renderGagaTeamView = function() {
     for(let i = 0; i < currentGagaTeams.length; i += 2) {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         
-        // Grid 적용 및 꽉 찬 레이아웃 (최대 가로 4명 고정), 왕관(isKing) 처리 적용
+        // Grid 적용 및 꽉 찬 레이아웃 (최대 가로 4명 고정), 학생 이름 극대화 적용
         const createBadges = (team) => team.members.map((m) => {
             let animHTML = '';
             if (showAnim && team.id === window.lastTeamScoreChange.teamId) {
@@ -949,25 +993,25 @@ window.renderGagaTeamView = function() {
             const borderStyle = isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : `border-[${m.gender==='남'?'#3498db':'#e74c3c'}] bg-white`;
 
             return `
-            <div class="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
+            <div class="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
                 ${kingCrown}
-                <div class="relative w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 mb-1 sm:mb-2 shrink-0">
+                <div class="relative w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-36 xl:h-36 mb-1 sm:mb-3 shrink-0">
                     <img src="${window.generateCuteAvatar(m)}" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
-                <b class="text-base sm:text-2xl lg:text-3xl xl:text-4xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 tracking-tight">${m.name}</b>
-                <span class="text-xs sm:text-lg lg:text-xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}점${animHTML}</span>
+                <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${m.name}</b>
+                <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}점${animHTML}</span>
             </div>`;
         }).join('');
         
         const createPanel = (team, isEven) => `
-            <div class="w-full sm:w-40 border-b-2 sm:border-b-0 sm:border-r-4 border-dashed ${isEven ? 'border-slate-400/50' : 'border-slate-300'} pb-2 mb-2 sm:pb-0 sm:mb-0 sm:pr-4 sm:mr-4 flex flex-row sm:flex-col justify-between items-center shrink-0">
+            <div class="w-full sm:w-28 lg:w-32 border-b-2 sm:border-b-0 sm:border-r-4 border-dashed ${isEven ? 'border-slate-400/50' : 'border-slate-300'} pb-2 mb-2 sm:pb-0 sm:mb-0 sm:pr-4 sm:mr-4 flex flex-row sm:flex-col justify-between items-center shrink-0">
                 <div class="flex flex-col items-center">
-                    <div class="text-3xl sm:text-5xl font-black text-slate-800 whitespace-nowrap">${team.id}팀</div>
-                    ${isEven ? `<div class="text-sm sm:text-lg font-bold text-slate-600 mt-1">(형광)</div>` : ''}
+                    <div class="text-2xl sm:text-4xl font-black text-slate-800 whitespace-nowrap">${team.id}팀</div>
+                    ${isEven ? `<div class="text-xs sm:text-base font-bold text-slate-600 mt-1">(형광)</div>` : ''}
                 </div>
                 <div class="flex gap-2 sm:gap-3 mt-0 sm:mt-auto">
-                    <button class="bg-red-500 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-2xl sm:text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
-                    <button class="bg-blue-500 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-2xl sm:text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
+                    <button class="bg-red-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl text-xl sm:text-2xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
+                    <button class="bg-blue-500 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl text-xl sm:text-2xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
                 </div>
             </div>`;
 
