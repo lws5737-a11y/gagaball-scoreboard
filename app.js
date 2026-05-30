@@ -449,7 +449,7 @@ window.renderGagaball = function() {
         let bgColor = s.attendance && !isDrawn ? (s.gender === '남' ? '#e3f2fd' : '#ffebee') : '#fff';
         const cuteAvatar = window.generateCuteAvatar(s); 
 
-        // 선발완료 표시를 학생 아바타 위로 변경
+        // 뽑기완료 표시를 실제 도장 이미지(SVG) 형태로 변경
         const cardHTML = `
             <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
                 <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
@@ -461,9 +461,7 @@ window.renderGagaball = function() {
                     <img src="${cuteAvatar}" alt="avatar" class="w-full h-full rounded-full cursor-pointer hover:scale-105 transition-transform border-4 object-cover block bg-white" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
                     ${isDrawn ? `
                     <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-full bg-slate-900/40">
-                        <div class="transform -rotate-12 border-[3px] border-white text-white px-3 py-1 rounded-lg text-lg sm:text-xl font-black tracking-widest shadow-lg bg-black/30 font-jua">
-                            선발완료
-                        </div>
+                        <img src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Crect width='120' height='40' rx='8' fill='%23ef4444' stroke='white' stroke-width='3'/%3E%3Ctext x='60' y='27' font-family='sans-serif' font-size='22' font-weight='900' fill='white' text-anchor='middle'%3E뽑기완료%3C/text%3E%3C/svg%3E" class="transform -rotate-12 w-20 sm:w-28 drop-shadow-md">
                     </div>
                     ` : ''}
                 </div>
@@ -544,52 +542,52 @@ window.renderGagaRanking = function() {
 
     const createCard = (s, place, isPodium) => {
         const isSelected = window.championsSelection.includes(s.no);
-        const highlightClass = isSelected ? "ring-[8px] ring-purple-500 bg-purple-50" : "";
+        const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
         
         let cardStyle = "bg-white border-[4px] border-slate-200";
         let rankBadge = `${s.rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        // 일반 랭킹 (4위 이하) 카드 크기 (화면 꽉 차게 2배 이상 확대)
-        let sizeClass = "p-6 sm:p-8 lg:p-10";
-        let avatarSize = "w-24 h-24 sm:w-36 sm:h-36 lg:w-48 lg:h-48";
-        let nameSize = "text-3xl sm:text-5xl lg:text-6xl";
-        let scoreSize = "text-2xl sm:text-4xl lg:text-5xl";
+        // 잘리지 않게 줄인 공통(4위 이하 그리드) 크기
+        let sizeClass = "p-4 sm:p-6 lg:p-8";
+        let avatarSize = "w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36";
+        let nameSize = "text-2xl sm:text-3xl lg:text-4xl";
+        let scoreSize = "text-xl sm:text-2xl lg:text-3xl";
         let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
 
         if (s.rank === 1) { 
-            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-200 border-[8px] lg:border-[12px] border-yellow-400 shadow-[0_20px_50px_rgba(250,204,21,0.4)]"; 
+            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-200 border-[8px] lg:border-[10px] border-yellow-400 shadow-[0_20px_50px_rgba(250,204,21,0.4)]"; 
             rankBadge = "🥇 1위"; 
-            badgeStyle = "bg-yellow-500 text-white shadow-lg text-2xl sm:text-3xl lg:text-4xl px-8 py-2";
+            badgeStyle = "bg-yellow-500 text-white shadow-lg text-xl sm:text-2xl lg:text-3xl px-6 py-2";
             if(isPodium) { 
-                sizeClass = "p-8 sm:p-12 lg:p-16";
-                avatarSize = "w-36 h-36 sm:w-56 sm:h-56 lg:w-72 lg:h-72 xl:w-80 xl:h-80"; 
-                nameSize = "text-5xl sm:text-7xl lg:text-8xl xl:text-9xl"; 
-                scoreSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl";
+                sizeClass = "p-6 sm:p-8 lg:p-10";
+                avatarSize = "w-28 h-28 sm:w-40 sm:h-40 lg:w-52 lg:h-52 xl:w-60 xl:h-60"; 
+                nameSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl"; 
+                scoreSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl";
                 transformClass += " z-10"; 
             }
         } else if (s.rank === 2) { 
-            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-200 border-[6px] lg:border-[10px] border-gray-400 shadow-[0_15px_40px_rgba(156,163,175,0.4)]"; 
+            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-200 border-[6px] lg:border-[8px] border-gray-400 shadow-[0_15px_40px_rgba(156,163,175,0.4)]"; 
             rankBadge = "🥈 2위"; 
-            badgeStyle = "bg-gray-500 text-white shadow-lg text-xl sm:text-2xl lg:text-3xl px-6 py-2";
+            badgeStyle = "bg-gray-500 text-white shadow-lg text-lg sm:text-xl lg:text-2xl px-5 py-1.5";
             if(isPodium) {
-                sizeClass = "p-6 sm:p-10 lg:p-12";
-                avatarSize = "w-32 h-32 sm:w-48 sm:h-48 lg:w-60 lg:h-60 xl:w-72 xl:h-72"; 
-                nameSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl"; 
-                scoreSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl";
+                sizeClass = "p-5 sm:p-6 lg:p-8";
+                avatarSize = "w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48"; 
+                nameSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"; 
+                scoreSize = "text-2xl sm:text-3xl lg:text-4xl xl:text-5xl";
             }
         } else if (s.rank === 3) { 
-            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-200 border-[6px] lg:border-[10px] border-orange-400 shadow-[0_15px_40px_rgba(249,115,22,0.4)]"; 
+            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-200 border-[6px] lg:border-[8px] border-orange-400 shadow-[0_15px_40px_rgba(249,115,22,0.4)]"; 
             rankBadge = "🥉 3위"; 
-            badgeStyle = "bg-orange-600 text-white shadow-lg text-xl sm:text-2xl lg:text-3xl px-6 py-2";
+            badgeStyle = "bg-orange-600 text-white shadow-lg text-lg sm:text-xl lg:text-2xl px-5 py-1.5";
             if(isPodium) {
-                sizeClass = "p-6 sm:p-10 lg:p-12";
-                avatarSize = "w-32 h-32 sm:w-48 sm:h-48 lg:w-60 lg:h-60 xl:w-72 xl:h-72"; 
-                nameSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl"; 
-                scoreSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl";
+                sizeClass = "p-5 sm:p-6 lg:p-8";
+                avatarSize = "w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48"; 
+                nameSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"; 
+                scoreSize = "text-2xl sm:text-3xl lg:text-4xl xl:text-5xl";
             }
         } else {
-            badgeStyle = "bg-slate-500 text-white shadow-md text-lg sm:text-xl lg:text-3xl px-6 py-1.5";
+            badgeStyle = "bg-slate-500 text-white shadow-md text-base sm:text-lg lg:text-xl px-4 py-1";
         }
 
         const cuteAvatar = window.generateCuteAvatar(s);
@@ -598,17 +596,17 @@ window.renderGagaRanking = function() {
 
         return `
         <div class="flex flex-col items-center justify-between rounded-[2.5rem] lg:rounded-[3.5rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full h-full relative" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="absolute -top-5 sm:-top-8 lg:-top-10 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
+            <div class="absolute -top-5 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
             
-            <div class="relative mt-6 sm:mt-10 lg:mt-12 mb-4 sm:mb-8 lg:mb-10 shrink-0">
-                <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[6px] sm:border-[10px] lg:border-[12px] bg-white object-cover border-white shadow-xl">
+            <div class="relative mt-4 sm:mt-6 lg:mt-8 mb-3 sm:mb-6 lg:mb-8 shrink-0">
+                <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[6px] sm:border-[8px] lg:border-[10px] bg-white object-cover border-white shadow-xl">
             </div>
             
-            <div class="${nameSize} font-black text-slate-800 drop-shadow-md whitespace-nowrap mb-2 sm:mb-4 truncate max-w-full px-2">${s.name}</div>
-            <div class="${scoreSize} font-black text-red-600 drop-shadow-lg mb-4 sm:mb-8">${s.score || 0}점</div>
+            <div class="${nameSize} font-black text-slate-800 drop-shadow-md whitespace-nowrap mb-1 sm:mb-3 truncate max-w-full px-2">${s.name}</div>
+            <div class="${scoreSize} font-black text-red-600 drop-shadow-lg mb-3 sm:mb-6">${s.score || 0}점</div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} mt-auto" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                <div class="w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 rounded-full border-[4px] lg:border-[6px] ${refStampColor} border-dashed flex items-center justify-center font-black text-lg sm:text-2xl lg:text-3xl transform -rotate-12 bg-white/95 shadow-lg shrink-0">
+                <div class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] lg:border-[5px] ${refStampColor} border-dashed flex items-center justify-center font-black text-base sm:text-xl lg:text-2xl transform -rotate-12 bg-white/95 shadow-lg shrink-0">
                     심판
                 </div>
             </div>
@@ -616,17 +614,17 @@ window.renderGagaRanking = function() {
         `;
     };
 
-    // 올림픽 시상대 구성 (최상위 3명 화면 전체 삼각 구도 배치)
+    // 올림픽 시상대 구성 (최상위 3명 화면 전체 삼각 구도 배치, 잘리지 않도록 여백 조절)
     let top3 = rankedStudents.slice(0, 3);
     let others = rankedStudents.slice(3);
 
     if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[35%] flex justify-center z-10 transform -translate-y-12 sm:-translate-y-20 lg:-translate-y-32 transition-transform duration-500">${createCard(top3[0], 1, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
+        let p1 = top3[0] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[35%] flex justify-center z-10 transform -translate-y-12 sm:-translate-y-16 lg:-translate-y-24 transition-transform duration-500">${createCard(top3[0], 1, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
         let p2 = top3[1] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-start self-end origin-bottom-left transition-transform duration-500">${createCard(top3[1], 2, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
         let p3 = top3[2] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-end self-end origin-bottom-right transition-transform duration-500">${createCard(top3[2], 3, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
 
         podiumHTML = `
-        <div class="flex justify-between items-end w-full px-2 sm:px-4 lg:px-8 mb-20 sm:mb-28 lg:mb-40 pt-20 lg:pt-32 gap-3 sm:gap-6 lg:gap-8">
+        <div class="flex justify-between items-end w-full px-2 sm:px-4 lg:px-8 mb-10 sm:mb-16 lg:mb-20 pt-10 lg:pt-16 gap-3 sm:gap-6 lg:gap-8">
             ${p2}
             ${p1}
             ${p3}
@@ -636,7 +634,7 @@ window.renderGagaRanking = function() {
 
     // 나머지 랭킹 그리드 (화면 좌우 꽉 차게 정렬)
     if (others.length > 0) {
-        gridHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-8 lg:gap-12 w-full px-2 sm:px-4 lg:px-8">`;
+        gridHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 w-full px-2 sm:px-4 lg:px-8">`;
         others.forEach(s => {
             gridHTML += `<div class="w-full flex justify-center">${createCard(s, s.rank, false)}</div>`;
         });
