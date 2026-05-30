@@ -401,6 +401,14 @@ window.switchGagaTab = function(tab) {
     if(tab === 'team') window.renderGagaTeamView();
 }
 
+window.changeDrawCount = function(delta) {
+    const input = document.getElementById('gaga-draw-count');
+    let val = parseInt(input.value) + delta;
+    if(val < 1) val = 1;
+    if(val > 10) val = 10;
+    input.value = val;
+}
+
 window.renderGagaball = function() {
     const activeGrid = document.getElementById('gaga-active-grid');
     const inactiveGrid = document.getElementById('gaga-inactive-grid');
@@ -424,22 +432,25 @@ window.renderGagaball = function() {
         let bgColor = s.attendance && !isDrawn ? (s.gender === '남' ? '#e3f2fd' : '#ffebee') : '#fff';
         const cuteAvatar = window.generateCuteAvatar(s); 
 
-        const drawnOverlay = isDrawn ? `
-            <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-2xl bg-white/40">
-                <div class="transform -rotate-12 border-[5px] border-slate-700 text-slate-700 px-4 py-2 rounded-xl text-2xl sm:text-4xl font-black tracking-widest bg-white/90 shadow-lg font-jua uppercase">
-                    선발완료
-                </div>
-            </div>
-        ` : '';
-
+        // 선발완료 표시를 학생 아바타 위로 변경
         const cardHTML = `
             <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
-                ${drawnOverlay}
                 <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
                     <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
                     <button class="${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})">${btnText}</button>
                 </div>
-                <img src="${cuteAvatar}" alt="avatar" class="avatar-img cursor-pointer hover:scale-105 transition-transform relative z-20" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
+                
+                <div class="avatar-wrapper relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] mx-auto mb-3">
+                    <img src="${cuteAvatar}" alt="avatar" class="w-full h-full rounded-full cursor-pointer hover:scale-105 transition-transform border-4 object-cover block bg-white" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
+                    ${isDrawn ? `
+                    <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-full bg-slate-900/40">
+                        <div class="transform -rotate-12 border-[3px] border-white text-white px-3 py-1 rounded-lg text-lg sm:text-xl font-black tracking-widest shadow-lg bg-black/30 font-jua">
+                            선발완료
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+
                 <div class="name relative z-20">${s.name} <span class="text-xs sm:text-lg">(${s.gender})</span></div>
                 <div class="score-val relative z-20">${s.score || 0}</div>
                 <div class="score-ctrl relative z-20">
@@ -565,28 +576,25 @@ window.renderGagaRanking = function() {
     }
 }
 
-// 겹치기 카드 생성 함수
-const generateOverlapCards = (students) => {
-    return students.map((s, idx) => {
+// 겹치지 않는 동적 Grid 카드 생성 (아바타/이름 크게, 버튼 작게)
+const generateGridCards = (students) => {
+    return students.map((s) => {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
         const cuteAvatar = window.generateCuteAvatar(s);
-        let marginClass = idx === 0 ? "ml-0" : "-ml-8 sm:-ml-12 lg:-ml-16";
         
         return `
-            <div class="overlap-card flex-none w-[180px] sm:w-[220px] lg:w-[260px] ${marginClass} shrink-0" style="z-index: ${idx+1}; height: 90%;">
-                <div class="border-[5px] sm:border-[8px] p-2 sm:p-4 rounded-3xl text-center shadow-xl bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
-                    
-                    <div class="w-full flex items-center justify-center pt-2">
-                        <img src="${cuteAvatar}" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                    </div>
-                    
-                    <div class="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-800 my-2 whitespace-nowrap truncate leading-tight w-full flex items-center justify-center">${s.name}</div>
-                    
-                    <div class="text-2xl sm:text-3xl lg:text-4xl font-black text-red-500 flex items-center justify-center gap-2 w-full pb-1">
-                        <button class="bg-red-500 text-white rounded-xl lg:rounded-2xl w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                        <span id="modal-score-${s.no}" class="w-12 sm:w-16 lg:w-20 text-center tracking-tighter drop-shadow-sm">${s.score || 0}</span>
-                        <button class="bg-blue-500 text-white rounded-xl lg:rounded-2xl w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
-                    </div>
+            <div class="border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
+                
+                <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2 relative">
+                    <img src="${cuteAvatar}" class="h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                </div>
+                
+                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${s.name}</div>
+                
+                <div class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-600 flex items-center justify-center gap-3 w-full shrink-0 pb-1">
+                    <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <span id="modal-score-${s.no}" class="w-12 lg:w-16 text-center tracking-tighter drop-shadow-sm">${s.score || 0}점</span>
+                    <button class="bg-blue-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
                 </div>
             </div>
         `;
@@ -599,7 +607,18 @@ window.startChampionsTournament = function() {
 
     document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
     document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-purple-600 mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
-    document.getElementById('gagaDrawResultGrid').innerHTML = generateOverlapCards(selectedStudents);
+    
+    // 왕중왕전 모달 그리드 설정
+    const n = selectedStudents.length;
+    let gridClasses = "grid gap-2 sm:gap-4 w-full flex-1 h-full min-h-0 overflow-hidden px-2 pb-2 ";
+    if(n <= 2) gridClasses += "grid-cols-2 grid-rows-1";
+    else if(n <= 4) gridClasses += "grid-cols-2 grid-rows-2";
+    else if(n <= 6) gridClasses += "grid-cols-3 grid-rows-2";
+    else if(n <= 8) gridClasses += "grid-cols-4 grid-rows-2";
+    else gridClasses += "grid-cols-5 grid-rows-2";
+    
+    document.getElementById('gagaDrawResultGrid').className = gridClasses;
+    document.getElementById('gagaDrawResultGrid').innerHTML = generateGridCards(selectedStudents);
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
     window.playOlympicFanfare(); 
@@ -609,7 +628,7 @@ window.startChampionsTournament = function() {
     window.renderGagaRanking(); 
 }
 
-// 룰렛 관련 (생략 없이 원본 유지)
+// 룰렛 관련 
 let defaultIndividualMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 경기장에 등장했습니다! 체육쌤을 아웃시키면 체육 도장 1장이 주어집니다!" }, { text: "포인트 X2", weight: 20, color: "#ffeaa7", desc: "최종 승자에게는 평소보다 2배의 포인트가 주어집니다." } ];
 let defaultTeamMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "왕을 잡아라!", weight: 15, color: "#a29bfe", desc: "양팀은 우리팀 왕을 한명 정해주세요. 상대팀 왕을 먼저 아웃시키는 팀이 승리합니다." }, { text: "포인트 X2", weight: 15, color: "#ffeaa7", desc: "최종 승리팀 전원에게 평소보다 2배의 포인트가 주어집니다." } ];
 
@@ -750,7 +769,7 @@ window.triggerGagaDraw = function(targetGender) {
     }, 2500);
 }
 
-// 모달창 겹치기 생성 적용
+// 참가선수 뽑기 모달 동적 Grid Layout (최대 10명)
 window.executeGagaDraw = function(targetGender, drawCount, available) {
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
@@ -770,8 +789,19 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     document.getElementById('gagaDrawMainTitle').innerText = "🎉 참가 선수 🎉";
     document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
 
+    // 인원수에 따른 동적 그리드 클래스 할당 (최대 5열 2행)
+    const n = picked.length;
+    let gridClasses = "grid gap-2 sm:gap-4 w-full flex-1 h-full min-h-0 overflow-hidden px-2 pb-2 ";
+    if (n <= 2) gridClasses += "grid-cols-2 grid-rows-1";
+    else if (n <= 4) gridClasses += "grid-cols-2 grid-rows-2";
+    else if (n <= 6) gridClasses += "grid-cols-3 grid-rows-2";
+    else if (n <= 8) gridClasses += "grid-cols-4 grid-rows-2";
+    else gridClasses += "grid-cols-5 grid-rows-2";
+    
+    document.getElementById('gagaDrawResultGrid').className = gridClasses;
+    document.getElementById('gagaDrawResultGrid').innerHTML = generateGridCards(picked); 
+
     saveData(); window.renderGagaball();
-    document.getElementById('gagaDrawResultGrid').innerHTML = generateOverlapCards(picked); 
     document.getElementById('gagaDrawModal').style.display = 'flex';
     window.playCasinoJackpot(); window.fireConfetti();
 }
@@ -785,7 +815,7 @@ window.resetGagaDraw = function() {
 }
 window.closeGagaDrawModal = function() { document.getElementById('gagaDrawModal').style.display = 'none'; }
 
-// 팀 편성 및 대진표 (겹치기 UI 적용)
+// 팀 편성 로직
 const getStudentPower = (student, validRecords) => {
     let bs = (parseInt(student.ballSense) || 0) * 60; 
     let rs = 0;
@@ -870,8 +900,8 @@ window.renderGagaTeamView = function() {
     for(let i = 0; i < currentGagaTeams.length; i += 2) {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         
-        // 팀 카드도 수직 형태 + 마이너스 마진으로 겹치게 변경
-        const createBadges = (team) => team.members.map((m, idx) => {
+        // 겹치기 취소, 일반 간격(gap)을 준 정렬된 카드로 표시
+        const createBadges = (team) => team.members.map((m) => {
             let animHTML = '';
             if (showAnim && team.id === window.lastTeamScoreChange.teamId) {
                 const val = window.lastTeamScoreChange.val;
@@ -879,9 +909,8 @@ window.renderGagaTeamView = function() {
                 const colorClass = val > 0 ? 'float-score-plus' : 'float-score-minus';
                 animHTML = `<span class="float-score-anim ${colorClass}">${sign}${val}</span>`;
             }
-            let marginClass = idx === 0 ? "ml-0" : "-ml-6 sm:-ml-10";
             return `
-            <div class="overlap-card flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl border-2 sm:border-4 bg-white shadow-md w-[80px] sm:w-[130px] ${marginClass}" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'}; z-index: ${idx+1};">
+            <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl border-2 sm:border-4 bg-white shadow-md w-[80px] sm:w-[130px] shrink-0" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'};">
                 <img src="${window.generateCuteAvatar(m)}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-50 mb-1 sm:mb-2 object-cover shrink-0 cursor-pointer" onclick="window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 <b class="text-sm sm:text-xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1">${m.name}</b>
                 <span class="text-xs sm:text-lg text-red-500 font-black relative whitespace-nowrap">${m.score || 0}점${animHTML}</span>
@@ -904,12 +933,12 @@ window.renderGagaTeamView = function() {
             <div class="flex flex-col xl:flex-row gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-2xl border-2 sm:border-4 border-slate-100 shadow-md items-stretch mb-4 overflow-visible">
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgA} border-t-8 xl:border-t-0 xl:border-l-8">
                     ${createPanel(teamA)} 
-                    <div class="flex-1 flex flex-wrap items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamA)}</div>
+                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-3 items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamA)}</div>
                 </div>
                 ${teamB ? `<div class="text-xl sm:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm my-1 xl:my-0">VS</div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
                     ${createPanel(teamB)} 
-                    <div class="flex-1 flex flex-wrap items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamB)}</div>
+                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-3 items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamB)}</div>
                 </div>` : ''}
             </div>`;
     }
