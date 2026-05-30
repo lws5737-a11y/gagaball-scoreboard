@@ -367,16 +367,27 @@ window.showTab = function(tabName) {
 
     const tabGaga = document.getElementById('tab-gagaball');
     const tabStamp = document.getElementById('tab-stamp');
+    const gagaHeaderTabs = document.getElementById('gaga-header-tabs');
 
     if (tabName === 'gagaball') {
         document.getElementById('gagaball-section').classList.remove('hidden');
         tabGaga.className = "flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 rounded-xl font-bold text-sm transition text-white bg-slate-800 shadow-md border border-slate-800 transform scale-105 z-10 whitespace-nowrap";
         tabStamp.className = "flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 rounded-xl font-bold text-sm transition text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm whitespace-nowrap";
+        
+        if (gagaHeaderTabs) {
+            gagaHeaderTabs.classList.remove('hidden');
+            gagaHeaderTabs.classList.add('flex');
+        }
         window.switchGagaTab('score'); 
     } else {
         document.getElementById('stamp-section').classList.remove('hidden');
         tabStamp.className = "flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 rounded-xl font-bold text-sm transition text-white bg-green-600 shadow-md border border-green-600 transform scale-105 z-10 whitespace-nowrap";
         tabGaga.className = "flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 rounded-xl font-bold text-sm transition text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 shadow-sm whitespace-nowrap";
+        
+        if (gagaHeaderTabs) {
+            gagaHeaderTabs.classList.add('hidden');
+            gagaHeaderTabs.classList.remove('flex');
+        }
         window.renderStampBoard();
     }
 }
@@ -387,12 +398,18 @@ window.showTab = function(tabName) {
 window.switchGagaTab = function(tab) {
     ['score', 'rank', 'team'].forEach(t => {
         document.getElementById(`gaga-view-${t}`).classList.add('hidden');
-        document.getElementById(`gaga-btn-${t}`).classList.remove('bg-slate-800', 'text-white', 'shadow-md');
-        document.getElementById(`gaga-btn-${t}`).classList.add('bg-slate-100', 'text-slate-600');
+        const btn = document.getElementById(`gaga-btn-${t}`);
+        if(btn) {
+            btn.classList.remove('bg-slate-100', 'text-slate-800', 'shadow-sm');
+            btn.classList.add('text-slate-400', 'bg-transparent');
+        }
     });
     document.getElementById(`gaga-view-${tab}`).classList.remove('hidden');
-    document.getElementById(`gaga-btn-${tab}`).classList.add('bg-slate-800', 'text-white', 'shadow-md');
-    document.getElementById(`gaga-btn-${tab}`).classList.remove('bg-slate-100', 'text-slate-600');
+    const activeBtn = document.getElementById(`gaga-btn-${tab}`);
+    if(activeBtn) {
+        activeBtn.classList.add('bg-slate-100', 'text-slate-800', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-400', 'bg-transparent');
+    }
 
     if (tab !== 'rank') window.championsSelection = []; 
 
@@ -888,8 +905,25 @@ window.executeGagaTeams = function(numTeams, available) {
         candidates[0].members.push(ref); candidates[0].score += (ref.score || 0);
     });
 
+    // 팀 생성 시 초기 왕(isKing) 상태는 false로 설정
+    teams.forEach(t => t.members.forEach(m => m.isKing = false));
+
     distribute(boys); distribute(girls); currentGagaTeams = teams; window.renderGagaTeamView(); 
     window.playCasinoJackpot(); window.fireConfetti();
+}
+
+// 특정 학생을 '왕'으로 토글하는 함수
+window.toggleTeamKing = function(teamId, memberNo) {
+    const team = currentGagaTeams.find(t => t.id === teamId);
+    if(!team) return;
+    const member = team.members.find(m => m.no === memberNo);
+    if(!member) return;
+    
+    member.isKing = !member.isKing;
+    
+    if(member.isKing) window.playOlympicFanfare(); // 왕으로 선택되었을 때 효과음
+    
+    window.renderGagaTeamView();
 }
 
 window.renderGagaTeamView = function() {
@@ -900,7 +934,7 @@ window.renderGagaTeamView = function() {
     for(let i = 0; i < currentGagaTeams.length; i += 2) {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         
-        // 겹치기 취소, 일반 간격(gap)을 준 정렬된 카드로 표시
+        // Grid 적용 및 꽉 찬 레이아웃 (최대 가로 4명 고정), 왕관(isKing) 처리 적용
         const createBadges = (team) => team.members.map((m) => {
             let animHTML = '';
             if (showAnim && team.id === window.lastTeamScoreChange.teamId) {
@@ -909,36 +943,47 @@ window.renderGagaTeamView = function() {
                 const colorClass = val > 0 ? 'float-score-plus' : 'float-score-minus';
                 animHTML = `<span class="float-score-anim ${colorClass}">${sign}${val}</span>`;
             }
+
+            const isKing = m.isKing;
+            const kingCrown = isKing ? `<div class="absolute -top-4 -right-3 text-4xl sm:text-5xl drop-shadow-md z-20 animate-bounce">👑</div>` : '';
+            const borderStyle = isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : `border-[${m.gender==='남'?'#3498db':'#e74c3c'}] bg-white`;
+
             return `
-            <div class="flex flex-col items-center justify-center p-2 sm:p-3 rounded-2xl sm:rounded-3xl border-2 sm:border-4 bg-white shadow-md w-[80px] sm:w-[130px] shrink-0" style="border-color:${m.gender==='남'?'#3498db':'#e74c3c'};">
-                <img src="${window.generateCuteAvatar(m)}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-50 mb-1 sm:mb-2 object-cover shrink-0 cursor-pointer" onclick="window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
-                <b class="text-sm sm:text-xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1">${m.name}</b>
-                <span class="text-xs sm:text-lg text-red-500 font-black relative whitespace-nowrap">${m.score || 0}점${animHTML}</span>
+            <div class="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
+                ${kingCrown}
+                <div class="relative w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 xl:w-28 xl:h-28 mb-1 sm:mb-2 shrink-0">
+                    <img src="${window.generateCuteAvatar(m)}" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                </div>
+                <b class="text-base sm:text-2xl lg:text-3xl xl:text-4xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 tracking-tight">${m.name}</b>
+                <span class="text-xs sm:text-lg lg:text-xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}점${animHTML}</span>
             </div>`;
         }).join('');
         
-        const createPanel = (team) => `
-            <div class="w-full sm:w-40 border-b-2 sm:border-b-0 sm:border-r-4 border-dashed border-slate-300 pb-2 mb-2 sm:pb-0 sm:mb-0 sm:pr-4 sm:mr-4 flex flex-row sm:flex-col justify-between items-center shrink-0">
-                <div class="text-2xl sm:text-5xl font-black text-slate-700 whitespace-nowrap">${team.id}팀</div>
+        const createPanel = (team, isEven) => `
+            <div class="w-full sm:w-40 border-b-2 sm:border-b-0 sm:border-r-4 border-dashed ${isEven ? 'border-slate-400/50' : 'border-slate-300'} pb-2 mb-2 sm:pb-0 sm:mb-0 sm:pr-4 sm:mr-4 flex flex-row sm:flex-col justify-between items-center shrink-0">
+                <div class="flex flex-col items-center">
+                    <div class="text-3xl sm:text-5xl font-black text-slate-800 whitespace-nowrap">${team.id}팀</div>
+                    ${isEven ? `<div class="text-sm sm:text-lg font-bold text-slate-600 mt-1">(형광)</div>` : ''}
+                </div>
                 <div class="flex gap-2 sm:gap-3 mt-0 sm:mt-auto">
-                    <button class="bg-red-500 text-white w-8 h-8 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-xl sm:text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
-                    <button class="bg-blue-500 text-white w-8 h-8 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-xl sm:text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
+                    <button class="bg-red-500 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-2xl sm:text-4xl font-black shadow hover:bg-red-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, -1)">-</button>
+                    <button class="bg-blue-500 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl text-2xl sm:text-4xl font-black shadow hover:bg-blue-600 transition flex items-center justify-center" onclick="window.addGagaTeamScore(${team.id}, 1)">+</button>
                 </div>
             </div>`;
 
         let teamBgA = "bg-orange-50 border-orange-400";
-        let teamBgB = "bg-lime-50 border-lime-400";
+        let teamBgB = "bg-[#f3ff4c] border-[#d1e600]"; // 짝수팀 형광색 배경
 
         teamHTML += `
             <div class="flex flex-col xl:flex-row gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-2xl border-2 sm:border-4 border-slate-100 shadow-md items-stretch mb-4 overflow-visible">
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgA} border-t-8 xl:border-t-0 xl:border-l-8">
-                    ${createPanel(teamA)} 
-                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-3 items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamA)}</div>
+                    ${createPanel(teamA, false)} 
+                    <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamA)}</div>
                 </div>
                 ${teamB ? `<div class="text-xl sm:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm my-1 xl:my-0">VS</div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
-                    ${createPanel(teamB)} 
-                    <div class="flex-1 flex flex-wrap gap-2 sm:gap-3 items-center justify-start content-center py-2 px-2 overflow-visible">${createBadges(teamB)}</div>
+                    ${createPanel(teamB, true)} 
+                    <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamB)}</div>
                 </div>` : ''}
             </div>`;
     }
