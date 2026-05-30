@@ -64,7 +64,7 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 /* 가가볼 스코어보드 CSS */
 #gagaball-section { font-family: 'Jua', sans-serif; letter-spacing: 0.5px; }
 #gagaball-section .scoreboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 25px; }
-#gagaball-section .score-item { background: #fff; border: 4px solid #3498db; padding: 25px; border-radius: 16px; text-align: center; position: relative; transition: 0.2s; box-shadow: 0 6px 12px rgba(0,0,0,0.08); overflow: hidden; }
+#gagaball-section .score-item { background: #fff; border: 4px solid #3498db; padding: 25px; border-radius: 16px; text-align: center; position: relative; transition: 0.2s; box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
 
 /* 뽑기 완료 학생(도장 찍힌 학생) 스타일 오버라이드 */
 #gagaball-section .score-item.drawn { 
@@ -73,10 +73,9 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
     box-shadow: none;
     transform: scale(0.98); 
 }
-#gagaball-section .avatar-img { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 15px; display: block; background: #fdfdfd; object-fit: cover; border: 4px solid; }
 #gagaball-section .score-item.drawn .avatar-img { 
     filter: grayscale(100%); 
-    opacity: 0.4; 
+    opacity: 0.6; 
     border-color: #cbd5e1 !important; 
 }
 
@@ -87,10 +86,6 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #gagaball-section .score-ctrl button:active { transform: scale(0.9); }
 #gagaball-section .score-ctrl button.minus { background: #e74c3c; }
 #gagaball-section .inactive-grid .score-item { border-color: #ddd; background: #fdfdfd; opacity: 0.6; padding: 15px; }
-
-/* 겹치기 카드 레이아웃 효과 (마우스 오버 시 맨 위로 튀어나옴) */
-.overlap-card { position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
-.overlap-card:hover, .overlap-card:active { z-index: 100 !important; transform: scale(1.1) translateY(-10px); }
 
 /* 모달 레이아웃 최적화 */
 .gaga-modal-overlay { 
@@ -134,7 +129,6 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 @media screen and (max-width: 640px) {
     #gagaball-section .scoreboard-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px; }
     #gagaball-section .score-item { padding: 10px 6px; border-width: 2px; border-radius: 12px; }
-    #gagaball-section .avatar-img { width: 55px; height: 55px; border-width: 2px; margin: 0 auto 8px; }
     #gagaball-section .score-item .name { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #gagaball-section .score-item .score-val { font-size: 2.2rem; margin: 5px 0; }
     #gagaball-section .score-ctrl button { width: 40px; height: 32px; font-size: 1.5rem; border-radius: 6px; }
