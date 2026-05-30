@@ -97,7 +97,11 @@ Google 계정으로 시작하기
 <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 bg-amber-50 p-4 sm:p-6 rounded-2xl border-2 border-amber-200 shadow-sm">
 <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
 <span class="font-black text-amber-800 text-lg sm:text-2xl">🎯 가가볼 뽑기:</span>
-<input type="number" id="gaga-draw-count" min="1" max="30" value="8" class="w-16 sm:w-20 p-2 rounded-lg border-2 border-amber-300 font-bold text-center text-lg sm:text-xl">
+<div class="flex items-center bg-white rounded-lg border-2 border-amber-300 overflow-hidden mx-1">
+    <button onclick="window.changeDrawCount(-1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition">-</button>
+    <input type="number" id="gaga-draw-count" min="1" max="10" value="8" readonly class="w-10 sm:w-12 text-center font-bold text-lg sm:text-xl border-none outline-none bg-transparent">
+    <button onclick="window.changeDrawCount(1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition">+</button>
+</div>
 <span class="font-bold text-amber-800 text-lg sm:text-xl mr-2">명</span>
 <button onclick="window.triggerGagaDraw('all')" class="bg-slate-800 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-700 text-sm sm:text-xl transition transform hover:scale-105">전체</button>
 <button onclick="window.triggerGagaDraw('남')" class="bg-blue-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-600 text-sm sm:text-xl transition transform hover:scale-105">남학생</button>
@@ -132,9 +136,9 @@ Google 계정으로 시작하기
 <div class="flex w-full sm:w-auto items-center gap-2 sm:gap-3">
 <select id="gaga-team-count" class="p-2 sm:p-3 rounded-xl border-2 border-slate-300 font-bold text-lg sm:text-2xl">
 <option value="2">2팀</option>
-<option value="4" selected>4팀</option>
+<option value="4">4팀</option>
 <option value="6">6팀</option>
-<option value="8">8팀</option>
+<option value="8" selected>8팀</option>
 </select>
 <button onclick="window.triggerGagaTeams()" class="flex-1 bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black shadow-md hover:bg-purple-700 text-lg sm:text-2xl transition transform hover:scale-105 whitespace-nowrap">👥 밸런스 편성</button>
 </div>
@@ -234,7 +238,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-[98vh] w-[98vw] max-w-none mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
 
-<div id="gagaDrawResultGrid" class="flex flex-wrap justify-center content-center items-center gap-y-6 sm:gap-y-10 w-full flex-1 min-h-0 px-6 sm:px-10 pb-8 pt-4"></div>
+<div id="gagaDrawResultGrid" class=""></div>
 
 <button class="bg-slate-800 text-white w-full max-w-4xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-3xl sm:text-5xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
