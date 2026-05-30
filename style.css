@@ -73,9 +73,11 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
     box-shadow: none;
     transform: scale(0.98); 
 }
-#gagaball-section .score-item.drawn .avatar-img { 
-    filter: grayscale(100%); 
-    opacity: 0.6; 
+#gagaball-section .score-item.drawn .avatar-wrapper {
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+#gagaball-section .score-item.drawn .avatar-wrapper img {
     border-color: #cbd5e1 !important; 
 }
 
