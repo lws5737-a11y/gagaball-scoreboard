@@ -3,16 +3,70 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstati
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 // ==========================================
-// 1. 오디오 통합 관리
+// 1. 오디오 통합 관리 (MP3 + Web Audio API)
 // ==========================================
+// MP3 파일 설정 (sound 폴더 내)
+const audioFiles = {
+    anthem: new Audio('sound/orchestral-anthem.mp3'),
+    tadaa: new Audio('sound/tadaa01.mp3'),
+    spinner: new Audio('sound/spinner01.mp3'),
+    goodresult: new Audio('sound/goodresult.mp3')
+};
+audioFiles.anthem.loop = true; // 브금 반복 재생
+
+// 오디오 재생 함수 (브라우저 정책에 의해 차단될 수 있으므로 catch 처리)
+window.playMP3 = function(key) {
+    if (audioFiles[key]) {
+        audioFiles[key].currentTime = 0;
+        audioFiles[key].volume = 1;
+        audioFiles[key].play().catch(e => console.log("오디오 재생 차단됨 (사용자 상호작용 필요):", e));
+    }
+};
+
+window.stopMP3 = function(key) {
+    if (audioFiles[key]) {
+        audioFiles[key].pause();
+        audioFiles[key].currentTime = 0;
+    }
+};
+
+window.fadeOutMP3 = function(key) {
+    const audio = audioFiles[key];
+    if (audio && !audio.paused) {
+        let vol = audio.volume;
+        let fadeInterval = setInterval(() => {
+            if (vol > 0.05) {
+                vol -= 0.05;
+                audio.volume = vol;
+            } else {
+                clearInterval(fadeInterval);
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        }, 50);
+    }
+};
+
+// 첫 화면 진입 시 사용자 클릭(터치) 유도 후 BGM 재생
+let firstInteraction = false;
+const handleFirstInteraction = () => {
+    if (!firstInteraction && !currentClass) {
+        firstInteraction = true;
+        window.playMP3('anthem');
+    }
+    // 기본 Web Audio API 컨텍스트 초기화
+    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+};
+document.body.addEventListener('click', handleFirstInteraction);
+document.body.addEventListener('touchstart', handleFirstInteraction);
+
 let audioCtx;
 function initAudio() {
     if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     if (audioCtx.state === 'suspended') { audioCtx.resume(); }
     return audioCtx;
 }
-document.body.addEventListener('click', initAudio, { once: true });
-document.body.addEventListener('touchstart', initAudio, { once: true });
 
 window.playCoinSound = function() {
     try {
@@ -39,100 +93,6 @@ window.playBumpSound = function() {
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2);
     } catch(e) {}
 }
-
-window.playDrumRoll = function() {
-    try {
-        const ctx = initAudio();
-        for (let i = 0; i < 20; i++) {
-            setTimeout(() => {
-                const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(100 + Math.random() * 50, ctx.currentTime);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.start(); osc.stop(ctx.currentTime + 0.1);
-            }, i * 100);
-        }
-    } catch(e) {}
-}
-
-window.playGrandFanfare = function() {
-    try {
-        const ctx = initAudio();
-        const playChord = (freqs, t, d) => {
-            freqs.forEach(f => {
-                const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                osc.type = 'square'; osc.frequency.value = f;
-                gain.gain.setValueAtTime(0.15, ctx.currentTime + t);
-                gain.gain.linearRampToValueAtTime(0.0, ctx.currentTime + t + d);
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + d);
-            });
-        };
-        playChord([440, 554.37, 659.25], 0, 0.2); 
-        playChord([440, 554.37, 659.25], 0.2, 0.2);
-        playChord([440, 554.37, 659.25], 0.4, 0.2);
-        playChord([493.88, 587.33, 739.99], 0.6, 0.4); 
-        playChord([523.25, 659.25, 783.99, 1046.50], 1.0, 1.5); 
-    } catch(e) {}
-}
-
-window.playCasinoRoulette = function() {
-    try {
-        const ctx = initAudio();
-        let startTime = ctx.currentTime;
-        for (let i = 0; i < 40; i++) {
-            let tickTime = startTime + 2.5 * (1 - Math.pow(1 - (i/40), 2.5)); 
-            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-            osc.type = 'square';
-            osc.frequency.setValueAtTime(800 + (i % 3) * 200, tickTime); 
-            gain.gain.setValueAtTime(0, tickTime);
-            gain.gain.linearRampToValueAtTime(0.1, tickTime + 0.01);
-            gain.gain.exponentialRampToValueAtTime(0.01, tickTime + 0.05);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(tickTime); osc.stop(tickTime + 0.05);
-        }
-    } catch(e) {}
-};
-
-window.playCasinoJackpot = function() {
-    try {
-        const ctx = initAudio();
-        let now = ctx.currentTime;
-        const freqs = [523.25, 659.25, 783.99, 1046.50]; 
-        for(let i=0; i<15; i++) {
-            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-            osc.type = 'square';
-            osc.frequency.value = freqs[i % freqs.length] + (Math.random() * 10 - 5);
-            gain.gain.setValueAtTime(0, now + i * 0.1);
-            gain.gain.linearRampToValueAtTime(0.15, now + i * 0.1 + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.08);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.08);
-        }
-    } catch(e) {}
-};
-
-window.playOlympicFanfare = function() {
-    try {
-        const ctx = initAudio();
-        const playBrass = (f, t, d) => {
-            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-            osc.type = 'sawtooth'; osc.frequency.value = f;
-            gain.gain.setValueAtTime(0, ctx.currentTime + t);
-            gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + t + 0.05);
-            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + d);
-            osc.connect(gain); gain.connect(ctx.destination);
-            osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + d);
-        };
-        const chords = [ [261.63, 329.63, 392.00], [349.23, 440.00, 523.25], [392.00, 493.88, 587.33], [523.25, 659.25, 783.99, 1046.50] ];
-        chords[0].forEach(f => playBrass(f, 0, 0.4));
-        chords[1].forEach(f => playBrass(f, 0.4, 0.4));
-        chords[2].forEach(f => playBrass(f, 0.8, 0.4));
-        chords[3].forEach(f => playBrass(f, 1.2, 1.2));
-    } catch(e) {}
-};
 
 let confettiAnimationFrame;
 let confettiParticles = [];
@@ -236,6 +196,7 @@ if (auth && db) {
     window.signInWithGoogle = function() {
         const btn = document.getElementById('btn-login');
         btn.innerHTML = '로그인 중...';
+        handleFirstInteraction(); // 버튼 클릭 시에도 브금 트리거
         signInWithPopup(auth, provider).catch(() => {
             alert("로그인에 실패했습니다.");
             btn.innerHTML = 'Google 계정으로 시작하기';
@@ -350,6 +311,7 @@ window.renderStartupClassList = function() {
 
 window.selectClass = function(className) {
     currentClass = className;
+    window.fadeOutMP3('anthem'); // 학급 선택 시 브금 페이드아웃 및 정지
     
     document.getElementById('class-selection-screen').classList.add('hidden');
     document.getElementById('class-selection-screen').classList.remove('flex');
@@ -368,6 +330,10 @@ window.showTab = function(tabName) {
     const tabGaga = document.getElementById('tab-gagaball');
     const tabStamp = document.getElementById('tab-stamp');
     const gagaHeaderTabs = document.getElementById('gaga-header-tabs');
+
+    if (tabName !== 'gagaball' || !document.getElementById('gaga-view-rank').classList.contains('hidden')) {
+         window.fadeOutMP3('anthem'); // 명예의 전당을 벗어나면 브금 정지
+    }
 
     if (tabName === 'gagaball') {
         document.getElementById('gagaball-section').classList.remove('hidden');
@@ -411,10 +377,16 @@ window.switchGagaTab = function(tab) {
         activeBtn.classList.remove('text-slate-400', 'bg-transparent');
     }
 
-    if (tab !== 'rank') window.championsSelection = []; 
+    if (tab !== 'rank') {
+        window.championsSelection = []; 
+        window.fadeOutMP3('anthem'); // 랭킹 탭을 벗어나면 정지
+    }
 
     if(tab === 'score') window.renderGagaball();
-    if(tab === 'rank') { window.renderGagaRanking(); window.playOlympicFanfare(); }
+    if(tab === 'rank') { 
+        window.playMP3('anthem'); // 명예의 전당 진입 시 브금 재생
+        window.renderGagaRanking(); 
+    }
     if(tab === 'team') window.renderGagaTeamView();
 }
 
@@ -449,7 +421,6 @@ window.renderGagaball = function() {
         let bgColor = s.attendance && !isDrawn ? (s.gender === '남' ? '#e3f2fd' : '#ffebee') : '#fff';
         const cuteAvatar = window.generateCuteAvatar(s); 
 
-        // 뽑기완료 표시를 실제 도장 이미지(SVG) 형태로 변경
         const cardHTML = `
             <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
                 <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
@@ -536,112 +507,83 @@ window.renderGagaRanking = function() {
     });
 
     let podiumHTML = '';
-    let gridHTML = '';
+    let listHTML = '';
     
     window.championsSelection = window.championsSelection || [];
 
-    const createCard = (s, place, isPodium) => {
+    const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
-        const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
+        const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "bg-white/95";
+        let bdColor = rank === 1 ? 'border-yellow-400' : (rank === 2 ? 'border-gray-400' : 'border-orange-400');
         
-        let cardStyle = "bg-white border-[4px] border-slate-200";
-        let rankBadge = `${s.rank}위`;
-        let badgeStyle = "bg-slate-500 text-white";
-        
-        // 잘리지 않게 줄인 공통(4위 이하 그리드) 크기
-        let sizeClass = "p-4 sm:p-6 lg:p-8";
-        let avatarSize = "w-20 h-20 sm:w-28 sm:h-28 lg:w-36 lg:h-36";
-        let nameSize = "text-2xl sm:text-3xl lg:text-4xl";
-        let scoreSize = "text-xl sm:text-2xl lg:text-3xl";
-        let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
+        return `
+        <div class="flex flex-col items-center ${highlightClass} border-[3px] sm:border-[4px] ${bdColor} rounded-2xl p-2 sm:p-3 shadow-lg w-[95%] max-w-[130px] sm:max-w-[180px] backdrop-blur-sm cursor-pointer hover:-translate-y-2 transition-transform" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2 px-3 sm:px-4 py-0.5 rounded-full font-black text-xs sm:text-sm text-white shadow-sm whitespace-nowrap ${rank===1?'bg-yellow-500':(rank===2?'bg-gray-500':'bg-orange-600')}">
+                ${rank === 1 ? '🥇 1위' : (rank === 2 ? '🥈 2위' : '🥉 3위')}
+            </div>
+            <img src="${window.generateCuteAvatar(s)}" class="w-14 h-14 sm:w-24 sm:h-24 rounded-full border-[3px] border-white shadow-sm object-cover bg-white mb-1 sm:mb-2 mt-1">
+            <div class="text-base sm:text-2xl font-black text-slate-800 truncate w-full text-center tracking-tighter">${s.name}</div>
+            <div class="text-sm sm:text-xl font-black text-red-600 mt-0.5">${s.score}점</div>
+        </div>`;
+    };
 
-        if (s.rank === 1) { 
-            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-200 border-[8px] lg:border-[10px] border-yellow-400 shadow-[0_20px_50px_rgba(250,204,21,0.4)]"; 
-            rankBadge = "🥇 1위"; 
-            badgeStyle = "bg-yellow-500 text-white shadow-lg text-xl sm:text-2xl lg:text-3xl px-6 py-2";
-            if(isPodium) { 
-                sizeClass = "p-6 sm:p-8 lg:p-10";
-                avatarSize = "w-28 h-28 sm:w-40 sm:h-40 lg:w-52 lg:h-52 xl:w-60 xl:h-60"; 
-                nameSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl"; 
-                scoreSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl";
-                transformClass += " z-10"; 
-            }
-        } else if (s.rank === 2) { 
-            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-200 border-[6px] lg:border-[8px] border-gray-400 shadow-[0_15px_40px_rgba(156,163,175,0.4)]"; 
-            rankBadge = "🥈 2위"; 
-            badgeStyle = "bg-gray-500 text-white shadow-lg text-lg sm:text-xl lg:text-2xl px-5 py-1.5";
-            if(isPodium) {
-                sizeClass = "p-5 sm:p-6 lg:p-8";
-                avatarSize = "w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48"; 
-                nameSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"; 
-                scoreSize = "text-2xl sm:text-3xl lg:text-4xl xl:text-5xl";
-            }
-        } else if (s.rank === 3) { 
-            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-200 border-[6px] lg:border-[8px] border-orange-400 shadow-[0_15px_40px_rgba(249,115,22,0.4)]"; 
-            rankBadge = "🥉 3위"; 
-            badgeStyle = "bg-orange-600 text-white shadow-lg text-lg sm:text-xl lg:text-2xl px-5 py-1.5";
-            if(isPodium) {
-                sizeClass = "p-5 sm:p-6 lg:p-8";
-                avatarSize = "w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 xl:w-48 xl:h-48"; 
-                nameSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl"; 
-                scoreSize = "text-2xl sm:text-3xl lg:text-4xl xl:text-5xl";
-            }
-        } else {
-            badgeStyle = "bg-slate-500 text-white shadow-md text-base sm:text-lg lg:text-xl px-4 py-1";
-        }
-
-        const cuteAvatar = window.generateCuteAvatar(s);
+    const createListCard = (s) => {
+        const isSelected = window.championsSelection.includes(s.no);
+        const highlightClass = isSelected ? "ring-[3px] ring-purple-500 bg-purple-50" : "bg-white hover:bg-slate-50";
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-col items-center justify-between rounded-[2.5rem] lg:rounded-[3.5rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full h-full relative" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="absolute -top-5 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
+        <div class="flex flex-row items-center justify-between ${highlightClass} border-2 border-slate-200 rounded-2xl p-2 sm:p-3 shadow-sm hover:scale-[1.01] transition-transform cursor-pointer w-full" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="w-12 sm:w-16 text-center font-black text-slate-500 text-base sm:text-2xl shrink-0">${s.rank}위</div>
+            <img src="${window.generateCuteAvatar(s)}" class="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-slate-200 object-cover mx-2 sm:mx-4 shrink-0 bg-white">
+            <div class="flex-1 text-lg sm:text-3xl font-black text-slate-800 truncate text-left">${s.name}</div>
+            <div class="text-lg sm:text-3xl font-black text-red-600 shrink-0 w-16 sm:w-24 text-right pr-2 sm:pr-4">${s.score}점</div>
             
-            <div class="relative mt-4 sm:mt-6 lg:mt-8 mb-3 sm:mb-6 lg:mb-8 shrink-0">
-                <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[6px] sm:border-[8px] lg:border-[10px] bg-white object-cover border-white shadow-xl">
-            </div>
-            
-            <div class="${nameSize} font-black text-slate-800 drop-shadow-md whitespace-nowrap mb-1 sm:mb-3 truncate max-w-full px-2">${s.name}</div>
-            <div class="${scoreSize} font-black text-red-600 drop-shadow-lg mb-3 sm:mb-6">${s.score || 0}점</div>
-            
-            <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} mt-auto" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                <div class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] lg:border-[5px] ${refStampColor} border-dashed flex items-center justify-center font-black text-base sm:text-xl lg:text-2xl transform -rotate-12 bg-white/95 shadow-lg shrink-0">
+            <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
+                <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-[3px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[10px] sm:text-sm transform -rotate-12 bg-white shadow-sm">
                     심판
                 </div>
             </div>
-        </div>
-        `;
+        </div>`;
     };
 
-    // 올림픽 시상대 구성 (최상위 3명 화면 전체 삼각 구도 배치, 잘리지 않도록 여백 조절)
+    // 올림픽 시상대 구성 (1/2/3위)
     let top3 = rankedStudents.slice(0, 3);
     let others = rankedStudents.slice(3);
 
     if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[35%] flex justify-center z-10 transform -translate-y-12 sm:-translate-y-16 lg:-translate-y-24 transition-transform duration-500">${createCard(top3[0], 1, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
-        let p2 = top3[1] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-start self-end origin-bottom-left transition-transform duration-500">${createCard(top3[1], 2, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
-        let p3 = top3[2] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-end self-end origin-bottom-right transition-transform duration-500">${createCard(top3[2], 3, true)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
+        let p1 = top3[0] ? createPodiumCard(top3[0], 1) : '';
+        let p2 = top3[1] ? createPodiumCard(top3[1], 2) : '';
+        let p3 = top3[2] ? createPodiumCard(top3[2], 3) : '';
 
         podiumHTML = `
-        <div class="flex justify-between items-end w-full px-2 sm:px-4 lg:px-8 mb-10 sm:mb-16 lg:mb-20 pt-10 lg:pt-16 gap-3 sm:gap-6 lg:gap-8">
-            ${p2}
-            ${p1}
-            ${p3}
+        <div class="relative w-full max-w-3xl mx-auto h-[300px] sm:h-[450px] lg:h-[550px] mt-4 mb-8 select-none">
+            <img src="image_e5a7df.png" class="absolute bottom-0 left-0 w-full h-full object-contain drop-shadow-2xl pointer-events-none" alt="올림픽 시상대">
+            
+            <div class="absolute bottom-[48%] left-[22%] w-[28%] flex justify-center transform -translate-x-1/2 z-10">
+                ${p2}
+            </div>
+            <div class="absolute bottom-[62%] left-[50%] w-[32%] flex justify-center transform -translate-x-1/2 z-20">
+                ${p1}
+            </div>
+            <div class="absolute bottom-[38%] left-[78%] w-[28%] flex justify-center transform -translate-x-1/2 z-10">
+                ${p3}
+            </div>
         </div>
         `;
     }
 
-    // 나머지 랭킹 그리드 (화면 좌우 꽉 차게 정렬)
+    // 나머지 4등부터 세로 스크롤 리스트 
     if (others.length > 0) {
-        gridHTML = `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 w-full px-2 sm:px-4 lg:px-8">`;
+        listHTML = `<div class="flex flex-col gap-3 w-full max-w-3xl mx-auto px-2 max-h-[400px] overflow-y-auto pb-6 custom-scrollbar">`;
         others.forEach(s => {
-            gridHTML += `<div class="w-full flex justify-center">${createCard(s, s.rank, false)}</div>`;
+            listHTML += createListCard(s);
         });
-        gridHTML += `</div>`;
+        listHTML += `</div>`;
     }
 
-    container.innerHTML = podiumHTML + gridHTML;
+    container.innerHTML = podiumHTML + listHTML;
 
     const fab = document.getElementById('champions-fab-container');
     const fabText = document.getElementById('champions-fab-text');
@@ -698,7 +640,7 @@ window.startChampionsTournament = function() {
     document.getElementById('gagaDrawResultGrid').innerHTML = generateGridCards(selectedStudents);
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
-    window.playOlympicFanfare(); 
+    window.playMP3('tadaa'); 
     window.fireConfetti();
     
     window.championsSelection = []; 
@@ -788,23 +730,19 @@ window.drawRoulette = function() {
 }
 window.spinRoulette = function() {
     if(isSpinning) return; isSpinning = true;
+    
+    window.playMP3('spinner'); // 룰렛 5초 도는 동안 재생
+    
     const canvas = document.getElementById("rouletteCanvas");
     const spinAngle = Math.floor(Math.random() * 360) + (360 * 5); currentRouletteRotation += spinAngle;
-    canvas.style.transition = "transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)"; canvas.style.transform = `rotate(${currentRouletteRotation}deg)`;
-
-    try {
-        const ctx = initAudio(); let startTime = ctx.currentTime;
-        for(let i=0; i<45; i++) {
-            let t = i / 45; let tickTime = startTime + 4.0 * (1 - Math.pow(1 - t, 3.5)); 
-            const osc = ctx.createOscillator(); const gain = ctx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(600 - (i*5), tickTime); 
-            gain.gain.setValueAtTime(0, tickTime); gain.gain.linearRampToValueAtTime(0.3, tickTime + 0.01); gain.gain.exponentialRampToValueAtTime(0.01, tickTime + 0.05);
-            osc.connect(gain); gain.connect(ctx.destination); osc.start(tickTime); osc.stop(tickTime + 0.05);
-        }
-    } catch(e) {}
+    canvas.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)"; 
+    canvas.style.transform = `rotate(${currentRouletteRotation}deg)`;
 
     setTimeout(() => {
         isSpinning = false;
+        window.stopMP3('spinner');
+        window.playMP3('goodresult'); // 결과 화면 사운드 재생
+        
         const normalizedRotation = currentRouletteRotation % 360; let pointerAngle = (360 - normalizedRotation) % 360;
         let currentPos = 0; let winner = null;
         let totalWeight = currentMissions.reduce((acc, m) => acc + m.weight, 0) || 1;
@@ -813,18 +751,8 @@ window.spinRoulette = function() {
             if(pointerAngle >= currentPos && pointerAngle < currentPos + sliceSize) { winner = currentMissions[i]; break; }
             currentPos += sliceSize;
         }
-        try {
-            const ctx = initAudio();
-            const playTone = (f, t, d) => {
-                const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                osc.type = 'triangle'; osc.connect(gain); gain.connect(ctx.destination);
-                osc.frequency.setValueAtTime(f, ctx.currentTime + t); gain.gain.setValueAtTime(0.3, ctx.currentTime + t); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + d);
-                osc.start(ctx.currentTime + t); osc.stop(ctx.currentTime + t + d);
-            };
-            playTone(523.25, 0.0, 0.2); playTone(523.25, 0.2, 0.2); playTone(523.25, 0.4, 0.2); playTone(659.25, 0.6, 0.2); playTone(783.99, 0.8, 0.6); 
-        } catch(e) {}
         window.showMissionDescModal(winner.text, winner.desc);
-    }, 4000);
+    }, 5000);
 }
 window.showMissionDescModal = function(title, text) {
     document.getElementById("missionDescTitle").innerText = "🎯 " + title; document.getElementById("missionDescText").innerText = text; document.getElementById("missionDescModal").style.display = "flex";
@@ -838,12 +766,12 @@ window.triggerGagaDraw = function(targetGender) {
     if(available.length === 0) return alert("현재 대기 중인 학생이 없습니다.");
 
     document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
-    window.playCasinoRoulette(); 
 
+    // 2.2초 타이머 (드럼 효과만 유지, 사운드 효과는 제거하고 tadaa로 대체)
     setTimeout(() => {
         document.getElementById('event-loading-overlay').classList.add('hidden'); document.getElementById('event-loading-overlay').classList.remove('flex');
         window.executeGagaDraw(targetGender, drawCount, available);
-    }, 2500);
+    }, 2200);
 }
 
 // 참가선수 뽑기 모달 동적 Grid Layout (최대 10명)
@@ -880,7 +808,9 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
 
     saveData(); window.renderGagaball();
     document.getElementById('gagaDrawModal').style.display = 'flex';
-    window.playCasinoJackpot(); window.fireConfetti();
+    
+    window.playMP3('tadaa'); // 짠! 효과음
+    window.fireConfetti();
 }
 
 window.resetGagaDraw = function() {
@@ -912,12 +842,12 @@ window.triggerGagaTeams = function() {
 
     document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
     document.getElementById('event-loading-text').innerText = "팀 밸런스 조정중..."; 
-    window.playCasinoRoulette(); 
 
+    // 2.2초 대기
     setTimeout(() => {
         document.getElementById('event-loading-overlay').classList.add('hidden'); document.getElementById('event-loading-overlay').classList.remove('flex');
         document.getElementById('event-loading-text').innerText = "두구두구두구..."; window.executeGagaTeams(numTeams, available);
-    }, 2500);
+    }, 2200);
 }
 
 window.executeGagaTeams = function(numTeams, available) {
@@ -969,7 +899,7 @@ window.executeGagaTeams = function(numTeams, available) {
     teams.forEach(t => t.members.forEach(m => m.isKing = false));
 
     distribute(boys); distribute(girls); currentGagaTeams = teams; window.renderGagaTeamView(); 
-    window.playCasinoJackpot(); window.fireConfetti();
+    window.playMP3('tadaa'); window.fireConfetti();
 }
 
 // 특정 학생을 '왕'으로 토글하는 함수
@@ -980,8 +910,6 @@ window.toggleTeamKing = function(teamId, memberNo) {
     if(!member) return;
     
     member.isKing = !member.isKing;
-    
-    if(member.isKing) window.playOlympicFanfare(); // 왕으로 선택되었을 때 효과음
     
     window.renderGagaTeamView();
 }
@@ -1135,7 +1063,7 @@ window.checkMissionComplete = (playEffect) => {
     const badge = document.getElementById('missionBadgeContainer');
     if (isComplete) { 
         badge.classList.remove('hidden'); badge.classList.add('badge-animate'); 
-        if (playEffect) window.playOlympicFanfare(); 
+        if (playEffect) window.playMP3('goodresult'); 
     } 
     else { badge.classList.add('hidden'); }
 };
