@@ -16,6 +16,10 @@
 
 <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[9999] hidden"></canvas>
 
+<div id="floating-roulette-btn" class="fixed hidden z-[10005] bg-gradient-to-r from-pink-500 to-purple-600 text-white font-black text-lg sm:text-2xl px-6 py-4 rounded-full shadow-[0_10px_25px_rgba(236,72,153,0.5)] border-4 border-white cursor-move select-none items-center justify-center active:scale-95 transition-all" style="display:none;">
+    🎡 룰렛 스타트!
+</div>
+
 <div id="login-screen" class="fixed inset-0 bg-slate-900/80 z-[200] flex flex-col items-center justify-center p-4 backdrop-blur-sm">
 <div class="bg-white p-8 rounded-2xl shadow-xl max-w-sm w-full mx-4 text-center">
 <div class="text-4xl mb-4">🏟️</div>
@@ -52,13 +56,11 @@ Google 계정으로 시작하기
 </div>
 
 <div class="flex flex-wrap xl:flex-nowrap items-center justify-center gap-2 sm:gap-4 flex-1 w-full xl:w-auto mt-2 xl:mt-0 font-jua">
-    
     <div id="gaga-header-tabs" class="flex bg-slate-900/50 p-1 rounded-xl shadow-inner mr-0 xl:mr-4 border border-slate-700">
         <button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg bg-slate-100 text-slate-800 shadow-sm transition whitespace-nowrap font-black">🏆 개인전</button>
         <button onclick="window.switchGagaTab('team')" id="gaga-btn-team" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">⚔️ 팀전</button>
         <button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">🥇 명예의전당</button>
     </div>
-
     <button onclick="window.openSmartRouletteModal()" class="bg-purple-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🎡 미션 룰렛</button>
     <button onclick="window.openTimerSelectModal()" class="bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">⏱️ 타이머</button>
     <button onclick="window.resetAllScoresDB()" class="bg-slate-200 text-slate-700 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🔄 점수 초기화</button>
@@ -98,7 +100,7 @@ Google 계정으로 시작하기
 <div id="gaga-view-score">
 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 bg-amber-50 p-4 sm:p-6 rounded-2xl border-2 border-amber-200 shadow-sm mt-0">
 <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
-<span class="font-black text-amber-800 text-lg sm:text-2xl">🎯 개인전 뽑기:</span>
+<span class="font-black text-amber-800 text-lg sm:text-2xl">🎯 참가 학생 뽑기:</span>
 <div class="flex items-center bg-white rounded-lg border-2 border-amber-300 overflow-hidden mx-1">
     <button onclick="window.changeDrawCount(-1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition">-</button>
     <input type="number" id="gaga-draw-count" min="1" max="10" value="8" readonly class="w-10 sm:w-12 text-center font-bold text-lg sm:text-xl border-none outline-none bg-transparent">
@@ -240,9 +242,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div id="gagaDrawModal" class="gaga-modal-overlay flex-col overflow-hidden">
 <div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-[98vh] w-[98vw] max-w-none mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
-
 <div id="gagaDrawResultGrid" class=""></div>
-
 <button class="bg-slate-800 text-white w-full max-w-4xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-3xl sm:text-5xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
 </div>
