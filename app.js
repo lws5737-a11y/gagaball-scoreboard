@@ -504,7 +504,7 @@ window.toggleChampionSelection = function(no) {
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
 
-// 명예의 전당 레이아웃 전면 수정: 높이차 구도 + 1위 하단 4위 이후 스크롤 + 무한반복 처리
+// 명예의 전당 레이아웃 전면 수정: TV화면용 좌우 꽉 찬 3분할 레이아웃 + 가로형 대형 카드 + 투명 스크롤
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -527,36 +527,39 @@ window.renderGagaRanking = function() {
     
     window.championsSelection = window.championsSelection || [];
 
+    // 가로 배열(flex-row) 기반의 시원시원한 대형 카드
     const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
-        const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "";
+        const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
         
-        let cardStyle = "bg-white border-[3px] border-slate-200";
+        let cardStyle = "bg-white border-[4px] border-slate-200";
         let rankBadge = `${rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        let sizeClass = "p-2 sm:p-3 lg:p-4 pr-10 sm:pr-14 lg:pr-16"; 
-        let avatarSize = "w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24"; 
-        let nameSize = "text-lg sm:text-xl lg:text-2xl"; 
-        let scoreSize = "text-base sm:text-lg lg:text-xl";
+        let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[100px] sm:h-[150px] lg:h-[180px]"; 
+        let avatarSize = "w-14 h-14 sm:w-24 sm:h-24 lg:w-32 lg:h-32 shrink-0"; 
+        let nameSize = "text-2xl sm:text-4xl lg:text-5xl xl:text-6xl flex-1 text-left px-3 sm:px-6 truncate"; 
+        let scoreSize = "text-2xl sm:text-4xl lg:text-5xl xl:text-6xl shrink-0 text-right";
+        let stampSize = "w-12 h-12 sm:w-16 sm:h-16 lg:w-24 lg:h-24 shrink-0 mx-2 sm:mx-4";
         let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
 
         if (rank === 1) { 
-            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-100 border-[5px] lg:border-[6px] border-yellow-400 shadow-[0_10px_25px_rgba(250,204,21,0.25)]"; 
+            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-100 border-[6px] lg:border-[8px] border-yellow-400 shadow-[0_15px_30px_rgba(250,204,21,0.3)]"; 
             rankBadge = "🥇 1위"; 
-            badgeStyle = "bg-yellow-500 text-white shadow-md text-sm sm:text-base lg:text-lg px-4 py-0.5";
+            badgeStyle = "bg-yellow-500 text-white shadow-md text-base sm:text-xl lg:text-3xl px-6 py-1 lg:py-2";
             transformClass += " z-10"; 
-            avatarSize = "w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28";
-            nameSize = "text-xl sm:text-2xl lg:text-3xl";
-            scoreSize = "text-lg sm:text-xl lg:text-2xl";
+            avatarSize = "w-16 h-16 sm:w-28 sm:h-28 lg:w-40 lg:h-40 shrink-0";
+            nameSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl flex-1 text-left px-4 sm:px-8 truncate";
+            scoreSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl shrink-0 text-right";
+            sizeClass = "px-4 sm:px-8 py-6 lg:py-8 h-[120px] sm:h-[180px] lg:h-[220px]";
         } else if (rank === 2) { 
-            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[4px] lg:border-[5px] border-gray-400 shadow-[0_8px_20px_rgba(156,163,175,0.25)]"; 
+            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[5px] lg:border-[6px] border-gray-400 shadow-[0_10px_25px_rgba(156,163,175,0.3)]"; 
             rankBadge = "🥈 2위"; 
-            badgeStyle = "bg-gray-500 text-white shadow-md text-xs sm:text-sm lg:text-base px-3 py-0.5";
+            badgeStyle = "bg-gray-500 text-white shadow-md text-sm sm:text-lg lg:text-2xl px-5 py-1 lg:py-1.5";
         } else if (rank === 3) { 
-            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-100 border-[4px] lg:border-[5px] border-orange-400 shadow-[0_8px_20px_rgba(249,115,22,0.25)]"; 
+            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-100 border-[5px] lg:border-[6px] border-orange-400 shadow-[0_10px_25px_rgba(249,115,22,0.3)]"; 
             rankBadge = "🥉 3위"; 
-            badgeStyle = "bg-orange-600 text-white shadow-md text-xs sm:text-sm lg:text-base px-3 py-0.5";
+            badgeStyle = "bg-orange-600 text-white shadow-md text-sm sm:text-lg lg:text-2xl px-5 py-1 lg:py-1.5";
         }
 
         const cuteAvatar = window.generateCuteAvatar(s);
@@ -564,18 +567,17 @@ window.renderGagaRanking = function() {
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-col items-center justify-center rounded-[2rem] lg:rounded-[2.5rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="absolute -top-3.5 sm:-top-4 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
+        <div class="flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
             
-            <div class="relative mt-2 mb-1 shrink-0">
-                <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[4px] bg-white object-cover border-white shadow-md">
-            </div>
+            <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
             
-            <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap mb-0.5 truncate max-w-full px-1">${s.name}</div>
+            <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap">${s.name}</div>
+            
             <div class="${scoreSize} font-black text-red-600 drop-shadow-sm">${s.score || 0}점</div>
             
-            <div class="absolute top-1/2 right-1 sm:right-2 lg:right-3 transform -translate-y-1/2 cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full border-[2px] lg:border-[3px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[10px] sm:text-xs lg:text-sm transform -rotate-12 bg-white/95 shadow-md shrink-0">
+            <div class="cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity} shrink-0 ${stampSize}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
+                <div class="w-full h-full rounded-full border-[3px] lg:border-[4px] ${refStampColor} border-dashed flex items-center justify-center font-black text-xs sm:text-lg lg:text-2xl transform -rotate-12 bg-white/95 shadow-md">
                     심판
                 </div>
             </div>
@@ -583,21 +585,22 @@ window.renderGagaRanking = function() {
         `;
     };
 
+    // 4위 이하 카드도 1위 카드와 동일한 가로 배열 및 사이즈 감각 유지
     const createListCard = (s) => {
         const isSelected = window.championsSelection.includes(s.no);
-        const highlightClass = isSelected ? "ring-[3px] ring-purple-500 bg-purple-50" : "bg-white hover:bg-slate-50";
+        const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "bg-white hover:bg-slate-50";
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-row items-center justify-between ${highlightClass} border-2 border-slate-200 rounded-2xl p-1.5 sm:p-2 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[56px] sm:h-[72px]" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="w-8 sm:w-12 text-center font-black text-slate-500 text-xs sm:text-base shrink-0">${s.rank}위</div>
-            <img src="${window.generateCuteAvatar(s)}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-slate-200 object-cover mx-1 sm:mx-2 shrink-0 bg-white">
-            <div class="flex-1 text-sm sm:text-lg font-black text-slate-800 truncate text-left">${s.name}</div>
-            <div class="text-sm sm:text-lg font-black text-red-600 shrink-0 w-12 sm:w-16 text-right pr-1">${s.score || 0}점</div>
+        <div class="flex flex-row items-center justify-between ${highlightClass} border-[3px] border-slate-200 rounded-2xl p-2 sm:p-4 lg:p-5 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[80px] sm:h-[110px] lg:h-[140px]" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="w-12 sm:w-16 lg:w-20 text-center font-black text-slate-500 text-xl sm:text-2xl lg:text-4xl shrink-0">${s.rank}위</div>
+            <img src="${window.generateCuteAvatar(s)}" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
+            <div class="flex-1 text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 truncate text-left pl-2">${s.name}</div>
+            <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-red-600 shrink-0 text-right pr-2">${s.score || 0}점</div>
             
-            <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-[2px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[8px] sm:text-[10px] transform -rotate-12 bg-white shadow-sm">
+            <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0 mx-2 lg:mx-4" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 rounded-full border-[2px] lg:border-[3px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[10px] sm:text-xs lg:text-base transform -rotate-12 bg-white shadow-sm">
                     심판
                 </div>
             </div>
@@ -608,8 +611,9 @@ window.renderGagaRanking = function() {
     let others = rankedStudents.slice(3);
 
     if (others.length > 0) {
-        // 중앙 컬럼(1위 밑)에 딱 들어맞는 크기로 제한 (h-300px~450px)
-        listHTML = `<div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-2 w-full px-1 overflow-y-auto custom-scrollbar scroll-smooth" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">`;
+        // 스크롤바를 숨기는 inline 스타일 적용으로 대형 화면에서 더 깔끔하게 출력
+        listHTML = `<div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
+        <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>`;
         others.forEach(s => {
             listHTML += createListCard(s);
         });
@@ -617,51 +621,50 @@ window.renderGagaRanking = function() {
     }
 
     if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="w-full max-w-[280px] lg:max-w-[320px] flex justify-center z-10 mx-auto shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
+        let p1 = top3[0] ? `<div class="w-full flex justify-center z-10 shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
         let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
         let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
-        // 1등(중앙) 공간 아래에 리스트(listHTML)가 결합되는 새로운 Flex 레이아웃
+        // 좌우 끝까지 꽉 차는 3분할 레이아웃 적용 (32% / 35% / 32%)
         podiumHTML = `
-        <div class="flex flex-row justify-center w-full max-w-5xl mx-auto px-2 gap-2 sm:gap-4 lg:gap-6 pt-4">
-            <div class="w-[28%] flex flex-col items-center pt-12 sm:pt-20 lg:pt-28 shrink-0">
+        <div class="flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
+            <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-36 shrink-0">
                 ${p2}
             </div>
-            <div class="w-[44%] flex flex-col items-center z-10 shrink-0">
+            <div class="w-[35%] flex flex-col items-center z-10 shrink-0">
                 ${p1}
-                <div class="w-full mt-4 sm:mt-6 relative h-[300px] sm:h-[450px]">
+                <div class="w-full mt-6 sm:mt-10 relative h-[400px] sm:h-[600px] lg:h-[800px] pb-10">
                     ${listHTML}
                 </div>
             </div>
-            <div class="w-[28%] flex flex-col items-center pt-16 sm:pt-24 lg:pt-32 shrink-0">
+            <div class="w-[32%] flex flex-col items-center pt-32 lg:pt-48 shrink-0">
                 ${p3}
             </div>
         </div>
         `;
     } else {
-        // 학생이 3명 미만일 경우 예외 처리
-        podiumHTML = `<div class="relative w-full max-w-2xl mx-auto h-[400px] mt-10">${listHTML}</div>`;
+        podiumHTML = `<div class="relative w-full max-w-4xl mx-auto h-[500px] mt-10">${listHTML}</div>`;
     }
 
     container.innerHTML = podiumHTML;
 
-    // 자동 스크롤 무한 반복 로직 (마지막 도착 시 처음으로 즉시 복귀)
+    // 마지막 순위 도달 시 즉시 4위(처음)로 튕겨서 스크롤 무한 반복 루프 설정
     clearInterval(window.rankAutoScrollInterval);
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
             if (list) {
-                // 스크롤이 끝에 닿았는지 확인 (모니터 배율 대응으로 Math.ceil 사용)
-                if (Math.ceil(list.scrollTop) + list.clientHeight >= list.scrollHeight - 1) {
-                    list.scrollTop = 0; // 끝에 닿으면 즉시 처음으로 되돌아감
+                // 확대 비율 등에 따른 오차를 고려해 -2px 여유를 두고 체크
+                if (list.scrollTop + list.clientHeight >= list.scrollHeight - 2) {
+                    list.scrollTop = 0; 
                 } else {
-                    list.scrollTop += 1;
+                    list.scrollTop += 1.5; // 큰 화면에 맞춰 스크롤 속도 소폭 상향
                 }
             } else {
                 clearInterval(window.rankAutoScrollInterval);
             }
-        }, 40);
+        }, 30);
     }
 
     const fab = document.getElementById('champions-fab-container');
@@ -727,26 +730,15 @@ window.startChampionsTournament = function() {
 }
 
 // -----------------------------------------------------------
-// 룰렛 플로팅 창 마우스 좌클릭 드래그 로직
+// 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직 (드래그 삭제)
 // -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
-let isDraggingBtn = false;
-let hasBtnMoved = false;
-let btnStartX = 0, btnStartY = 0;
 
 window.showFloatingRouletteBtn = function(context) {
     window.currentFloatingContext = context;
     const btn = document.getElementById('floating-roulette-btn');
     if (!btn) return;
     btn.style.display = 'flex';
-    btn.style.transform = 'none'; 
-    
-    setTimeout(() => {
-        const btnWidth = btn.offsetWidth || 180;
-        const btnHeight = btn.offsetHeight || 60;
-        btn.style.top = (window.innerHeight / 2 - btnHeight / 2) + 'px';
-        btn.style.left = (window.innerWidth / 2 - btnWidth / 2) + 'px';
-    }, 20);
 };
 
 window.hideFloatingRouletteBtn = function() {
@@ -754,107 +746,19 @@ window.hideFloatingRouletteBtn = function() {
     if (btn) btn.style.display = 'none';
 };
 
-window.initDraggableRouletteBtn = function() {
-    const btn = document.getElementById('floating-roulette-btn');
-    if (!btn) return;
-
-    // 마우스 이벤트 (좌클릭 한정)
-    btn.addEventListener('mousedown', (e) => {
-        if (e.button !== 0) return; // 좌클릭(0)이 아니면 무시
-        e.preventDefault(); // 텍스트 선택 등 고스트 드래그 완벽 차단
-        isDraggingBtn = true;
-        hasBtnMoved = false;
-        btnStartX = e.clientX;
-        btnStartY = e.clientY;
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    });
-
-    // 터치 이벤트 (모바일)
-    btn.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            isDraggingBtn = true;
-            hasBtnMoved = false;
-            btnStartX = e.touches[0].clientX;
-            btnStartY = e.touches[0].clientY;
-            document.addEventListener('touchmove', onTouchMove, { passive: false });
-            document.addEventListener('touchend', onTouchEnd);
-        }
-    });
-
-    function onMouseMove(e) {
-        if (!isDraggingBtn) return;
-        const dx = e.clientX - btnStartX;
-        const dy = e.clientY - btnStartY;
-        // 일정 범위 이상 움직여야 드래그로 판정
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasBtnMoved = true;
-        
-        if (hasBtnMoved) {
-            let newTop = btn.offsetTop + dy;
-            let newLeft = btn.offsetLeft + dx;
-            btnStartX = e.clientX;
-            btnStartY = e.clientY;
-            
-            newTop = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, newTop));
-            newLeft = Math.max(0, Math.min(window.innerWidth - btn.offsetWidth, newLeft));
-            
-            btn.style.top = newTop + 'px';
-            btn.style.left = newLeft + 'px';
-        }
+window.startRouletteFromFloating = function(e) {
+    if(e) e.preventDefault();
+    window.hideFloatingRouletteBtn();
+    
+    if (window.currentFloatingContext === 'team') {
+        window.openRouletteModal('team');
+    } else {
+        window.openRouletteModal('individual');
     }
-
-    function onMouseUp() {
-        isDraggingBtn = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-    }
-
-    function onTouchMove(e) {
-        if (!isDraggingBtn) return;
-        if (e.touches.length === 1) {
-            const dx = e.touches[0].clientX - btnStartX;
-            const dy = e.touches[0].clientY - btnStartY;
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasBtnMoved = true;
-            
-            if (hasBtnMoved) {
-                e.preventDefault(); 
-                let newTop = btn.offsetTop + dy;
-                let newLeft = btn.offsetLeft + dx;
-                btnStartX = e.touches[0].clientX;
-                btnStartY = e.touches[0].clientY;
-                
-                newTop = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, newTop));
-                newLeft = Math.max(0, Math.min(window.innerWidth - btn.offsetWidth, newLeft));
-                
-                btn.style.top = newTop + 'px';
-                btn.style.left = newLeft + 'px';
-            }
-        }
-    }
-
-    function onTouchEnd() {
-        isDraggingBtn = false;
-        document.removeEventListener('touchmove', onTouchMove);
-        document.removeEventListener('touchend', onTouchEnd);
-    }
-
-    // 클릭 이벤트 통제 (드래그 시 클릭 무시)
-    btn.addEventListener('click', (e) => {
-        if (hasBtnMoved) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-        }
-        window.hideFloatingRouletteBtn();
-        if (window.currentFloatingContext === 'team') {
-            window.openRouletteModal('team');
-        } else {
-            window.openRouletteModal('individual');
-        }
-        setTimeout(() => {
-            window.spinRoulette();
-        }, 150);
-    });
+    
+    setTimeout(() => {
+        window.spinRoulette();
+    }, 150);
 };
 
 // 룰렛 설정
@@ -1523,11 +1427,3 @@ window.importFromExcel = function() {
         if (currentTab === 'gagaball') window.renderGagaball();
     }
 }
-
-// 룰렛 플로팅 버튼 드래그 초기화
-document.addEventListener('DOMContentLoaded', () => {
-    window.initDraggableRouletteBtn();
-});
-setTimeout(() => {
-    window.initDraggableRouletteBtn();
-}, 1000);
