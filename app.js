@@ -181,14 +181,13 @@ window.toggleReferee = function(no) {
     }
 }
 
-// 1번 수정 요청: 누락되었던 출석/불참 토글 기능 정상 추가
 window.toggleAttendance = function(no) {
     if(!currentClass || !classData[currentClass]) return;
     const student = classData[currentClass].find(s => s.no == no);
     if(student) {
         student.attendance = !student.attendance;
         if(!student.attendance) {
-            student.gagaDrawn = false; // 불참 시 추첨 대상에서도 해제
+            student.gagaDrawn = false; 
         }
         saveData();
         window.renderGagaball();
@@ -505,7 +504,7 @@ window.toggleChampionSelection = function(no) {
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
 
-// 3번 수정 요청: 1~3위 카드 높이 축소 및 도장 우측 이동 / 4위 이하 5명 고정 노출 및 스크롤 위치 상향
+// 명예의 전당 레이아웃 전면 수정: 높이차 구도 + 1위 하단 4위 이후 스크롤 + 무한반복 처리
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -528,7 +527,6 @@ window.renderGagaRanking = function() {
     
     window.championsSelection = window.championsSelection || [];
 
-    // 1~3위 카드 높이를 크게 줄이고 심판 도장을 우측으로 배치
     const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "";
@@ -537,10 +535,10 @@ window.renderGagaRanking = function() {
         let rankBadge = `${rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        let sizeClass = "p-3 sm:p-4 lg:p-5 pr-14 sm:pr-18 lg:pr-24"; // 우측 도장 공간 확보용 padding
-        let avatarSize = "w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28"; 
-        let nameSize = "text-xl sm:text-2xl lg:text-3xl"; 
-        let scoreSize = "text-lg sm:text-xl lg:text-2xl";
+        let sizeClass = "p-2 sm:p-3 lg:p-4 pr-10 sm:pr-14 lg:pr-16"; 
+        let avatarSize = "w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24"; 
+        let nameSize = "text-lg sm:text-xl lg:text-2xl"; 
+        let scoreSize = "text-base sm:text-lg lg:text-xl";
         let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
 
         if (rank === 1) { 
@@ -548,6 +546,9 @@ window.renderGagaRanking = function() {
             rankBadge = "🥇 1위"; 
             badgeStyle = "bg-yellow-500 text-white shadow-md text-sm sm:text-base lg:text-lg px-4 py-0.5";
             transformClass += " z-10"; 
+            avatarSize = "w-16 h-16 sm:w-24 sm:h-24 lg:w-28 lg:h-28";
+            nameSize = "text-xl sm:text-2xl lg:text-3xl";
+            scoreSize = "text-lg sm:text-xl lg:text-2xl";
         } else if (rank === 2) { 
             cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[4px] lg:border-[5px] border-gray-400 shadow-[0_8px_20px_rgba(156,163,175,0.25)]"; 
             rankBadge = "🥈 2위"; 
@@ -562,7 +563,6 @@ window.renderGagaRanking = function() {
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
-        // score || 0 처리로 undefined점 표기 전면 수정
         return `
         <div class="flex flex-col items-center justify-center rounded-[2rem] lg:rounded-[2.5rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
             <div class="absolute -top-3.5 sm:-top-4 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
@@ -574,7 +574,7 @@ window.renderGagaRanking = function() {
             <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap mb-0.5 truncate max-w-full px-1">${s.name}</div>
             <div class="${scoreSize} font-black text-red-600 drop-shadow-sm">${s.score || 0}점</div>
             
-            <div class="absolute top-1/2 right-2 sm:right-3 lg:right-5 transform -translate-y-1/2 cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
+            <div class="absolute top-1/2 right-1 sm:right-2 lg:right-3 transform -translate-y-1/2 cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
                 <div class="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full border-[2px] lg:border-[3px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[10px] sm:text-xs lg:text-sm transform -rotate-12 bg-white/95 shadow-md shrink-0">
                     심판
                 </div>
@@ -590,14 +590,14 @@ window.renderGagaRanking = function() {
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-row items-center justify-between ${highlightClass} border-2 border-slate-200 rounded-2xl p-2 sm:p-2.5 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[64px] sm:h-[84px]" onclick="window.toggleChampionSelection(${s.no})">
-            <div class="w-12 sm:w-16 text-center font-black text-slate-500 text-base sm:text-xl shrink-0">${s.rank}위</div>
-            <img src="${window.generateCuteAvatar(s)}" class="w-10 h-10 sm:w-14 sm:h-14 rounded-full border-2 border-slate-200 object-cover mx-2 sm:mx-4 shrink-0 bg-white">
-            <div class="flex-1 text-base sm:text-2xl font-black text-slate-800 truncate text-left">${s.name}</div>
-            <div class="text-base sm:text-2xl font-black text-red-600 shrink-0 w-16 sm:w-24 text-right pr-2 sm:pr-4">${s.score || 0}점</div>
+        <div class="flex flex-row items-center justify-between ${highlightClass} border-2 border-slate-200 rounded-2xl p-1.5 sm:p-2 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[56px] sm:h-[72px]" onclick="window.toggleChampionSelection(${s.no})">
+            <div class="w-8 sm:w-12 text-center font-black text-slate-500 text-xs sm:text-base shrink-0">${s.rank}위</div>
+            <img src="${window.generateCuteAvatar(s)}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-slate-200 object-cover mx-1 sm:mx-2 shrink-0 bg-white">
+            <div class="flex-1 text-sm sm:text-lg font-black text-slate-800 truncate text-left">${s.name}</div>
+            <div class="text-sm sm:text-lg font-black text-red-600 shrink-0 w-12 sm:w-16 text-right pr-1">${s.score || 0}점</div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
-                <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-full border-[2px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[9px] sm:text-xs transform -rotate-12 bg-white shadow-sm">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-[2px] ${refStampColor} border-dashed flex items-center justify-center font-black text-[8px] sm:text-[10px] transform -rotate-12 bg-white shadow-sm">
                     심판
                 </div>
             </div>
@@ -607,41 +607,54 @@ window.renderGagaRanking = function() {
     let top3 = rankedStudents.slice(0, 3);
     let others = rankedStudents.slice(3);
 
-    if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[35%] flex justify-center z-10 transform -translate-y-4 sm:transform-none transition-transform duration-500">${createPodiumCard(top3[0], 1)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
-        let p2 = top3[1] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-start self-end origin-bottom-left transition-transform duration-500">${createPodiumCard(top3[1], 2)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
-        let p3 = top3[2] ? `<div class="flex-1 w-full max-w-[32%] lg:max-w-[30%] flex justify-end self-end origin-bottom-right transition-transform duration-500">${createPodiumCard(top3[2], 3)}</div>` : '<div class="flex-1 max-w-[32%]"></div>';
-
-        // mb-4로 줄여서 아래 리스트의 시작 위치를 위쪽으로 끌어올림
-        podiumHTML = `
-        <div class="flex justify-between items-end w-full px-2 sm:px-4 lg:px-8 mb-4 pt-6 gap-2 sm:gap-4 lg:gap-6">
-            ${p2}
-            ${p1}
-            ${p3}
-        </div>
-        `;
-    }
-
-    // 한 화면에 정확히 5명 분량이 깔끔하게 들어오도록 고정 높이 지정 (간격 포함 대략 350px / 460px)
     if (others.length > 0) {
-        listHTML = `<div id="gaga-ranking-list" class="flex flex-col gap-2 w-full max-w-3xl mx-auto px-2 h-[345px] sm:h-[455px] overflow-y-auto pb-4 custom-scrollbar scroll-smooth" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">`;
+        // 중앙 컬럼(1위 밑)에 딱 들어맞는 크기로 제한 (h-300px~450px)
+        listHTML = `<div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-2 w-full px-1 overflow-y-auto custom-scrollbar scroll-smooth" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">`;
         others.forEach(s => {
             listHTML += createListCard(s);
         });
         listHTML += `</div>`;
     }
 
-    container.innerHTML = podiumHTML + listHTML;
+    if (top3.length > 0) {
+        let p1 = top3[0] ? `<div class="w-full max-w-[280px] lg:max-w-[320px] flex justify-center z-10 mx-auto shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
+        let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
+        let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
-    // 자동 스크롤 로직 기동
+        // 1등(중앙) 공간 아래에 리스트(listHTML)가 결합되는 새로운 Flex 레이아웃
+        podiumHTML = `
+        <div class="flex flex-row justify-center w-full max-w-5xl mx-auto px-2 gap-2 sm:gap-4 lg:gap-6 pt-4">
+            <div class="w-[28%] flex flex-col items-center pt-12 sm:pt-20 lg:pt-28 shrink-0">
+                ${p2}
+            </div>
+            <div class="w-[44%] flex flex-col items-center z-10 shrink-0">
+                ${p1}
+                <div class="w-full mt-4 sm:mt-6 relative h-[300px] sm:h-[450px]">
+                    ${listHTML}
+                </div>
+            </div>
+            <div class="w-[28%] flex flex-col items-center pt-16 sm:pt-24 lg:pt-32 shrink-0">
+                ${p3}
+            </div>
+        </div>
+        `;
+    } else {
+        // 학생이 3명 미만일 경우 예외 처리
+        podiumHTML = `<div class="relative w-full max-w-2xl mx-auto h-[400px] mt-10">${listHTML}</div>`;
+    }
+
+    container.innerHTML = podiumHTML;
+
+    // 자동 스크롤 무한 반복 로직 (마지막 도착 시 처음으로 즉시 복귀)
     clearInterval(window.rankAutoScrollInterval);
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
             if (list) {
-                if (list.scrollTop + list.clientHeight >= list.scrollHeight - 1) {
-                    list.scrollTop = 0;
+                // 스크롤이 끝에 닿았는지 확인 (모니터 배율 대응으로 Math.ceil 사용)
+                if (Math.ceil(list.scrollTop) + list.clientHeight >= list.scrollHeight - 1) {
+                    list.scrollTop = 0; // 끝에 닿으면 즉시 처음으로 되돌아감
                 } else {
                     list.scrollTop += 1;
                 }
@@ -661,7 +674,6 @@ window.renderGagaRanking = function() {
     }
 }
 
-// 겹치지 않는 동적 Grid 카드 생성 (아바타/이름 크게, 버튼 작게)
 const generateGridCards = (students) => {
     return students.map((s) => {
         let borderColor = s.gender === '남' ? '#3498db' : '#e74c3c';
@@ -705,8 +717,7 @@ window.startChampionsTournament = function() {
     document.getElementById('gagaDrawResultGrid').innerHTML = generateGridCards(selectedStudents);
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
-    // 2번 수정 요청에 맞추어 플로팅 버튼 출력 연동
-    window.showFloatingRouletteBtn('champions');
+    window.showFloatingRouletteBtn('individual');
     
     window.playMP3('tadaa'); 
     window.fireConfetti();
@@ -715,9 +726,12 @@ window.startChampionsTournament = function() {
     window.renderGagaRanking(); 
 }
 
-// 2번 수정 요청: 플로팅 버튼 제어 및 터치/클릭 드래그 이동 로직
+// -----------------------------------------------------------
+// 룰렛 플로팅 창 마우스 좌클릭 드래그 로직
+// -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
 let isDraggingBtn = false;
+let hasBtnMoved = false;
 let btnStartX = 0, btnStartY = 0;
 
 window.showFloatingRouletteBtn = function(context) {
@@ -725,9 +739,8 @@ window.showFloatingRouletteBtn = function(context) {
     const btn = document.getElementById('floating-roulette-btn');
     if (!btn) return;
     btn.style.display = 'flex';
-    btn.style.transform = 'none'; // 드래그 좌표 혼선 방지를 위한 transform 초기화
+    btn.style.transform = 'none'; 
     
-    // 완전히 렌더링된 후 중앙 정렬을 위해 약간의 딜레이 후 위치 픽스
     setTimeout(() => {
         const btnWidth = btn.offsetWidth || 180;
         const btnHeight = btn.offsetHeight || 60;
@@ -745,19 +758,23 @@ window.initDraggableRouletteBtn = function() {
     const btn = document.getElementById('floating-roulette-btn');
     if (!btn) return;
 
-    // 마우스 드래그 이벤트
+    // 마우스 이벤트 (좌클릭 한정)
     btn.addEventListener('mousedown', (e) => {
-        isDraggingBtn = false;
+        if (e.button !== 0) return; // 좌클릭(0)이 아니면 무시
+        e.preventDefault(); // 텍스트 선택 등 고스트 드래그 완벽 차단
+        isDraggingBtn = true;
+        hasBtnMoved = false;
         btnStartX = e.clientX;
         btnStartY = e.clientY;
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     });
 
-    // 터치 드래그 이벤트 (태블릿 및 모바일용)
+    // 터치 이벤트 (모바일)
     btn.addEventListener('touchstart', (e) => {
-        isDraggingBtn = false;
         if (e.touches.length === 1) {
+            isDraggingBtn = true;
+            hasBtnMoved = false;
             btnStartX = e.touches[0].clientX;
             btnStartY = e.touches[0].clientY;
             document.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -766,19 +783,20 @@ window.initDraggableRouletteBtn = function() {
     });
 
     function onMouseMove(e) {
+        if (!isDraggingBtn) return;
         const dx = e.clientX - btnStartX;
         const dy = e.clientY - btnStartY;
-        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-            isDraggingBtn = true;
-        }
-        if (isDraggingBtn) {
+        // 일정 범위 이상 움직여야 드래그로 판정
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasBtnMoved = true;
+        
+        if (hasBtnMoved) {
             let newTop = btn.offsetTop + dy;
             let newLeft = btn.offsetLeft + dx;
             btnStartX = e.clientX;
             btnStartY = e.clientY;
             
-            newTop = Math.max(0, Math.min(window.innerHeight - btn.clientHeight, newTop));
-            newLeft = Math.max(0, Math.min(window.innerWidth - btn.clientWidth, newLeft));
+            newTop = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, newTop));
+            newLeft = Math.max(0, Math.min(window.innerWidth - btn.offsetWidth, newLeft));
             
             btn.style.top = newTop + 'px';
             btn.style.left = newLeft + 'px';
@@ -786,26 +804,27 @@ window.initDraggableRouletteBtn = function() {
     }
 
     function onMouseUp() {
+        isDraggingBtn = false;
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
     }
 
     function onTouchMove(e) {
+        if (!isDraggingBtn) return;
         if (e.touches.length === 1) {
             const dx = e.touches[0].clientX - btnStartX;
             const dy = e.touches[0].clientY - btnStartY;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                isDraggingBtn = true;
-            }
-            if (isDraggingBtn) {
-                e.preventDefault(); // 스크롤 방지
+            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) hasBtnMoved = true;
+            
+            if (hasBtnMoved) {
+                e.preventDefault(); 
                 let newTop = btn.offsetTop + dy;
                 let newLeft = btn.offsetLeft + dx;
                 btnStartX = e.touches[0].clientX;
                 btnStartY = e.touches[0].clientY;
                 
-                newTop = Math.max(0, Math.min(window.innerHeight - btn.clientHeight, newTop));
-                newLeft = Math.max(0, Math.min(window.innerWidth - btn.clientWidth, newLeft));
+                newTop = Math.max(0, Math.min(window.innerHeight - btn.offsetHeight, newTop));
+                newLeft = Math.max(0, Math.min(window.innerWidth - btn.offsetWidth, newLeft));
                 
                 btn.style.top = newTop + 'px';
                 btn.style.left = newLeft + 'px';
@@ -814,15 +833,17 @@ window.initDraggableRouletteBtn = function() {
     }
 
     function onTouchEnd() {
+        isDraggingBtn = false;
         document.removeEventListener('touchmove', onTouchMove);
         document.removeEventListener('touchend', onTouchEnd);
     }
 
-    // 클릭 시 룰렛 자동 실행 연동
+    // 클릭 이벤트 통제 (드래그 시 클릭 무시)
     btn.addEventListener('click', (e) => {
-        if (isDraggingBtn) {
+        if (hasBtnMoved) {
             e.preventDefault();
-            return; // 드래그 중인 경우는 실행하지 않음
+            e.stopPropagation();
+            return;
         }
         window.hideFloatingRouletteBtn();
         if (window.currentFloatingContext === 'team') {
@@ -836,7 +857,7 @@ window.initDraggableRouletteBtn = function() {
     });
 };
 
-// 룰렛 관련 
+// 룰렛 설정
 let defaultIndividualMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 경기장에 등장했습니다! 체육쌤을 아웃시키면 체육 도장 1장이 주어집니다!" }, { text: "포인트 X2", weight: 20, color: "#ffeaa7", desc: "최종 승자에게는 평소보다 2배의 포인트가 주어집니다." } ];
 let defaultTeamMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "왕을 잡아라!", weight: 15, color: "#a29bfe", desc: "양팀은 우리팀 왕을 한명 정해주세요. 상대팀 왕을 먼저 아웃시키는 팀이 승리합니다." }, { text: "포인트 X2", weight: 15, color: "#ffeaa7", desc: "최종 승리팀 전원에게 평소보다 2배의 포인트가 주어집니다." } ];
 
@@ -954,7 +975,6 @@ window.triggerGagaDraw = function(targetGender) {
 
     document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
 
-    // 오디오 즉시 기동 및 2.2초 카운트 다운 시작
     window.playMP3('tadaa'); 
 
     setTimeout(() => {
@@ -996,7 +1016,6 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     saveData(); window.renderGagaball();
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
-    // 결과창과 동시에 플로팅 버튼 활성화
     window.showFloatingRouletteBtn('individual');
     window.fireConfetti();
 }
@@ -1034,7 +1053,6 @@ window.triggerGagaTeams = function() {
     document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
     document.getElementById('event-loading-text').innerText = "팀 밸런스 조정중..."; 
 
-    // 음원 즉시 재생
     window.playMP3('tadaa');
 
     setTimeout(() => {
@@ -1092,7 +1110,6 @@ window.executeGagaTeams = function(numTeams, available) {
 
     distribute(boys); distribute(girls); currentGagaTeams = teams; window.renderGagaTeamView(); 
     
-    // 팀 편성 완료 후 플로팅 버튼 기동
     window.showFloatingRouletteBtn('team');
     window.fireConfetti();
 }
@@ -1507,7 +1524,7 @@ window.importFromExcel = function() {
     }
 }
 
-// 초기화 시 플로팅 드래그 기능 할당 코드 호출
+// 룰렛 플로팅 버튼 드래그 초기화
 document.addEventListener('DOMContentLoaded', () => {
     window.initDraggableRouletteBtn();
 });
