@@ -1024,6 +1024,10 @@ window.executeGagaTeams = function(numTeams, available) {
         candidates[0].members.push(ref); candidates[0].score += (ref.score || 0);
     });
 
+    // 🚨 여기서 남학생, 여학생 분배 코드가 빠져있었습니다! 다시 넣었습니다!
+    distribute(boys); 
+    distribute(girls);
+
     teams.forEach(t => t.members.forEach(m => m.isKing = false));
 
     currentGagaTeams = teams; 
