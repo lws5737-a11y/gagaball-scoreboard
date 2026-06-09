@@ -147,6 +147,7 @@ let classStamps = {};
 let currentTab = 'gagaball'; 
 let hiddenClasses = []; 
 window.championsSelection = []; 
+window.hiddenRoulettes = []; // 일회용 룰렛 숨김 처리용 배열 추가
 
 window.lastTeamScoreChange = { teamId: null, val: 0, time: 0 };
 
@@ -504,7 +505,7 @@ window.toggleChampionSelection = function(no) {
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
 
-// 명예의 전당 레이아웃: 높이 2배 + 자동 스크롤 떨림 방지 개선 적용
+// 명예의 전당 레이아웃: 이름/점수 겹침 수정(세로 배치) 및 자동스크롤 개선 적용
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -527,7 +528,7 @@ window.renderGagaRanking = function() {
     
     window.championsSelection = window.championsSelection || [];
 
-    // 가로 배열(flex-row) 기반의 2배 커진 대형 카드
+    // 가로 배열(flex-row) 유지하되 이름과 점수를 세로로 쌓음 (flex-col)
     const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
@@ -536,11 +537,11 @@ window.renderGagaRanking = function() {
         let rankBadge = `${rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        // 2배 높이 & 텍스트 확대
+        // 2배 높이 & 텍스트 세로 배치를 위한 크기 설정
         let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[200px] sm:h-[300px] lg:h-[360px]"; 
         let avatarSize = "w-24 h-24 sm:w-40 sm:h-40 lg:w-56 lg:h-56 shrink-0"; 
-        let nameSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl flex-1 text-left px-4 sm:px-8 truncate"; 
-        let scoreSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl shrink-0 text-right";
+        let nameSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl"; 
+        let scoreSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl";
         let stampSize = "w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 shrink-0 mx-2 sm:mx-6";
         let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
 
@@ -550,8 +551,8 @@ window.renderGagaRanking = function() {
             badgeStyle = "bg-yellow-500 text-white shadow-md text-xl sm:text-3xl lg:text-5xl px-6 py-2 lg:py-3";
             transformClass += " z-10"; 
             avatarSize = "w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 shrink-0";
-            nameSize = "text-5xl sm:text-7xl lg:text-8xl xl:text-9xl flex-1 text-left px-6 sm:px-12 truncate";
-            scoreSize = "text-5xl sm:text-7xl lg:text-8xl xl:text-9xl shrink-0 text-right";
+            nameSize = "text-5xl sm:text-6xl lg:text-7xl xl:text-8xl";
+            scoreSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl";
             sizeClass = "px-4 sm:px-8 py-6 lg:py-8 h-[240px] sm:h-[360px] lg:h-[440px]";
         } else if (rank === 2) { 
             cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[5px] lg:border-[6px] border-gray-400 shadow-[0_10px_25px_rgba(156,163,175,0.3)]"; 
@@ -567,15 +568,17 @@ window.renderGagaRanking = function() {
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
+        // 텍스트 영역을 flex-col로 처리하여 위아래로 쌓이게 만듦
         return `
         <div class="flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
             <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
             
             <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
             
-            <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap">${s.name}</div>
-            
-            <div class="${scoreSize} font-black text-red-600 drop-shadow-sm">${s.score || 0}점</div>
+            <div class="flex flex-col flex-1 items-center justify-center px-2 sm:px-4 truncate h-full">
+                <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${s.name}</div>
+                <div class="${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
+            </div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity} shrink-0 ${stampSize}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
                 <div class="w-full h-full rounded-full border-[3px] lg:border-[4px] ${refStampColor} border-dashed flex items-center justify-center font-black text-xs sm:text-lg lg:text-2xl transform -rotate-12 bg-white/95 shadow-md">
@@ -625,7 +628,7 @@ window.renderGagaRanking = function() {
         let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
         let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
-        // 좌우 끝까지 꽉 차는 3분할 레이아웃 & 늘어난 카드 높이에 맞춘 여백 조정
+        // 좌우 끝까지 꽉 차는 3분할 레이아웃
         podiumHTML = `
         <div class="flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
             <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
@@ -648,24 +651,22 @@ window.renderGagaRanking = function() {
 
     container.innerHTML = podiumHTML;
 
-    // 자동 스크롤 떨림(Shaking) 완벽 해결 및 무한 루프
+    // 자동 스크롤 방향 및 무한 반복 버그 완전 해결
     clearInterval(window.rankAutoScrollInterval);
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
             if (list) {
-                let prevScroll = list.scrollTop;
-                list.scrollTop += 2; // 소수점 배제, 깔끔한 정수 픽셀 이동
-                
-                // 스크롤이 더 이상 내려가지 않거나, 바닥에 닿았을 때 0으로 리셋
-                if (list.scrollTop === prevScroll || Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight - 1) {
-                    list.scrollTop = 0; 
+                list.scrollTop += 1; // 픽셀 단위로 스크롤을 아래로 이동 (4위부터 마지막까지)
+                // 바닥에 완전히 닿았는지 체크 (소수점 고려하여 올림 처리)
+                if (Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight) {
+                    list.scrollTop = 0; // 바닥 도달 시 다시 최상단(4위)으로 리셋
                 }
             } else {
                 clearInterval(window.rankAutoScrollInterval);
             }
-        }, 30);
+        }, 20); // 속도를 부드럽게 유지하기 위해 시간 간격 조정
     }
 
     const fab = document.getElementById('champions-fab-container');
@@ -734,6 +735,7 @@ window.startChampionsTournament = function() {
 // 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직
 // -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
+window.currentTeamRouletteBtnId = null; // 현재 띄워진 팀전 룰렛 버튼 ID 추적
 
 window.showFloatingRouletteBtn = function(context) {
     window.currentFloatingContext = context;
@@ -870,7 +872,18 @@ window.spinRoulette = function() {
 window.showMissionDescModal = function(title, text) {
     document.getElementById("missionDescTitle").innerText = "🎯 " + title; document.getElementById("missionDescText").innerText = text; document.getElementById("missionDescModal").style.display = "flex";
 }
-window.closeMissionDescModal = function() { document.getElementById("missionDescModal").style.display = "none"; }
+window.closeMissionDescModal = function() { 
+    document.getElementById("missionDescModal").style.display = "none"; 
+    
+    // 미션 확인 창을 닫으면 사용했던 팀전 룰렛 버튼 숨김 처리
+    if (window.currentTeamRouletteBtnId) {
+        if(!window.hiddenRoulettes) window.hiddenRoulettes = [];
+        window.hiddenRoulettes.push(window.currentTeamRouletteBtnId);
+        const btn = document.getElementById(window.currentTeamRouletteBtnId);
+        if(btn) btn.classList.add('hidden');
+        window.currentTeamRouletteBtnId = null;
+    }
+}
 
 window.triggerGagaDraw = function(targetGender) {
     if(!currentClass) return;
@@ -1013,10 +1026,9 @@ window.executeGagaTeams = function(numTeams, available) {
 
     teams.forEach(t => t.members.forEach(m => m.isKing = false));
 
-    distribute(boys); distribute(girls); currentGagaTeams = teams; window.renderGagaTeamView(); 
-    
-    // 팀 룰렛은 VS 버튼에 직접 달아두었으므로 플로팅은 띄우지 않습니다.
-    // window.showFloatingRouletteBtn('team'); 
+    currentGagaTeams = teams; 
+    window.hiddenRoulettes = []; // 팀 편성 시 숨겨진 룰렛 버튼 배열 초기화
+    window.renderGagaTeamView(); 
     window.fireConfetti();
 }
 
@@ -1030,7 +1042,7 @@ window.toggleTeamKing = function(teamId, memberNo) {
     window.renderGagaTeamView();
 }
 
-// 팀전 뷰에 VS 텍스트를 지우고 룰렛 버튼 띄우기
+// 팀전 뷰 레이아웃 분리 (VS 글자 위쪽으로 룰렛 버튼 띄우기)
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
     const now = Date.now();
@@ -1084,8 +1096,9 @@ window.renderGagaTeamView = function() {
                     <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamA)}</div>
                 </div>
                 ${teamB ? `
-                <div class="relative flex items-center justify-center my-2 xl:my-0 z-10 w-full xl:w-16 shrink-0">
-                    <button class="bg-gradient-to-b from-purple-500 to-indigo-600 text-white rounded-full w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 flex items-center justify-center shadow-lg border-[4px] sm:border-[6px] border-white hover:scale-110 transition z-20 shrink-0 text-3xl sm:text-4xl lg:text-5xl" onclick="window.openRouletteModal('team'); setTimeout(() => window.spinRoulette(), 150);" title="팀전 미션 룰렛">🎡</button>
+                <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full xl:w-20 shrink-0 gap-1 sm:gap-2">
+                    <button id="team-roulette-${i}" class="bg-gradient-to-b from-purple-500 to-indigo-600 text-white rounded-full w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center shadow-lg border-[3px] sm:border-[4px] border-white hover:scale-110 transition z-20 shrink-0 text-2xl sm:text-3xl lg:text-4xl ${window.hiddenRoulettes && window.hiddenRoulettes.includes(`team-roulette-${i}`) ? 'hidden' : ''}" onclick="window.currentTeamRouletteBtnId = 'team-roulette-${i}'; window.openRouletteModal('team'); setTimeout(() => window.spinRoulette(), 150);" title="팀전 미션 룰렛">🎡</button>
+                    <div class="text-xl sm:text-3xl lg:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm">VS</div>
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
                     ${createPanel(teamB, true)} 
