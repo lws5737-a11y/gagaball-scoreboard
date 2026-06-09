@@ -504,7 +504,7 @@ window.toggleChampionSelection = function(no) {
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
 
-// 명예의 전당 레이아웃 전면 수정: TV화면용 좌우 꽉 찬 3분할 레이아웃 + 가로형 대형 카드 + 투명 스크롤
+// 명예의 전당 레이아웃: 높이 2배 + 자동 스크롤 떨림 방지 개선 적용
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -527,7 +527,7 @@ window.renderGagaRanking = function() {
     
     window.championsSelection = window.championsSelection || [];
 
-    // 가로 배열(flex-row) 기반의 시원시원한 대형 카드
+    // 가로 배열(flex-row) 기반의 2배 커진 대형 카드
     const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
@@ -536,30 +536,31 @@ window.renderGagaRanking = function() {
         let rankBadge = `${rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[100px] sm:h-[150px] lg:h-[180px]"; 
-        let avatarSize = "w-14 h-14 sm:w-24 sm:h-24 lg:w-32 lg:h-32 shrink-0"; 
-        let nameSize = "text-2xl sm:text-4xl lg:text-5xl xl:text-6xl flex-1 text-left px-3 sm:px-6 truncate"; 
-        let scoreSize = "text-2xl sm:text-4xl lg:text-5xl xl:text-6xl shrink-0 text-right";
-        let stampSize = "w-12 h-12 sm:w-16 sm:h-16 lg:w-24 lg:h-24 shrink-0 mx-2 sm:mx-4";
+        // 2배 높이 & 텍스트 확대
+        let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[200px] sm:h-[300px] lg:h-[360px]"; 
+        let avatarSize = "w-24 h-24 sm:w-40 sm:h-40 lg:w-56 lg:h-56 shrink-0"; 
+        let nameSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl flex-1 text-left px-4 sm:px-8 truncate"; 
+        let scoreSize = "text-4xl sm:text-6xl lg:text-7xl xl:text-8xl shrink-0 text-right";
+        let stampSize = "w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 shrink-0 mx-2 sm:mx-6";
         let transformClass = isSelected ? "scale-[1.03]" : "hover:scale-[1.02]";
 
         if (rank === 1) { 
             cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-100 border-[6px] lg:border-[8px] border-yellow-400 shadow-[0_15px_30px_rgba(250,204,21,0.3)]"; 
             rankBadge = "🥇 1위"; 
-            badgeStyle = "bg-yellow-500 text-white shadow-md text-base sm:text-xl lg:text-3xl px-6 py-1 lg:py-2";
+            badgeStyle = "bg-yellow-500 text-white shadow-md text-xl sm:text-3xl lg:text-5xl px-6 py-2 lg:py-3";
             transformClass += " z-10"; 
-            avatarSize = "w-16 h-16 sm:w-28 sm:h-28 lg:w-40 lg:h-40 shrink-0";
-            nameSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl flex-1 text-left px-4 sm:px-8 truncate";
-            scoreSize = "text-3xl sm:text-5xl lg:text-6xl xl:text-7xl shrink-0 text-right";
-            sizeClass = "px-4 sm:px-8 py-6 lg:py-8 h-[120px] sm:h-[180px] lg:h-[220px]";
+            avatarSize = "w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 shrink-0";
+            nameSize = "text-5xl sm:text-7xl lg:text-8xl xl:text-9xl flex-1 text-left px-6 sm:px-12 truncate";
+            scoreSize = "text-5xl sm:text-7xl lg:text-8xl xl:text-9xl shrink-0 text-right";
+            sizeClass = "px-4 sm:px-8 py-6 lg:py-8 h-[240px] sm:h-[360px] lg:h-[440px]";
         } else if (rank === 2) { 
             cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[5px] lg:border-[6px] border-gray-400 shadow-[0_10px_25px_rgba(156,163,175,0.3)]"; 
             rankBadge = "🥈 2위"; 
-            badgeStyle = "bg-gray-500 text-white shadow-md text-sm sm:text-lg lg:text-2xl px-5 py-1 lg:py-1.5";
+            badgeStyle = "bg-gray-500 text-white shadow-md text-lg sm:text-2xl lg:text-4xl px-5 py-1.5 lg:py-2";
         } else if (rank === 3) { 
             cardStyle = "bg-gradient-to-b from-orange-50 to-orange-100 border-[5px] lg:border-[6px] border-orange-400 shadow-[0_10px_25px_rgba(249,115,22,0.3)]"; 
             rankBadge = "🥉 3위"; 
-            badgeStyle = "bg-orange-600 text-white shadow-md text-sm sm:text-lg lg:text-2xl px-5 py-1 lg:py-1.5";
+            badgeStyle = "bg-orange-600 text-white shadow-md text-lg sm:text-2xl lg:text-4xl px-5 py-1.5 lg:py-2";
         }
 
         const cuteAvatar = window.generateCuteAvatar(s);
@@ -585,7 +586,7 @@ window.renderGagaRanking = function() {
         `;
     };
 
-    // 4위 이하 카드도 1위 카드와 동일한 가로 배열 및 사이즈 감각 유지
+    // 4위 이하 카드
     const createListCard = (s) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "bg-white hover:bg-slate-50";
@@ -611,7 +612,6 @@ window.renderGagaRanking = function() {
     let others = rankedStudents.slice(3);
 
     if (others.length > 0) {
-        // 스크롤바를 숨기는 inline 스타일 적용으로 대형 화면에서 더 깔끔하게 출력
         listHTML = `<div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
         <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>`;
         others.forEach(s => {
@@ -625,19 +625,19 @@ window.renderGagaRanking = function() {
         let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
         let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
-        // 좌우 끝까지 꽉 차는 3분할 레이아웃 적용 (32% / 35% / 32%)
+        // 좌우 끝까지 꽉 차는 3분할 레이아웃 & 늘어난 카드 높이에 맞춘 여백 조정
         podiumHTML = `
         <div class="flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
-            <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-36 shrink-0">
+            <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
                 ${p2}
             </div>
             <div class="w-[35%] flex flex-col items-center z-10 shrink-0">
                 ${p1}
-                <div class="w-full mt-6 sm:mt-10 relative h-[400px] sm:h-[600px] lg:h-[800px] pb-10">
+                <div class="w-full mt-6 sm:mt-10 relative h-[400px] sm:h-[500px] lg:h-[600px] pb-10">
                     ${listHTML}
                 </div>
             </div>
-            <div class="w-[32%] flex flex-col items-center pt-32 lg:pt-48 shrink-0">
+            <div class="w-[32%] flex flex-col items-center pt-32 lg:pt-40 shrink-0">
                 ${p3}
             </div>
         </div>
@@ -648,18 +648,19 @@ window.renderGagaRanking = function() {
 
     container.innerHTML = podiumHTML;
 
-    // 마지막 순위 도달 시 즉시 4위(처음)로 튕겨서 스크롤 무한 반복 루프 설정
+    // 자동 스크롤 떨림(Shaking) 완벽 해결 및 무한 루프
     clearInterval(window.rankAutoScrollInterval);
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
             if (list) {
-                // 확대 비율 등에 따른 오차를 고려해 -2px 여유를 두고 체크
-                if (list.scrollTop + list.clientHeight >= list.scrollHeight - 2) {
+                let prevScroll = list.scrollTop;
+                list.scrollTop += 2; // 소수점 배제, 깔끔한 정수 픽셀 이동
+                
+                // 스크롤이 더 이상 내려가지 않거나, 바닥에 닿았을 때 0으로 리셋
+                if (list.scrollTop === prevScroll || Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight - 1) {
                     list.scrollTop = 0; 
-                } else {
-                    list.scrollTop += 1.5; // 큰 화면에 맞춰 스크롤 속도 소폭 상향
                 }
             } else {
                 clearInterval(window.rankAutoScrollInterval);
@@ -730,7 +731,7 @@ window.startChampionsTournament = function() {
 }
 
 // -----------------------------------------------------------
-// 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직 (드래그 삭제)
+// 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직
 // -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
 
@@ -1014,7 +1015,8 @@ window.executeGagaTeams = function(numTeams, available) {
 
     distribute(boys); distribute(girls); currentGagaTeams = teams; window.renderGagaTeamView(); 
     
-    window.showFloatingRouletteBtn('team');
+    // 팀 룰렛은 VS 버튼에 직접 달아두었으므로 플로팅은 띄우지 않습니다.
+    // window.showFloatingRouletteBtn('team'); 
     window.fireConfetti();
 }
 
@@ -1028,6 +1030,7 @@ window.toggleTeamKing = function(teamId, memberNo) {
     window.renderGagaTeamView();
 }
 
+// 팀전 뷰에 VS 텍스트를 지우고 룰렛 버튼 띄우기
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
     const now = Date.now();
@@ -1080,7 +1083,10 @@ window.renderGagaTeamView = function() {
                     ${createPanel(teamA, false)} 
                     <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamA)}</div>
                 </div>
-                ${teamB ? `<div class="text-xl sm:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm my-1 xl:my-0">VS</div>
+                ${teamB ? `
+                <div class="relative flex items-center justify-center my-2 xl:my-0 z-10 w-full xl:w-16 shrink-0">
+                    <button class="bg-gradient-to-b from-purple-500 to-indigo-600 text-white rounded-full w-14 h-14 sm:w-20 sm:h-20 lg:w-24 lg:h-24 flex items-center justify-center shadow-lg border-[4px] sm:border-[6px] border-white hover:scale-110 transition z-20 shrink-0 text-3xl sm:text-4xl lg:text-5xl" onclick="window.openRouletteModal('team'); setTimeout(() => window.spinRoulette(), 150);" title="팀전 미션 룰렛">🎡</button>
+                </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
                     ${createPanel(teamB, true)} 
                     <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamB)}</div>
@@ -1259,7 +1265,7 @@ window.selectAvatar = function(path) {
 };
 
 // ==========================================
-// 8. 학급 관리 기능 (단순화 + 숨김 처리)
+// 8. 학급 관리 기능
 // ==========================================
 window.openManageModal = function() {
     document.getElementById('manage-modal').classList.remove('hidden');
