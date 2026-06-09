@@ -147,7 +147,7 @@ let classStamps = {};
 let currentTab = 'gagaball'; 
 let hiddenClasses = []; 
 window.championsSelection = []; 
-window.hiddenRoulettes = []; // 일회용 룰렛 숨김 처리용 배열 추가
+window.hiddenRoulettes = []; 
 
 window.lastTeamScoreChange = { teamId: null, val: 0, time: 0 };
 
@@ -502,10 +502,31 @@ window.toggleChampionSelection = function(no) {
     window.renderGagaRanking();
 }
 
+// 스크롤 제어를 위한 변수들 및 상단 복귀 함수 설정
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
+window.rankAutoScrollReachedBottom = false;
 
-// 명예의 전당 레이아웃: 이름/점수 겹침 수정(세로 배치) 및 자동스크롤 개선 적용
+window.scrollToRankTop = function() {
+    const list = document.getElementById('gaga-ranking-list');
+    const returnBtn = document.getElementById('gaga-rank-return-btn');
+    if (list) {
+        window.autoScrollActive = false; // 부드럽게 올라가는 동안 자동스크롤 일시정지
+        list.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        if(returnBtn) {
+            returnBtn.classList.add('opacity-0', 'pointer-events-none');
+            returnBtn.classList.remove('opacity-100', 'pointer-events-auto');
+        }
+        
+        // 스크롤이 다 올라갈 쯤에 바닥 도달 상태 해제 및 자동스크롤 재개
+        setTimeout(() => {
+            window.rankAutoScrollReachedBottom = false;
+            window.autoScrollActive = true;
+        }, 800);
+    }
+};
+
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
@@ -528,7 +549,6 @@ window.renderGagaRanking = function() {
     
     window.championsSelection = window.championsSelection || [];
 
-    // 가로 배열(flex-row) 유지하되 이름과 점수를 세로로 쌓음 (flex-col)
     const createPodiumCard = (s, rank) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[6px] ring-purple-500 bg-purple-50" : "";
@@ -537,7 +557,6 @@ window.renderGagaRanking = function() {
         let rankBadge = `${rank}위`;
         let badgeStyle = "bg-slate-500 text-white";
         
-        // 2배 높이 & 텍스트 세로 배치를 위한 크기 설정
         let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[200px] sm:h-[300px] lg:h-[360px]"; 
         let avatarSize = "w-24 h-24 sm:w-40 sm:h-40 lg:w-56 lg:h-56 shrink-0"; 
         let nameSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl"; 
@@ -568,7 +587,6 @@ window.renderGagaRanking = function() {
         const refStampOpacity = s.isReferee ? 'opacity-100 scale-110' : 'opacity-20 grayscale hover:grayscale-0 hover:opacity-50';
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
-        // 텍스트 영역을 flex-col로 처리하여 위아래로 쌓이게 만듦
         return `
         <div class="flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
             <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
@@ -589,7 +607,6 @@ window.renderGagaRanking = function() {
         `;
     };
 
-    // 4위 이하 카드
     const createListCard = (s) => {
         const isSelected = window.championsSelection.includes(s.no);
         const highlightClass = isSelected ? "ring-[4px] ring-purple-500 bg-purple-50" : "bg-white hover:bg-slate-50";
@@ -615,12 +632,20 @@ window.renderGagaRanking = function() {
     let others = rankedStudents.slice(3);
 
     if (others.length > 0) {
-        listHTML = `<div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
-        <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>`;
-        others.forEach(s => {
-            listHTML += createListCard(s);
-        });
-        listHTML += `</div>`;
+        let cardsHTML = '';
+        others.forEach(s => { cardsHTML += createListCard(s); });
+        
+        // 스크롤 리스트와 되돌아가기 화살표 버튼 배치
+        listHTML = `
+        <div class="relative w-full h-full">
+            <div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
+                <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>
+                ${cardsHTML}
+            </div>
+            <button id="gaga-rank-return-btn" class="absolute bottom-12 -right-4 sm:-right-8 bg-slate-800 hover:bg-slate-900 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-full shadow-[0_5px_15px_rgba(0,0,0,0.4)] transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center transform hover:scale-110 border-2 border-slate-500" onclick="window.scrollToRankTop()" title="위로 가기">
+                <svg class="w-5 h-5 sm:w-8 sm:h-8 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 15l7-7 7 7"></path></svg>
+            </button>
+        </div>`;
     }
 
     if (top3.length > 0) {
@@ -628,7 +653,6 @@ window.renderGagaRanking = function() {
         let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
         let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
-        // 좌우 끝까지 꽉 차는 3분할 레이아웃
         podiumHTML = `
         <div class="flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
             <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
@@ -651,22 +675,33 @@ window.renderGagaRanking = function() {
 
     container.innerHTML = podiumHTML;
 
-    // 자동 스크롤 방향 및 무한 반복 버그 완전 해결
+    // 새로운 자동 스크롤 로직 (바닥에서 멈추고 화살표 띄우기)
     clearInterval(window.rankAutoScrollInterval);
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
+            const returnBtn = document.getElementById('gaga-rank-return-btn');
+            
             if (list) {
-                list.scrollTop += 1; // 픽셀 단위로 스크롤을 아래로 이동 (4위부터 마지막까지)
-                // 바닥에 완전히 닿았는지 체크 (소수점 고려하여 올림 처리)
-                if (Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight) {
-                    list.scrollTop = 0; // 바닥 도달 시 다시 최상단(4위)으로 리셋
+                // 맨 밑바닥에 도달했는지 확인 (안전하게 -1 픽셀 여유 계산)
+                if (Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight - 1) {
+                    if (!window.rankAutoScrollReachedBottom) {
+                        window.rankAutoScrollReachedBottom = true;
+                        // 화살표 버튼 스르륵 나타나기
+                        if(returnBtn) {
+                            returnBtn.classList.remove('opacity-0', 'pointer-events-none');
+                            returnBtn.classList.add('opacity-100', 'pointer-events-auto');
+                        }
+                    }
+                } else if (!window.rankAutoScrollReachedBottom) {
+                    // 바닥에 닿기 전까지만 계속 스크롤
+                    list.scrollTop += 1;
                 }
             } else {
                 clearInterval(window.rankAutoScrollInterval);
             }
-        }, 20); // 속도를 부드럽게 유지하기 위해 시간 간격 조정
+        }, 20); 
     }
 
     const fab = document.getElementById('champions-fab-container');
@@ -735,7 +770,7 @@ window.startChampionsTournament = function() {
 // 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직
 // -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
-window.currentTeamRouletteBtnId = null; // 현재 띄워진 팀전 룰렛 버튼 ID 추적
+window.currentTeamRouletteBtnId = null;
 
 window.showFloatingRouletteBtn = function(context) {
     window.currentFloatingContext = context;
@@ -875,7 +910,6 @@ window.showMissionDescModal = function(title, text) {
 window.closeMissionDescModal = function() { 
     document.getElementById("missionDescModal").style.display = "none"; 
     
-    // 미션 확인 창을 닫으면 사용했던 팀전 룰렛 버튼 숨김 처리
     if (window.currentTeamRouletteBtnId) {
         if(!window.hiddenRoulettes) window.hiddenRoulettes = [];
         window.hiddenRoulettes.push(window.currentTeamRouletteBtnId);
@@ -1024,14 +1058,13 @@ window.executeGagaTeams = function(numTeams, available) {
         candidates[0].members.push(ref); candidates[0].score += (ref.score || 0);
     });
 
-    // 🚨 여기서 남학생, 여학생 분배 코드가 빠져있었습니다! 다시 넣었습니다!
     distribute(boys); 
     distribute(girls);
 
     teams.forEach(t => t.members.forEach(m => m.isKing = false));
 
     currentGagaTeams = teams; 
-    window.hiddenRoulettes = []; // 팀 편성 시 숨겨진 룰렛 버튼 배열 초기화
+    window.hiddenRoulettes = []; 
     window.renderGagaTeamView(); 
     window.fireConfetti();
 }
@@ -1043,10 +1076,17 @@ window.toggleTeamKing = function(teamId, memberNo) {
     if(!member) return;
     
     member.isKing = !member.isKing;
+    
+    // 왕관 착용 및 해제 효과음 추가
+    if(member.isKing) {
+        window.playCoinSound(); // 씌울 때 경쾌한 소리
+    } else {
+        window.playBumpSound(); // 벗길 때 둔탁한 소리
+    }
+    
     window.renderGagaTeamView();
 }
 
-// 팀전 뷰 레이아웃 분리 (VS 글자 위쪽으로 룰렛 버튼 띄우기)
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
     const now = Date.now();
@@ -1065,12 +1105,14 @@ window.renderGagaTeamView = function() {
             }
 
             const isKing = m.isKing;
-            const kingCrown = isKing ? `<div class="absolute -top-4 -right-3 text-4xl sm:text-5xl drop-shadow-md z-20 animate-bounce">👑</div>` : '';
+            // 왕관 위치를 아바타 머리 정중앙으로 이동하고 약간 삐딱하게 기울임
+            const kingCrown = isKing ? `<div class="absolute -top-6 sm:-top-8 lg:-top-10 left-1/2 transform -translate-x-1/2 text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg z-30 animate-bounce" style="rotate: 10deg;">👑</div>` : '';
 
             return `
             <div class="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
-                ${kingCrown}
+                
                 <div class="relative w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-36 xl:h-36 mb-1 sm:mb-3 shrink-0">
+                    ${kingCrown}
                     <img src="${window.generateCuteAvatar(m)}" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
                 <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${m.name}</b>
