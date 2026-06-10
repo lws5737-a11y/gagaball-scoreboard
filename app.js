@@ -5,6 +5,22 @@ import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
 // ==========================================
+window.isGlobalMuted = false;
+
+window.toggleGlobalMute = function() {
+    window.isGlobalMuted = !window.isGlobalMuted;
+    const btn = document.getElementById('global-mute-btn');
+    if(btn) btn.innerText = window.isGlobalMuted ? '🔇' : '🔊';
+    
+    if(window.isGlobalMuted) {
+        Object.values(audioFiles).forEach(a => a.pause());
+    } else {
+        if(currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden')) {
+            window.playMP3('anthem');
+        }
+    }
+};
+
 const audioFiles = {
     anthem: new Audio('sound/orchestral-anthem.mp3'),
     tadaa: new Audio('sound/tadaa01.mp3'),
@@ -14,6 +30,7 @@ const audioFiles = {
 audioFiles.anthem.loop = true;
 
 window.playMP3 = function(key) {
+    if (window.isGlobalMuted) return;
     if (audioFiles[key]) {
         audioFiles[key].currentTime = 0;
         audioFiles[key].volume = 1;
@@ -65,6 +82,7 @@ function initAudio() {
 }
 
 window.playCoinSound = function() {
+    if (window.isGlobalMuted) return;
     try {
         const ctx = initAudio();
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
@@ -78,6 +96,7 @@ window.playCoinSound = function() {
 }
 
 window.playBumpSound = function() {
+    if (window.isGlobalMuted) return;
     try {
         const ctx = initAudio();
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
@@ -511,7 +530,7 @@ window.scrollToRankTop = function() {
     const list = document.getElementById('gaga-ranking-list');
     const returnBtn = document.getElementById('gaga-rank-return-btn');
     if (list) {
-        window.autoScrollActive = false; // 부드럽게 올라가는 동안 자동스크롤 일시정지
+        window.autoScrollActive = false; 
         list.scrollTo({ top: 0, behavior: 'smooth' });
         
         if(returnBtn) {
@@ -519,7 +538,6 @@ window.scrollToRankTop = function() {
             returnBtn.classList.remove('opacity-100', 'pointer-events-auto');
         }
         
-        // 스크롤이 다 올라갈 쯤에 바닥 도달 상태 해제 및 자동스크롤 재개
         setTimeout(() => {
             window.rankAutoScrollReachedBottom = false;
             window.autoScrollActive = true;
@@ -635,7 +653,6 @@ window.renderGagaRanking = function() {
         let cardsHTML = '';
         others.forEach(s => { cardsHTML += createListCard(s); });
         
-        // 스크롤 리스트와 되돌아가기 화살표 버튼 배치
         listHTML = `
         <div class="relative w-full h-full">
             <div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
@@ -675,8 +692,10 @@ window.renderGagaRanking = function() {
 
     container.innerHTML = podiumHTML;
 
-    // 새로운 자동 스크롤 로직 (바닥에서 멈추고 화살표 띄우기)
+    // 새로운 자동 스크롤 로직 (버그 픽스 포함: 초기화 보장)
     clearInterval(window.rankAutoScrollInterval);
+    window.rankAutoScrollReachedBottom = false; // ★ 화면을 다시 그릴 때 반드시 스크롤 상태도 초기화
+    
     if (others.length > 0) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
@@ -1077,11 +1096,10 @@ window.toggleTeamKing = function(teamId, memberNo) {
     
     member.isKing = !member.isKing;
     
-    // 왕관 착용 및 해제 효과음 추가
     if(member.isKing) {
-        window.playCoinSound(); // 씌울 때 경쾌한 소리
+        window.playCoinSound(); 
     } else {
-        window.playBumpSound(); // 벗길 때 둔탁한 소리
+        window.playBumpSound(); 
     }
     
     window.renderGagaTeamView();
@@ -1105,7 +1123,6 @@ window.renderGagaTeamView = function() {
             }
 
             const isKing = m.isKing;
-            // 왕관 위치를 아바타 머리 정중앙으로 이동하고 약간 삐딱하게 기울임
             const kingCrown = isKing ? `<div class="absolute -top-6 sm:-top-8 lg:-top-10 left-1/2 transform -translate-x-1/2 text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg z-30 animate-bounce" style="rotate: 10deg;">👑</div>` : '';
 
             return `
@@ -1250,6 +1267,7 @@ window.resetStampBoard = () => {
 };
 
 window.playStampSound = () => {
+    if (window.isGlobalMuted) return;
     const ctx = initAudio(); const now = ctx.currentTime;
     const fallOsc = ctx.createOscillator(); const fallGain = ctx.createGain();
     fallOsc.type = 'sine'; fallOsc.frequency.setValueAtTime(900, now); fallOsc.frequency.exponentialRampToValueAtTime(100, now + 0.35);
@@ -1263,6 +1281,7 @@ window.playStampSound = () => {
 };
 
 const playTone = (freq, type, duration, gainVal) => {
+    if (window.isGlobalMuted) return;
     const ctx = initAudio();
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
