@@ -269,6 +269,16 @@ function setupFirestoreListener() {
             classData = data.data || {}; groupScores = data.scores || {}; groupRecords = data.records || {}; classStamps = data.stamps || {};
             hiddenClasses = data.hiddenClasses || [];
             if (data.stampImage) { globalStampImage = data.stampImage; localStorage.setItem('customStamp', globalStampImage); document.querySelectorAll('.stamp-img').forEach(img => { img.src = globalStampImage; }); }
+            
+            // 💡 [추가된 부분] 파이어베이스에서 룰렛 미션 데이터도 가져옵니다!
+            if (data.rouletteMissions) {
+                individualMissions = data.rouletteMissions.individual || defaultIndividualMissions;
+                teamMissions = data.rouletteMissions.team || defaultTeamMissions;
+                
+                // 현재 띄워진 룰렛창이 있다면 데이터 새로고침
+                if (currentMissionsType === 'team') currentMissions = teamMissions;
+                else currentMissions = individualMissions;
+            }
         }
         
         if (!currentClass) {
@@ -290,7 +300,17 @@ function saveData() {
         const syncIcon = document.getElementById('sync-status');
         if(syncIcon) { syncIcon.classList.remove('hidden'); syncIcon.classList.add('flex'); }
         const docRef = doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
-        setDoc(docRef, { data: classData, scores: groupScores, records: groupRecords, stamps: classStamps, stampImage: globalStampImage, hiddenClasses: hiddenClasses }, { merge: true })
+        
+        // 💡 [추가된 부분] rouletteMissions 항목을 파이어베이스에 함께 저장합니다.
+        setDoc(docRef, { 
+            data: classData, 
+            scores: groupScores, 
+            records: groupRecords, 
+            stamps: classStamps, 
+            stampImage: globalStampImage, 
+            hiddenClasses: hiddenClasses,
+            rouletteMissions: { individual: individualMissions, team: teamMissions } // 룰렛 데이터 탑재!
+        }, { merge: true })
         .then(() => { isDebouncing = false; if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); } })
         .catch(() => { isDebouncing = false; if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); } });
     }
@@ -877,9 +897,19 @@ window.updateRouletteItem = function(i) {
 window.addRouletteItem = function() { editMissionsTemp.push({ text: "새 미션", weight: 10, color: "#74b9ff", desc: "미션 설명" }); window.renderRouletteEditList(); }
 window.removeRouletteItem = function(i) { editMissionsTemp.splice(i, 1); window.renderRouletteEditList(); }
 window.saveRouletteEdit = function() {
-    if (currentMissionsType === 'team') { teamMissions = editMissionsTemp; localStorage.setItem('gagaTeamMissions', JSON.stringify(teamMissions)); currentMissions = teamMissions; } 
-    else { individualMissions = editMissionsTemp; localStorage.setItem('gagaIndividualMissions', JSON.stringify(individualMissions)); currentMissions = individualMissions; }
-    window.closeRouletteEditModal(); window.drawRoulette();
+    if (currentMissionsType === 'team') { 
+        teamMissions = editMissionsTemp; 
+        currentMissions = teamMissions; 
+    } else { 
+        individualMissions = editMissionsTemp; 
+        currentMissions = individualMissions; 
+    }
+    
+    // 💡 localStorage 대신 파이어베이스 동기화 함수를 호출합니다!
+    saveData(); 
+    
+    window.closeRouletteEditModal(); 
+    window.drawRoulette();
 }
 window.drawRoulette = function() {
     const canvas = document.getElementById("rouletteCanvas"); if (!canvas.getContext) return;
