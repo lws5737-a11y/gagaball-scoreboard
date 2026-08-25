@@ -1,6 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { escapeHTML, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -10,7 +11,11 @@ window.isGlobalMuted = false;
 window.toggleGlobalMute = function() {
     window.isGlobalMuted = !window.isGlobalMuted;
     const btn = document.getElementById('global-mute-btn');
-    if(btn) btn.innerText = window.isGlobalMuted ? '🔇' : '🔊';
+    if(btn) {
+        btn.innerText = window.isGlobalMuted ? '🔇' : '🔊';
+        btn.setAttribute('aria-label', window.isGlobalMuted ? '소리 켜기' : '소리 끄기');
+        btn.setAttribute('aria-pressed', String(window.isGlobalMuted));
+    }
     
     if(window.isGlobalMuted) {
         Object.values(audioFiles).forEach(a => a.pause());
@@ -188,6 +193,7 @@ window.generateCuteAvatar = function(student) {
     let avatarIndex = index % 50; 
     let row = Math.floor(avatarIndex / 10) + 1;
     let col = (avatarIndex % 10) + 1; 
+    if (student.gender !== '남' && student.gender !== '여') return fallbackSVG;
     let prefix = student.gender === '남' ? 'boy' : 'girl';
     return `images/avatars/${prefix}_${row}-${col}.png`;
 }
@@ -219,8 +225,21 @@ window.toggleAttendance = function(no) {
 // 3. 파이어베이스 연동 로직
 // ==========================================
 let userId = null; 
-let isDebouncing = false; 
+let saveTimer = null;
+let saveInFlight = false;
+let saveRequested = false;
 let unsubscribeSnapshot = null;
+
+function setSyncStatus(state, message = '') {
+    const syncIcon = document.getElementById('sync-status');
+    if (!syncIcon) return;
+    syncIcon.classList.toggle('hidden', state === 'idle');
+    syncIcon.classList.toggle('flex', state !== 'idle');
+    syncIcon.classList.toggle('bg-red-700', state === 'error');
+    syncIcon.classList.toggle('bg-slate-700', state !== 'error');
+    const label = syncIcon.querySelector('[data-sync-label]');
+    if (label) label.innerText = message || (state === 'saving' ? '저장 중' : '동기화 오류');
+}
 
 if (auth && db) {
     window.signInWithGoogle = function() {
@@ -258,12 +277,11 @@ function setupFirestoreListener() {
     if (!userId || !db) return;
     const docRef = doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
     if (unsubscribeSnapshot) unsubscribeSnapshot(); 
-    const syncIcon = document.getElementById('sync-status');
-    if(syncIcon) { syncIcon.classList.remove('hidden'); syncIcon.classList.add('flex'); }
+    setSyncStatus('saving', '불러오는 중');
 
     unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
-        if (isDebouncing) return;
-        if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); }
+        if (docSnap.metadata.hasPendingWrites) return;
+        setSyncStatus('idle');
         if (docSnap.exists()) {
             const data = docSnap.data();
             classData = data.data || {}; groupScores = data.scores || {}; groupRecords = data.records || {}; classStamps = data.stamps || {};
@@ -290,29 +308,49 @@ function setupFirestoreListener() {
         window.renderClassSelect();
     }, (error) => {
         console.error("데이터 동기화 오류:", error);
-        if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); }
+        setSyncStatus('error', '불러오기 실패');
     });
 }
 
 function saveData() {
-    if (userId && db) {
-        isDebouncing = true; 
-        const syncIcon = document.getElementById('sync-status');
-        if(syncIcon) { syncIcon.classList.remove('hidden'); syncIcon.classList.add('flex'); }
+    if (!userId || !db) return;
+    saveRequested = true;
+    clearTimeout(saveTimer);
+    setSyncStatus('saving');
+    saveTimer = setTimeout(flushSaveData, 150);
+}
+
+async function flushSaveData() {
+    if (saveInFlight || !saveRequested || !userId || !db) return;
+    saveInFlight = true;
+    saveRequested = false;
+
+    const payload = {
+        data: structuredClone(classData),
+        scores: structuredClone(groupScores),
+        records: structuredClone(groupRecords),
+        stamps: structuredClone(classStamps),
+        stampImage: globalStampImage,
+        hiddenClasses: [...hiddenClasses],
+        rouletteMissions: {
+            individual: structuredClone(individualMissions),
+            team: structuredClone(teamMissions)
+        }
+    };
+
+    try {
         const docRef = doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
-        
-        // 💡 [추가된 부분] rouletteMissions 항목을 파이어베이스에 함께 저장합니다.
-        setDoc(docRef, { 
-            data: classData, 
-            scores: groupScores, 
-            records: groupRecords, 
-            stamps: classStamps, 
-            stampImage: globalStampImage, 
-            hiddenClasses: hiddenClasses,
-            rouletteMissions: { individual: individualMissions, team: teamMissions } // 룰렛 데이터 탑재!
-        }, { merge: true })
-        .then(() => { isDebouncing = false; if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); } })
-        .catch(() => { isDebouncing = false; if(syncIcon) { syncIcon.classList.add('hidden'); syncIcon.classList.remove('flex'); } });
+        await setDoc(docRef, payload, { merge: true });
+        setSyncStatus('idle');
+    } catch (error) {
+        console.error('데이터 저장 오류:', error);
+        setSyncStatus('error', '저장 실패');
+    } finally {
+        saveInFlight = false;
+        if (saveRequested) {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(flushSaveData, 500);
+        }
     }
 }
 
@@ -368,7 +406,11 @@ window.selectClass = function(className) {
     document.getElementById('app-container').classList.remove('hidden');
     
     const displayBtn = document.getElementById('current-class-display');
-    if (displayBtn) displayBtn.innerHTML = `<span>🔄 ${className}</span>`;
+    if (displayBtn) {
+        const label = document.createElement('span');
+        label.innerText = `🔄 ${className}`;
+        displayBtn.replaceChildren(label);
+    }
     
     window.showTab(currentTab);
 };
@@ -481,7 +523,7 @@ window.renderGagaball = function() {
                 </div>
                 
                 <div class="avatar-wrapper relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] mx-auto mb-3">
-                    <img src="${cuteAvatar}" alt="avatar" class="w-full h-full rounded-full cursor-pointer hover:scale-105 transition-transform border-4 object-cover block bg-white" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
+                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="w-full h-full rounded-full cursor-pointer hover:scale-105 transition-transform border-4 object-cover block bg-white" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" style="border-color: ${borderStyle};" title="아바타 변경">
                     ${isDrawn ? `
                     <div class="absolute inset-0 z-10 flex items-center justify-center pointer-events-none rounded-full bg-slate-900/40">
                         <img src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Crect width='120' height='40' rx='8' fill='%23ef4444' stroke='white' stroke-width='3'/%3E%3Ctext x='60' y='27' font-family='sans-serif' font-size='22' font-weight='900' fill='white' text-anchor='middle'%3E뽑기완료%3C/text%3E%3C/svg%3E" class="transform -rotate-12 w-20 sm:w-28 drop-shadow-md">
@@ -489,7 +531,7 @@ window.renderGagaball = function() {
                     ` : ''}
                 </div>
 
-                <div class="name relative z-20">${s.name} <span class="text-xs sm:text-lg">(${s.gender})</span></div>
+                <div class="name relative z-20">${escapeHTML(s.name)} <span class="text-xs sm:text-lg">(${escapeHTML(s.gender)})</span></div>
                 <div class="score-val relative z-20">${s.score || 0}</div>
                 <div class="score-ctrl relative z-20">
                     <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
@@ -629,10 +671,10 @@ window.renderGagaRanking = function() {
         <div class="flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
             <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
             
-            <img src="${cuteAvatar}" class="${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
+            <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
             
             <div class="flex flex-col flex-1 items-center justify-center px-2 sm:px-4 truncate h-full">
-                <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${s.name}</div>
+                <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${escapeHTML(s.name)}</div>
                 <div class="${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
             </div>
             
@@ -654,8 +696,8 @@ window.renderGagaRanking = function() {
         return `
         <div class="flex flex-row items-center justify-between ${highlightClass} border-[3px] border-slate-200 rounded-2xl p-2 sm:p-4 lg:p-5 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[80px] sm:h-[110px] lg:h-[140px]" onclick="window.toggleChampionSelection(${s.no})">
             <div class="w-12 sm:w-16 lg:w-20 text-center font-black text-slate-500 text-xl sm:text-2xl lg:text-4xl shrink-0">${s.rank}위</div>
-            <img src="${window.generateCuteAvatar(s)}" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
-            <div class="flex-1 text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 truncate text-left pl-2">${s.name}</div>
+            <img src="${escapeHTML(window.generateCuteAvatar(s))}" alt="${escapeHTML(s.name)} 아바타" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
+            <div class="flex-1 text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 truncate text-left pl-2">${escapeHTML(s.name)}</div>
             <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-red-600 shrink-0 text-right pr-2">${s.score || 0}점</div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0 mx-2 lg:mx-4" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
@@ -762,10 +804,10 @@ const generateGridCards = (students) => {
             <div class="border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
                 
                 <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2 relative">
-                    <img src="${cuteAvatar}" class="h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
                 
-                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${s.name}</div>
+                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${escapeHTML(s.name)}</div>
                 
                 <div class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-600 flex items-center justify-center gap-3 w-full shrink-0 pb-1">
                     <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
@@ -879,11 +921,11 @@ window.renderRouletteEditList = function() {
             <div class="border p-3 rounded-xl bg-slate-50 flex flex-col gap-2 relative">
                 <button onclick="window.removeRouletteItem(${i})" class="absolute top-2 right-2 text-red-500 font-bold">&times; 삭제</button>
                 <div class="flex items-center gap-2 pr-12">
-                    <input type="color" value="${m.color || colors[i%colors.length]}" id="r-edit-color-${i}" class="w-8 h-8 rounded cursor-pointer" onchange="window.updateRouletteItem(${i})">
-                    <input type="text" value="${m.text}" id="r-edit-text-${i}" placeholder="미션명" class="flex-1 p-2 border rounded font-bold" onchange="window.updateRouletteItem(${i})">
+                    <input type="color" value="${escapeHTML(m.color || colors[i%colors.length])}" id="r-edit-color-${i}" class="w-8 h-8 rounded cursor-pointer" onchange="window.updateRouletteItem(${i})">
+                    <input type="text" value="${escapeHTML(m.text)}" id="r-edit-text-${i}" placeholder="미션명" class="flex-1 p-2 border rounded font-bold" onchange="window.updateRouletteItem(${i})">
                     <input type="number" value="${m.weight}" id="r-edit-weight-${i}" placeholder="확률" class="w-12 sm:w-16 p-2 border rounded" onchange="window.updateRouletteItem(${i})">
                 </div>
-                <textarea id="r-edit-desc-${i}" placeholder="설명" class="w-full p-2 border rounded text-sm" onchange="window.updateRouletteItem(${i})">${m.desc}</textarea>
+                <textarea id="r-edit-desc-${i}" placeholder="설명" class="w-full p-2 border rounded text-sm" onchange="window.updateRouletteItem(${i})">${escapeHTML(m.desc)}</textarea>
             </div>
         `;
     });
@@ -897,6 +939,11 @@ window.updateRouletteItem = function(i) {
 window.addRouletteItem = function() { editMissionsTemp.push({ text: "새 미션", weight: 10, color: "#74b9ff", desc: "미션 설명" }); window.renderRouletteEditList(); }
 window.removeRouletteItem = function(i) { editMissionsTemp.splice(i, 1); window.renderRouletteEditList(); }
 window.saveRouletteEdit = function() {
+    editMissionsTemp.forEach((_, index) => window.updateRouletteItem(index));
+    const validation = validateMissions(editMissionsTemp);
+    if (!validation.valid) return alert(validation.message);
+    editMissionsTemp = validation.missions;
+
     if (currentMissionsType === 'team') { 
         teamMissions = editMissionsTemp; 
         currentMissions = teamMissions; 
@@ -930,6 +977,9 @@ window.drawRoulette = function() {
     ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = "bold 40px Jua"; ctx.fillText("미션", cw/2, ch/2);
 }
 window.spinRoulette = function() {
+    const validation = validateMissions(currentMissions);
+    if (!validation.valid) return alert(validation.message);
+    currentMissions = validation.missions;
     if(isSpinning) return; isSpinning = true;
     window.playMP3('spinner');
     const canvas = document.getElementById("rouletteCanvas");
@@ -949,6 +999,10 @@ window.spinRoulette = function() {
             let sliceSize = (currentMissions[i].weight / totalWeight) * 360;
             if(pointerAngle >= currentPos && pointerAngle < currentPos + sliceSize) { winner = currentMissions[i]; break; }
             currentPos += sliceSize;
+        }
+        if (!winner) {
+            alert('룰렛 결과를 계산하지 못했습니다. 확률 설정을 확인해주세요.');
+            return;
         }
         window.showMissionDescModal(winner.text, winner.desc);
     }, 5000);
@@ -989,14 +1043,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
     let picked = available.slice(0, actualDrawCount);
     
-    let pickedReferees = picked.filter(s => s.isReferee);
-    if (pickedReferees.length >= 3) {
-        let unpickedNonReferees = available.slice(actualDrawCount).filter(s => !s.isReferee);
-        if (unpickedNonReferees.length > 0) {
-            let refToSwapOut = picked.findIndex(s => s.isReferee);
-            picked[refToSwapOut] = unpickedNonReferees[0];
-        }
-    }
+    picked = limitSelectedReferees(picked, available.slice(actualDrawCount), 2);
 
     picked.forEach(s => s.gagaDrawn = true);
     
@@ -1160,9 +1207,9 @@ window.renderGagaTeamView = function() {
                 
                 <div class="relative w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-36 xl:h-36 mb-1 sm:mb-3 shrink-0">
                     ${kingCrown}
-                    <img src="${window.generateCuteAvatar(m)}" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                    <img src="${escapeHTML(window.generateCuteAvatar(m))}" alt="${escapeHTML(m.name)} 아바타" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
-                <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${m.name}</b>
+                <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${escapeHTML(m.name)}</b>
                 <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}점${animHTML}</span>
             </div>`;
         }).join('');
@@ -1232,9 +1279,12 @@ window.renderStampBoard = () => {
     board.innerHTML = ''; let stampedCount = 0;
     classStamps[currentClass].forEach((isStamped, i) => {
         if (isStamped) stampedCount++;
-        const cell = document.createElement('div');
+        const cell = document.createElement('button');
+        cell.type = 'button';
         cell.className = `stamp-cell w-full aspect-square border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center bg-white hover:bg-green-50 ${isStamped ? 'stamped' : ''}`;
-        cell.innerHTML = `<span class="cell-number font-bold font-sans">${i + 1}</span><img src="${globalStampImage}" class="stamp-img">`;
+        cell.setAttribute('aria-label', `${i + 1}번째 도장 ${isStamped ? '취소' : '찍기'}`);
+        cell.setAttribute('aria-pressed', String(isStamped));
+        cell.innerHTML = `<span class="cell-number font-bold font-sans">${i + 1}</span><img src="${escapeHTML(globalStampImage)}" class="stamp-img" alt="">`;
         cell.onclick = () => window.toggleStamp(i, cell);
         board.appendChild(cell);
     });
@@ -1278,6 +1328,8 @@ window.toggleStamp = (index, cellElement) => {
     const isStamped = !classStamps[currentClass][index]; classStamps[currentClass][index] = isStamped;
     if (isStamped) { cellElement.classList.add('stamped'); window.playStampSound(); } 
     else { cellElement.classList.remove('stamped'); window.playEraseSound(); }
+    cellElement.setAttribute('aria-label', `${index + 1}번째 도장 ${isStamped ? '취소' : '찍기'}`);
+    cellElement.setAttribute('aria-pressed', String(isStamped));
     document.getElementById('progressCount').innerText = classStamps[currentClass].filter(Boolean).length;
     saveData(); window.checkMissionComplete(true);
 };
@@ -1479,8 +1531,6 @@ window.toggleHiddenClasses = function() {
     }
 };
 
-function normalizeClassName(name) { return name ? name.trim().replace(/\s+/g, '') : name; }
-
 window.addNewClass = function() {
     const input = document.getElementById('new-class-input');
     let newClassName = input.value.trim(); newClassName = normalizeClassName(newClassName);
@@ -1518,15 +1568,11 @@ window.importFromExcel = function() {
     lines.forEach(line => {
         const parts = line.trim().split(/\s+/);
         if (parts.length >= 2) {
-            const no = parseInt(parts[0]); const name = parts[1]; let gender = parts.length > 2 ? parts[2] : '-';
+            const no = parseInt(parts[0]); const name = parts[1]; const gender = parts.length > 2 ? parts[2] : '-';
             if (!isNaN(no) && name) {
                 const existingIdx = currentStudents.findIndex(s => s.no === no);
-                const newStudent = { 
-                    no: no, name: name, gender: gender, ballSense: '0', attendance: true, score: 0, recordMs: 0, memo: "", dismissalInfo: "", 
-                    drawn: false, groupMemberDrawn: false, gagaDrawn: false, isReferee: false,
-                    captain_mixed2: false, captain_mixed3: false, captain_mixed4: false, captain_gender: false,
-                    group_mixed2: null, group_mixed3: null, group_mixed4: null, group_gender: null 
-                };
+                const existingStudent = existingIdx > -1 ? currentStudents[existingIdx] : null;
+                const newStudent = mergeStudent(existingStudent, { no, name, gender });
                 if (existingIdx > -1) currentStudents[existingIdx] = newStudent;
                 else currentStudents.push(newStudent);
                 addedCount++;
@@ -1541,3 +1587,34 @@ window.importFromExcel = function() {
         if (currentTab === 'gagaball') window.renderGagaball();
     }
 }
+
+document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const dialogs = [
+        ['missionDescModal', window.closeMissionDescModal],
+        ['rouletteEditModal', window.closeRouletteEditModal],
+        ['avatarSelectModal', window.closeAvatarSelectModal],
+        ['stampSelectModal', window.closeStampSelectModal],
+        ['gagaDrawModal', window.closeGagaDrawModal],
+        ['timerSelectModal', window.closeTimerSelectModal],
+        ['rouletteModal', window.closeRouletteModal]
+    ];
+
+    const activeDialog = dialogs.find(([id]) => {
+        const element = document.getElementById(id);
+        return element && getComputedStyle(element).display !== 'none';
+    });
+
+    if (activeDialog) {
+        event.preventDefault();
+        activeDialog[1]();
+        return;
+    }
+
+    const manageModal = document.getElementById('manage-modal');
+    if (manageModal && !manageModal.classList.contains('hidden')) {
+        event.preventDefault();
+        window.closeManageModal();
+    }
+});

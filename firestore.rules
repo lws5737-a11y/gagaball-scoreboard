@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthorizedTeacher() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/authorizedTeachers/$(request.auth.uid));
+    }
+
+    match /artifacts/running-measurement-app/sharedRooms/dongsan-school-db {
+      allow read, write: if isAuthorizedTeacher();
+    }
+
+    match /authorizedTeachers/{teacherId} {
+      allow read: if request.auth != null && request.auth.uid == teacherId;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>동산초 가가볼 콜로세움 made by 우석쌤</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="style.css">
@@ -67,11 +67,11 @@ Google 계정으로 시작하기
 </div>
 
 <div class="flex items-center gap-2 shrink-0 justify-end w-full xl:w-auto">
-<div id="sync-status" class="hidden items-center text-xs font-bold bg-slate-700 px-2 py-1 rounded-md" title="클라우드 동기화 중">
+<div id="sync-status" class="hidden items-center text-xs font-bold bg-slate-700 px-2 py-1 rounded-md" role="status" aria-live="polite" title="클라우드 동기화 상태">
 <svg class="animate-spin h-3 w-3 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-<span class="hidden sm:inline">동기화</span>
+<span class="hidden sm:inline" data-sync-label>동기화</span>
 </div>
-<button onclick="window.toggleGlobalMute()" id="global-mute-btn" class="bg-slate-700 hover:bg-slate-600 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-slate-500 shadow-sm transition cursor-pointer text-sm sm:text-base" title="음소거/해제">🔊</button>
+<button onclick="window.toggleGlobalMute()" id="global-mute-btn" class="bg-slate-700 hover:bg-slate-600 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-slate-500 shadow-sm transition cursor-pointer text-sm sm:text-base" title="음소거/해제" aria-label="소리 끄기" aria-pressed="false">🔊</button>
 <button onclick="window.openClassSelection()" id="current-class-display" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 sm:px-4 rounded-full text-xs sm:text-sm font-medium border border-slate-500 whitespace-nowrap shadow-sm transition cursor-pointer flex items-center gap-1.5">
 <span>🔄 학급 변경</span>
 </button>
@@ -113,7 +113,7 @@ Google 계정으로 시작하기
 <button onclick="window.triggerGagaDraw('여')" class="bg-pink-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-pink-600 text-sm sm:text-xl transition transform hover:scale-105">여학생</button>
 <button onclick="window.resetGagaDraw()" class="bg-red-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-red-600 text-sm sm:text-xl transition transform hover:scale-105 w-full sm:w-auto mt-2 sm:mt-0">🔄 추첨 초기화</button>
 </div>
-<div id="gaga-draw-stats" class="font-bold text-amber-700 text-base sm:text-2xl text-center">대기: 0명</div>
+<div id="gaga-draw-stats" class="font-bold text-amber-700 text-base sm:text-2xl text-center" aria-live="polite">대기: 0명</div>
 </div>
 
 <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
@@ -238,7 +238,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="gagaDrawModal" class="gaga-modal-overlay flex-col overflow-hidden">
+<div id="gagaDrawModal" class="gaga-modal-overlay flex-col overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="gagaDrawMainTitle">
 <div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-[98vh] w-[98vw] max-w-none mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
 <div id="gagaDrawResultGrid" class=""></div>
@@ -246,9 +246,9 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 </div>
 </div>
 
-<div id="timerSelectModal" class="gaga-modal-overlay" onclick="window.closeTimerSelectModal()">
+<div id="timerSelectModal" class="gaga-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="timer-select-title" onclick="window.closeTimerSelectModal()">
     <div class="gaga-modal-content" style="max-width: 400px; padding:30px;" onclick="event.stopPropagation()">
-        <h2 class="text-3xl font-black text-orange-500 mb-6">⏱️ 가가볼 타이머</h2>
+        <h2 id="timer-select-title" class="text-3xl font-black text-orange-500 mb-6">⏱️ 가가볼 타이머</h2>
         <div class="flex flex-col gap-4 font-sans">
             <button class="bg-orange-500 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-600 transition" onclick="window.open('https://youtu.be/Nn9Exxw5Gg4', '_blank'); window.closeTimerSelectModal();">99초 타이머</button>
             <button class="bg-orange-700 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-800 transition" onclick="window.open('https://youtu.be/eVGSsArJF6k', '_blank'); window.closeTimerSelectModal();">60초 타이머</button>
@@ -256,7 +256,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     </div>
 </div>
 
-<div id="rouletteModal" class="gaga-modal-overlay" onclick="window.closeRouletteModal()">
+<div id="rouletteModal" class="gaga-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rouletteModalTitle" onclick="window.closeRouletteModal()">
 <div class="gaga-modal-content" style="max-width: 950px; padding: 50px;" onclick="event.stopPropagation()">
     <div class="flex justify-between items-center mb-8">
         <h2 id="rouletteModalTitle" class="text-3xl sm:text-5xl font-black text-slate-800">🎡 오늘의 미션 룰렛</h2>

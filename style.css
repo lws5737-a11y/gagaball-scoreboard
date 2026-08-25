@@ -3,6 +3,11 @@
 body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
 .font-jua { font-family: 'Jua', sans-serif; }
 
+:focus-visible {
+    outline: 4px solid #f59e0b;
+    outline-offset: 3px;
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -134,4 +139,13 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
     #gagaball-section .score-item .name { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #gagaball-section .score-item .score-val { font-size: 2.2rem; margin: 5px 0; }
     #gagaball-section .score-ctrl button { width: 40px; height: 32px; font-size: 1.5rem; border-radius: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
