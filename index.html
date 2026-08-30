@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e293b">
 <title>동산초 가가볼 콜로세움 made by 우석쌤</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="style.css">
@@ -51,22 +52,24 @@ Google 계정으로 시작하기
 <div class="max-w-[98%] mx-auto flex flex-col xl:flex-row justify-between gap-3 items-center" id="header-inner-container">
 <div class="flex items-center gap-2 shrink-0">
 <h1 class="text-lg sm:text-2xl font-bold flex items-center gap-2 whitespace-nowrap font-jua tracking-wide">
-<span>🏟️</span> 동산초 가가볼 콜로세움 <span class="text-sm font-normal text-slate-400 hidden xl:inline ml-1 font-sans tracking-normal">made by 우석쌤</span>
+<span aria-hidden="true">🏟️</span><span class="mobile-app-title">가가볼 콜로세움</span><span class="desktop-app-title">동산초 가가볼 콜로세움</span> <span class="text-sm font-normal text-slate-400 hidden xl:inline ml-1 font-sans tracking-normal">made by 우석쌤</span>
 </h1>
 </div>
 
-<div class="flex flex-wrap xl:flex-nowrap items-center justify-center gap-2 sm:gap-4 flex-1 w-full xl:w-auto mt-2 xl:mt-0 font-jua">
+<div id="header-actions" class="flex flex-wrap xl:flex-nowrap items-center justify-center gap-2 sm:gap-4 flex-1 w-full xl:w-auto mt-2 xl:mt-0 font-jua">
     <div id="gaga-header-tabs" class="flex bg-slate-900/50 p-1 rounded-xl shadow-inner mr-0 xl:mr-4 border border-slate-700">
         <button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg bg-slate-100 text-slate-800 shadow-sm transition whitespace-nowrap font-black">🏆 개인전</button>
         <button onclick="window.switchGagaTab('team')" id="gaga-btn-team" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">⚔️ 팀전</button>
         <button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">🥇 명예의전당</button>
     </div>
-    <button onclick="window.openSmartRouletteModal()" class="bg-purple-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🎡 미션 룰렛</button>
-    <button onclick="window.openTimerSelectModal()" class="bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">⏱️ 타이머</button>
-    <button onclick="window.resetAllScoresDB()" class="bg-slate-200 text-slate-700 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🔄 점수 초기화</button>
+    <div id="header-tools" class="flex items-center justify-center gap-2 sm:gap-4">
+    <button onclick="window.openSmartRouletteModal()" class="header-tool-btn bg-purple-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🎡 미션 룰렛</button>
+    <button onclick="window.openTimerSelectModal()" class="header-tool-btn bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">⏱️ 타이머</button>
+    <button onclick="window.resetAllScoresDB()" class="header-tool-btn bg-slate-200 text-slate-700 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🔄 점수 초기화</button>
+    </div>
 </div>
 
-<div class="flex items-center gap-2 shrink-0 justify-end w-full xl:w-auto">
+<div id="header-utilities" class="flex items-center gap-2 shrink-0 justify-end w-full xl:w-auto">
 <div id="sync-status" class="hidden items-center text-xs font-bold bg-slate-700 px-2 py-1 rounded-md" role="status" aria-live="polite" title="클라우드 동기화 상태">
 <svg class="animate-spin h-3 w-3 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
 <span class="hidden sm:inline" data-sync-label>동기화</span>
@@ -100,18 +103,18 @@ Google 계정으로 시작하기
 
 <div id="gaga-view-score">
 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4 bg-amber-50 p-4 sm:p-6 rounded-2xl border-2 border-amber-200 shadow-sm mt-0">
-<div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
+<div id="draw-controls" class="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
 <span class="font-black text-amber-800 text-lg sm:text-2xl">🎯 참가 학생 뽑기:</span>
-<div class="flex items-center bg-white rounded-lg border-2 border-amber-300 overflow-hidden mx-1">
-    <button onclick="window.changeDrawCount(-1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition">-</button>
+<div id="draw-count-control" class="flex items-center bg-white rounded-lg border-2 border-amber-300 overflow-hidden mx-1">
+    <button onclick="window.changeDrawCount(-1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition" aria-label="추첨 인원 줄이기">-</button>
     <input type="number" id="gaga-draw-count" min="1" max="10" value="8" readonly class="w-10 sm:w-12 text-center font-bold text-lg sm:text-xl border-none outline-none bg-transparent">
-    <button onclick="window.changeDrawCount(1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition">+</button>
+    <button onclick="window.changeDrawCount(1)" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 font-black text-amber-800 transition" aria-label="추첨 인원 늘리기">+</button>
 </div>
 <span class="font-bold text-amber-800 text-lg sm:text-xl mr-2">명</span>
-<button onclick="window.triggerGagaDraw('all')" class="bg-slate-800 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-700 text-sm sm:text-xl transition transform hover:scale-105">전체</button>
-<button onclick="window.triggerGagaDraw('남')" class="bg-blue-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-600 text-sm sm:text-xl transition transform hover:scale-105">남학생</button>
-<button onclick="window.triggerGagaDraw('여')" class="bg-pink-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-pink-600 text-sm sm:text-xl transition transform hover:scale-105">여학생</button>
-<button onclick="window.resetGagaDraw()" class="bg-red-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-red-600 text-sm sm:text-xl transition transform hover:scale-105 w-full sm:w-auto mt-2 sm:mt-0">🔄 추첨 초기화</button>
+<button onclick="window.triggerGagaDraw('all')" class="draw-action bg-slate-800 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-slate-700 text-sm sm:text-xl transition transform hover:scale-105">전체</button>
+<button onclick="window.triggerGagaDraw('남')" class="draw-action bg-blue-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-blue-600 text-sm sm:text-xl transition transform hover:scale-105">남학생</button>
+<button onclick="window.triggerGagaDraw('여')" class="draw-action bg-pink-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-pink-600 text-sm sm:text-xl transition transform hover:scale-105">여학생</button>
+<button onclick="window.resetGagaDraw()" class="draw-reset bg-red-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold shadow-sm hover:bg-red-600 text-sm sm:text-xl transition transform hover:scale-105 w-full sm:w-auto mt-2 sm:mt-0">🔄 추첨 초기화</button>
 </div>
 <div id="gaga-draw-stats" class="font-bold text-amber-700 text-base sm:text-2xl text-center" aria-live="polite">대기: 0명</div>
 </div>

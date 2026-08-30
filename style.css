@@ -2,6 +2,16 @@
 
 body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
 .font-jua { font-family: 'Jua', sans-serif; }
+.mobile-app-title { display: none; }
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+button, select, input, textarea, [role="button"] {
+    touch-action: manipulation;
+}
 
 :focus-visible {
     outline: 4px solid #f59e0b;
@@ -134,11 +144,358 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 .float-score-minus { color: #ef4444; }
 
 @media screen and (max-width: 640px) {
-    #gagaball-section .scoreboard-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px; }
-    #gagaball-section .score-item { padding: 10px 6px; border-width: 2px; border-radius: 12px; }
-    #gagaball-section .score-item .name { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    #gagaball-section .score-item .score-val { font-size: 2.2rem; margin: 5px 0; }
-    #gagaball-section .score-ctrl button { width: 40px; height: 32px; font-size: 1.5rem; border-radius: 6px; }
+    body {
+        padding-bottom: calc(5.75rem + env(safe-area-inset-bottom)) !important;
+    }
+
+    .mobile-app-title { display: inline; }
+    .desktop-app-title { display: none; }
+
+    #main-header {
+        position: sticky !important;
+        inset: auto !important;
+        top: 0 !important;
+        padding: max(0.45rem, env(safe-area-inset-top)) 0.5rem 0.5rem !important;
+    }
+
+    #header-inner-container {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.45rem 0.5rem !important;
+        align-items: center;
+        max-width: 100% !important;
+    }
+
+    #header-inner-container > :first-child {
+        min-width: 0;
+    }
+
+    #header-inner-container h1 {
+        font-size: 0.98rem !important;
+        gap: 0.3rem !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #header-actions {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.4rem !important;
+        margin-top: 0 !important;
+        min-width: 0;
+    }
+
+    #gaga-header-tabs {
+        width: 100%;
+        margin: 0 !important;
+    }
+
+    #gaga-header-tabs button {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 42px;
+        padding: 0.45rem 0.2rem !important;
+        font-size: 0.875rem !important;
+    }
+
+    #header-tools {
+        width: 100%;
+        justify-content: flex-start !important;
+        gap: 0.45rem !important;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: none;
+        padding: 0 0.05rem 0.15rem;
+    }
+
+    #header-tools::-webkit-scrollbar { display: none; }
+
+    .header-tool-btn {
+        min-height: 42px;
+        padding: 0.55rem 0.8rem !important;
+        font-size: 0.875rem !important;
+        flex: 0 0 auto;
+    }
+
+    #header-utilities {
+        grid-column: 2;
+        grid-row: 1;
+        width: auto !important;
+        gap: 0.35rem !important;
+    }
+
+    #header-utilities button {
+        min-width: 40px;
+        min-height: 40px;
+    }
+
+    #current-class-display {
+        padding: 0.45rem 0.6rem !important;
+        max-width: 5.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #header-utilities > button:last-child {
+        padding: 0.45rem 0.55rem !important;
+    }
+
+    #main-container {
+        margin-top: 0 !important;
+        max-width: 100% !important;
+        padding: 0.5rem !important;
+    }
+
+    #gagaball-section {
+        padding: 0.55rem !important;
+        border-radius: 1rem !important;
+    }
+
+    #gaga-view-score > :first-child {
+        padding: 0.75rem !important;
+        gap: 0.55rem !important;
+        border-radius: 0.9rem !important;
+    }
+
+    #draw-controls {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.45rem !important;
+    }
+
+    #draw-controls > span:first-child {
+        grid-column: 1 / -1;
+        font-size: 1rem !important;
+        text-align: left;
+    }
+
+    #draw-count-control {
+        grid-column: 1 / 3;
+        width: 100%;
+        min-height: 46px;
+        margin: 0 !important;
+    }
+
+    #draw-count-control button {
+        min-width: 48px;
+        align-self: stretch;
+    }
+
+    #draw-count-control input { flex: 1; }
+
+    #draw-count-control + span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        font-size: 1rem !important;
+    }
+
+    .draw-action, .draw-reset {
+        min-height: 48px;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0.5rem 0.25rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    .draw-reset { grid-column: 1 / -1; }
+    #gaga-draw-stats { width: 100%; font-size: 0.95rem !important; }
+
+    #gaga-view-score h3 {
+        font-size: 1.45rem !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    #gagaball-section .scoreboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        margin-bottom: 15px;
+    }
+
+    #gagaball-section .score-item {
+        min-width: 0;
+        padding: 9px 6px 10px;
+        border-width: 2px;
+        border-radius: 12px;
+    }
+
+    #gagaball-section .score-item .avatar-wrapper {
+        width: 72px !important;
+        height: 72px !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    #gagaball-section .score-item .name {
+        font-size: 1.08rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #gagaball-section .score-item .score-val {
+        font-size: 2.5rem;
+        margin: 5px 0;
+    }
+
+    #gagaball-section .score-ctrl {
+        gap: 0.45rem;
+    }
+
+    #gagaball-section .score-ctrl button {
+        width: 48px;
+        height: 44px;
+        font-size: 1.7rem;
+        border-radius: 9px;
+    }
+
+    .attendance-btn {
+        min-height: 38px;
+        min-width: 48px;
+    }
+
+    .ranking-layout {
+        flex-direction: column !important;
+        gap: 1rem;
+        padding: 1.5rem 0.1rem 0 !important;
+    }
+
+    .rank-column {
+        width: 100% !important;
+        padding-top: 0 !important;
+    }
+
+    .rank-first { order: 1; }
+    .rank-second { order: 2; }
+    .rank-third { order: 3; }
+
+    .rank-podium-card {
+        height: 165px !important;
+        padding: 1rem 0.65rem !important;
+        border-width: 4px !important;
+        border-radius: 1.4rem !important;
+    }
+
+    .rank-podium-avatar {
+        width: 76px !important;
+        height: 76px !important;
+    }
+
+    .rank-podium-name { font-size: 2rem !important; }
+    .rank-podium-score { font-size: 1.7rem !important; }
+
+    .ranking-list-wrap {
+        width: 100% !important;
+        height: min(52vh, 430px) !important;
+        margin-top: 1rem !important;
+    }
+
+    #gaga-ranking-list > div {
+        min-height: 78px;
+    }
+
+    #gaga-team-matchups > div {
+        padding: 0.45rem !important;
+        gap: 0.55rem !important;
+    }
+
+    #gaga-team-matchups button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    #tab-navigation {
+        padding: 0.4rem 0.5rem max(0.45rem, env(safe-area-inset-bottom)) !important;
+    }
+
+    #tab-inner-container { gap: 0.5rem !important; }
+
+    #tab-inner-container button {
+        min-height: 58px;
+        padding: 0.45rem !important;
+        border-radius: 0.8rem !important;
+    }
+
+    #tab-inner-container button span:first-child { font-size: 1.15rem !important; }
+    #tab-inner-container button span:last-child { font-size: 0.95rem !important; }
+
+    .gaga-modal-overlay {
+        align-items: flex-start;
+        padding: max(0.65rem, env(safe-area-inset-top)) 0.65rem max(0.65rem, env(safe-area-inset-bottom));
+        overflow-y: auto;
+    }
+
+    .gaga-modal-content {
+        width: 100% !important;
+        max-height: calc(100dvh - 1.3rem);
+        margin: auto 0;
+        padding: 1rem !important;
+        border-radius: 1rem;
+        overflow-y: auto;
+    }
+
+    #gagaDrawModal .gaga-modal-content {
+        height: calc(100dvh - 1.3rem) !important;
+        max-height: calc(100dvh - 1.3rem) !important;
+        padding: 0.35rem !important;
+        overflow: hidden;
+    }
+
+    #gagaDrawMainTitle {
+        font-size: 1.75rem !important;
+        margin-bottom: 0.4rem !important;
+    }
+
+    #gagaDrawResultGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        grid-template-rows: none !important;
+        grid-auto-rows: minmax(190px, auto);
+        overflow-y: auto !important;
+        gap: 0.45rem !important;
+        padding: 0.2rem !important;
+    }
+
+    .draw-result-card { min-height: 190px; }
+    .draw-result-avatar { max-height: 92px !important; }
+    .draw-result-name { font-size: 1.45rem !important; }
+    .draw-result-card button { min-width: 44px; min-height: 44px; }
+
+    #gagaDrawModal .gaga-modal-content > button {
+        min-height: 56px;
+        padding: 0.65rem !important;
+        margin-top: 0.4rem !important;
+        font-size: 1.35rem !important;
+    }
+
+    .roulette-container {
+        max-width: min(100%, 55vh);
+    }
+
+    .roulette-pointer {
+        top: -28px;
+        font-size: 3rem;
+    }
+
+    #rouletteModalTitle { font-size: 1.65rem !important; }
+
+    #class-selection-screen {
+        padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+    }
+
+    #class-selection-screen > div.relative {
+        padding: 1rem !important;
+        margin: 0 !important;
+    }
+
+    #class-selection-screen h2 { font-size: 2rem !important; }
+    #startup-class-list { max-height: 56dvh !important; }
+
+    #manage-modal {
+        padding: max(0.6rem, env(safe-area-inset-top)) 0.6rem max(0.6rem, env(safe-area-inset-bottom)) !important;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

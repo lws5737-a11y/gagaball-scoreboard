@@ -516,10 +516,10 @@ window.renderGagaball = function() {
         const cuteAvatar = window.generateCuteAvatar(s); 
 
         const cardHTML = `
-            <div class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};">
+            <article class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점">
                 <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
                     <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
-                    <button class="${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})">${btnText}</button>
+                    <button class="attendance-btn ${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${btnText} 상태 변경">${btnText}</button>
                 </div>
                 
                 <div class="avatar-wrapper relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] mx-auto mb-3">
@@ -534,10 +534,10 @@ window.renderGagaball = function() {
                 <div class="name relative z-20">${escapeHTML(s.name)} <span class="text-xs sm:text-lg">(${escapeHTML(s.gender)})</span></div>
                 <div class="score-val relative z-20">${s.score || 0}</div>
                 <div class="score-ctrl relative z-20">
-                    <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
-                    <button class="hover:bg-blue-600" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                    <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">-</button>
+                    <button class="hover:bg-blue-600" onclick="window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
                 </div>
-            </div>
+            </article>
         `;
         if(s.attendance) activeHTML += cardHTML; else inactiveHTML += cardHTML;
     });
@@ -668,14 +668,14 @@ window.renderGagaRanking = function() {
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
+        <div class="rank-podium-card flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} ${highlightClass} transition-all cursor-pointer ${sizeClass} ${transformClass} w-full relative" onclick="window.toggleChampionSelection(${s.no})">
             <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
             
-            <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
+            <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="rank-podium-avatar ${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
             
             <div class="flex flex-col flex-1 items-center justify-center px-2 sm:px-4 truncate h-full">
-                <div class="${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${escapeHTML(s.name)}</div>
-                <div class="${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
+                <div class="rank-podium-name ${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${escapeHTML(s.name)}</div>
+                <div class="rank-podium-score ${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
             </div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all ${refStampOpacity} shrink-0 ${stampSize}" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
@@ -728,25 +728,23 @@ window.renderGagaRanking = function() {
     }
 
     if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="w-full flex justify-center z-10 shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
-        let p2 = top3[1] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
-        let p3 = top3[2] ? `<div class="w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
+        let p1 = top3[0] ? `<div class="podium-slot w-full flex justify-center z-10 shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
+        let p2 = top3[1] ? `<div class="podium-slot w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
+        let p3 = top3[2] ? `<div class="podium-slot w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
 
         podiumHTML = `
-        <div class="flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
-            <div class="w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
+        <div class="ranking-layout flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
+            <div class="rank-column rank-second w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
                 ${p2}
             </div>
-            <div class="w-[35%] flex flex-col items-center z-10 shrink-0">
+            <div class="rank-column rank-first w-[35%] flex flex-col items-center z-10 shrink-0">
                 ${p1}
-                <div class="w-full mt-6 sm:mt-10 relative h-[400px] sm:h-[500px] lg:h-[600px] pb-10">
-                    ${listHTML}
-                </div>
             </div>
-            <div class="w-[32%] flex flex-col items-center pt-32 lg:pt-40 shrink-0">
+            <div class="rank-column rank-third w-[32%] flex flex-col items-center pt-32 lg:pt-40 shrink-0">
                 ${p3}
             </div>
         </div>
+        ${listHTML ? `<div class="ranking-list-wrap w-full max-w-4xl mx-auto mt-6 sm:mt-10 relative h-[400px] sm:h-[500px] lg:h-[600px] pb-10">${listHTML}</div>` : ''}
         `;
     } else {
         podiumHTML = `<div class="relative w-full max-w-4xl mx-auto h-[500px] mt-10">${listHTML}</div>`;
@@ -801,18 +799,18 @@ const generateGridCards = (students) => {
         const cuteAvatar = window.generateCuteAvatar(s);
         
         return `
-            <div class="border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
+            <div class="draw-result-card border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
                 
                 <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2 relative">
-                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="draw-result-avatar h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
                 
-                <div class="text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${escapeHTML(s.name)}</div>
+                <div class="draw-result-name text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${escapeHTML(s.name)}</div>
                 
                 <div class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-600 flex items-center justify-center gap-3 w-full shrink-0 pb-1">
-                    <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)">-</button>
+                    <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">-</button>
                     <span id="modal-score-${s.no}" class="w-12 lg:w-16 text-center tracking-tighter drop-shadow-sm">${s.score || 0}점</span>
-                    <button class="bg-blue-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, 1)">+</button>
+                    <button class="bg-blue-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
                 </div>
             </div>
         `;
