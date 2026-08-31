@@ -221,6 +221,69 @@ window.toggleAttendance = function(no) {
     }
 };
 
+window.openAddStudentModal = function() {
+    if (!currentClass || !classData[currentClass]) {
+        alert("학생을 추가할 학급을 먼저 선택해주세요.");
+        return;
+    }
+
+    const students = classData[currentClass];
+    const nextNumber = students.length > 0
+        ? Math.max(...students.map(student => Number(student.no) || 0)) + 1
+        : 1;
+    const modal = document.getElementById('addStudentModal');
+    const form = document.getElementById('add-student-form');
+    form.reset();
+    document.getElementById('add-student-class-name').innerText = `${currentClass} 학급`;
+    document.getElementById('add-student-number').value = nextNumber;
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('add-student-name').focus(), 0);
+};
+
+window.closeAddStudentModal = function() {
+    const modal = document.getElementById('addStudentModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.addStudent = function() {
+    if (!currentClass || !classData[currentClass]) return;
+
+    const no = Number(document.getElementById('add-student-number').value);
+    const name = document.getElementById('add-student-name').value.trim();
+    const gender = document.getElementById('add-student-gender').value;
+
+    if (!Number.isInteger(no) || no < 1) return alert("학생 번호는 1 이상의 정수로 입력해주세요.");
+    if (!name) return alert("학생 이름을 입력해주세요.");
+    if (gender !== '남' && gender !== '여') return alert("성별을 선택해주세요.");
+    if (classData[currentClass].some(student => Number(student.no) === no)) {
+        return alert(`${no}번 학생이 이미 등록되어 있습니다.`);
+    }
+
+    classData[currentClass].push(mergeStudent(null, { no, name, gender }));
+    classData[currentClass].sort((a, b) => a.no - b.no);
+    saveData();
+    window.closeAddStudentModal();
+    window.renderGagaball();
+    window.renderGagaRanking();
+};
+
+window.deleteStudent = function(no) {
+    if (!currentClass || !classData[currentClass]) return;
+    const student = classData[currentClass].find(item => Number(item.no) === Number(no));
+    if (!student) return;
+    if (!confirm(`${student.no}번 ${student.name} 학생을 삭제하시겠습니까?\n점수와 경기 기록도 함께 삭제됩니다.`)) return;
+
+    classData[currentClass] = classData[currentClass].filter(item => Number(item.no) !== Number(no));
+    window.championsSelection = (window.championsSelection || []).filter(selectedNo => Number(selectedNo) !== Number(no));
+    currentGagaTeams.forEach(team => {
+        team.members = team.members.filter(member => Number(member.no) !== Number(no));
+    });
+    saveData();
+    window.renderGagaball();
+    window.renderGagaRanking();
+    if (currentGagaTeams.length > 0) window.renderGagaTeamView();
+};
+
 // ==========================================
 // 3. 파이어베이스 연동 로직
 // ==========================================
@@ -517,7 +580,8 @@ window.renderGagaball = function() {
 
         const cardHTML = `
             <article class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점">
-                <div class="flex justify-between items-center mb-2 sm:mb-3 relative z-20">
+                <button class="student-delete-btn absolute top-1.5 right-1.5 z-30 bg-white/90 text-red-500 border border-red-200 rounded-full font-black shadow-sm hover:bg-red-500 hover:text-white transition" onclick="window.deleteStudent(${s.no})" aria-label="${escapeHTML(s.name)} 학생 삭제" title="학생 삭제">&times;</button>
+                <div class="student-card-meta flex justify-between items-center mb-2 sm:mb-3 relative z-20">
                     <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
                     <button class="attendance-btn ${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${btnText} 상태 변경">${btnText}</button>
                 </div>
@@ -1590,6 +1654,7 @@ document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
 
     const dialogs = [
+        ['addStudentModal', window.closeAddStudentModal],
         ['missionDescModal', window.closeMissionDescModal],
         ['rouletteEditModal', window.closeRouletteEditModal],
         ['avatarSelectModal', window.closeAvatarSelectModal],
