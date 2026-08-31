@@ -580,9 +580,9 @@ window.renderGagaball = function() {
 
         const cardHTML = `
             <article class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점">
+                <span class="student-number absolute top-2 left-2 z-30 font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
                 <button class="student-delete-btn absolute top-1.5 right-1.5 z-30 bg-white/90 text-red-500 border border-red-200 rounded-full font-black shadow-sm hover:bg-red-500 hover:text-white transition" onclick="window.deleteStudent(${s.no})" aria-label="${escapeHTML(s.name)} 학생 삭제" title="학생 삭제">&times;</button>
-                <div class="student-card-meta flex justify-between items-center mb-2 sm:mb-3 relative z-20">
-                    <span class="font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
+                <div class="attendance-row flex justify-center items-center mb-2 sm:mb-3 relative z-20">
                     <button class="attendance-btn ${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${btnText} 상태 변경">${btnText}</button>
                 </div>
                 
@@ -1681,3 +1681,4 @@ document.addEventListener('keydown', (event) => {
         window.closeManageModal();
     }
 });
+
