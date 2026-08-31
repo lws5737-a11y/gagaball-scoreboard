@@ -122,6 +122,131 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #rouletteCanvas { border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; height: 100%; }
 .roulette-pointer { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); font-size: 5rem; text-shadow: 0 5px 10px rgba(0,0,0,0.4); z-index: 10; }
 
+/* 개인전 결과: 현상수배 포스터 효과 */
+.draw-result-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.draw-result-card > :not(.wanted-overlay) { position: relative; z-index: 2; }
+.wanted-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    color: #451a03;
+    border: 8px double #78350f;
+    background:
+        linear-gradient(rgba(254, 243, 199, 0.76), rgba(217, 119, 6, 0.28)),
+        repeating-linear-gradient(8deg, rgba(120, 53, 15, 0.08) 0 2px, transparent 2px 7px);
+    transition: opacity 0.2s ease;
+}
+.wanted-heading,
+.wanted-subtitle {
+    display: block;
+    padding: 0.1em 0.45em;
+    border: 3px solid currentColor;
+    background: rgba(254, 243, 199, 0.92);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    box-shadow: 3px 3px 0 rgba(69, 26, 3, 0.35);
+}
+.wanted-heading { font-size: clamp(1.15rem, 3vw, 2.2rem); transform: rotate(-3deg); }
+.wanted-subtitle { font-size: clamp(1rem, 2.5vw, 1.8rem); transform: rotate(2deg); }
+.wanted-stars { font-size: clamp(0.85rem, 2vw, 1.4rem); letter-spacing: 0.25em; }
+.draw-result-card.wanted-active {
+    border-color: #78350f !important;
+    filter: sepia(0.7) contrast(1.08);
+    transform: rotate(-1deg) scale(0.98);
+    box-shadow: 0 0 0 5px #f59e0b, 0 14px 32px rgba(69, 26, 3, 0.65);
+    animation: wantedReveal 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.2);
+}
+.draw-result-card.wanted-active .wanted-overlay { opacity: 1; }
+.draw-result-card.wanted-active .draw-result-avatar { filter: grayscale(0.25) sepia(0.8) contrast(1.15); }
+.draw-result-card.wanted-active .draw-result-name { color: #451a03 !important; text-shadow: 1px 1px 0 #fef3c7; }
+
+@keyframes wantedReveal {
+    0% { transform: scale(1.15) rotate(4deg); filter: sepia(0) contrast(1); }
+    45% { transform: scale(0.94) rotate(-4deg); }
+    100% { transform: rotate(-1deg) scale(0.98); filter: sepia(0.7) contrast(1.08); }
+}
+
+/* 팀전 결과: 왕 선정 효과 */
+.team-player-card { isolation: isolate; }
+.team-king-active {
+    z-index: 5;
+    border-color: #f59e0b !important;
+    background: linear-gradient(145deg, #fff7c2 0%, #fef3c7 45%, #fde68a 100%) !important;
+    box-shadow: 0 0 0 5px #fbbf24, 0 0 32px 10px rgba(250, 204, 21, 0.72), 0 14px 28px rgba(120, 53, 15, 0.35) !important;
+    animation: kingCoronation 0.65s cubic-bezier(0.2, 0.9, 0.25, 1.25), kingGlow 1.5s ease-in-out 0.65s infinite;
+}
+.team-king-active::before {
+    content: '';
+    position: absolute;
+    inset: -12px;
+    z-index: -1;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, #f59e0b, #fef3c7, #f97316, #fef08a, #f59e0b);
+    animation: royalSpin 3s linear infinite;
+}
+.team-king-effect { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+.king-crown {
+    position: absolute;
+    top: -2.8rem;
+    left: 50%;
+    font-size: clamp(3.5rem, 7vw, 6.5rem);
+    line-height: 1;
+    transform: translateX(-50%) rotate(8deg);
+    filter: drop-shadow(0 8px 7px rgba(120, 53, 15, 0.55));
+    animation: crownBounce 1s ease-in-out infinite;
+}
+.king-sparkle { position: absolute; top: 10%; font-size: clamp(1.6rem, 4vw, 3.2rem); animation: sparklePulse 0.75s ease-in-out infinite alternate; }
+.king-sparkle-left { left: -0.35rem; }
+.king-sparkle-right { right: -0.35rem; animation-delay: 0.25s; }
+.king-label {
+    position: absolute;
+    left: 50%;
+    bottom: -1rem;
+    transform: translateX(-50%) rotate(-2deg);
+    min-width: 4.2rem;
+    padding: 0.2rem 0.8rem;
+    border: 3px solid #fef3c7;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #b45309, #f59e0b);
+    color: white;
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-weight: 900;
+    line-height: 1.1;
+    text-shadow: 0 2px 0 #78350f;
+    box-shadow: 0 5px 12px rgba(120, 53, 15, 0.45);
+}
+
+@keyframes kingCoronation {
+    0% { transform: scale(0.72) rotate(-5deg); filter: brightness(1.8); }
+    55% { transform: scale(1.12) rotate(3deg); }
+    100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+}
+@keyframes kingGlow {
+    0%, 100% { box-shadow: 0 0 0 5px #fbbf24, 0 0 24px 6px rgba(250, 204, 21, 0.55), 0 14px 28px rgba(120, 53, 15, 0.3); }
+    50% { box-shadow: 0 0 0 8px #fde68a, 0 0 42px 16px rgba(250, 204, 21, 0.88), 0 18px 34px rgba(120, 53, 15, 0.42); }
+}
+@keyframes royalSpin { to { transform: rotate(360deg); } }
+@keyframes crownBounce {
+    0%, 100% { transform: translateX(-50%) translateY(0) rotate(8deg) scale(1); }
+    50% { transform: translateX(-50%) translateY(-8px) rotate(-5deg) scale(1.12); }
+}
+@keyframes sparklePulse { from { transform: scale(0.65) rotate(-12deg); opacity: 0.45; } to { transform: scale(1.2) rotate(12deg); opacity: 1; } }
+
 @keyframes shake {
 0% { transform: translate(1px, 1px) rotate(0deg); }
 10% { transform: translate(-1px, -2px) rotate(-1deg); }

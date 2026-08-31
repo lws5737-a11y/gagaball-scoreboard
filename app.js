@@ -863,23 +863,45 @@ const generateGridCards = (students) => {
         const cuteAvatar = window.generateCuteAvatar(s);
         
         return `
-            <div class="draw-result-card border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;">
-                
+            <div class="draw-result-card border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;" onclick="window.toggleWantedEffect(event)" onkeydown="window.handleWantedEffectKey(event)" tabindex="0" role="button" aria-pressed="false" aria-label="${escapeHTML(s.name)} 학생 현상수배 효과 켜기">
+                <div class="wanted-overlay" aria-hidden="true">
+                    <span class="wanted-heading">WANTED</span>
+                    <span class="wanted-subtitle">현상수배</span>
+                    <span class="wanted-stars">★ ★ ★</span>
+                </div>
+                 
                 <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2 relative">
-                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="draw-result-avatar h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
+                    <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="draw-result-avatar h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="event.stopPropagation(); window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
                 
                 <div class="draw-result-name text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${escapeHTML(s.name)}</div>
                 
                 <div class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-600 flex items-center justify-center gap-3 w-full shrink-0 pb-1">
-                    <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">-</button>
+                    <button class="bg-red-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-red-600 transition shadow-md" onclick="event.stopPropagation(); window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">-</button>
                     <span id="modal-score-${s.no}" class="w-12 lg:w-16 text-center tracking-tighter drop-shadow-sm">${s.score || 0}점</span>
-                    <button class="bg-blue-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
+                    <button class="bg-blue-500 text-white rounded-xl w-10 h-10 lg:w-12 lg:h-12 flex items-center justify-center hover:bg-blue-600 transition shadow-md" onclick="event.stopPropagation(); window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
                 </div>
             </div>
         `;
     }).join('');
 }
+
+window.toggleWantedEffect = function(event) {
+    const card = event.currentTarget;
+    if (!card || event.target.closest('button, img')) return;
+    const isActive = card.classList.toggle('wanted-active');
+    card.setAttribute('aria-pressed', String(isActive));
+    const studentName = card.querySelector('.draw-result-name')?.innerText || '학생';
+    card.setAttribute('aria-label', `${studentName} 학생 현상수배 효과 ${isActive ? '끄기' : '켜기'}`);
+    if (isActive) window.playStampSound();
+    else window.playBumpSound();
+};
+
+window.handleWantedEffectKey = function(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    window.toggleWantedEffect(event);
+};
 
 window.startChampionsTournament = function() {
     if(window.championsSelection.length === 0) return;
@@ -1237,6 +1259,7 @@ window.toggleTeamKing = function(teamId, memberNo) {
     
     if(member.isKing) {
         window.playCoinSound(); 
+        window.fireConfetti();
     } else {
         window.playBumpSound(); 
     }
@@ -1262,10 +1285,16 @@ window.renderGagaTeamView = function() {
             }
 
             const isKing = m.isKing;
-            const kingCrown = isKing ? `<div class="absolute -top-6 sm:-top-8 lg:-top-10 left-1/2 transform -translate-x-1/2 text-4xl sm:text-5xl lg:text-6xl drop-shadow-lg z-30 animate-bounce" style="rotate: 10deg;">👑</div>` : '';
+            const kingCrown = isKing ? `
+                <div class="team-king-effect" aria-hidden="true">
+                    <span class="king-crown">👑</span>
+                    <span class="king-sparkle king-sparkle-left">✨</span>
+                    <span class="king-sparkle king-sparkle-right">✨</span>
+                    <span class="king-label">왕</span>
+                </div>` : '';
 
             return `
-            <div class="relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
+            <div class="team-player-card ${isKing ? 'team-king-active' : ''} relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
                 
                 <div class="relative w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-36 xl:h-36 mb-1 sm:mb-3 shrink-0">
                     ${kingCrown}
