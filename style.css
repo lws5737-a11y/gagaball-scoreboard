@@ -103,7 +103,7 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #gagaball-section .score-ctrl button:active { transform: scale(0.9); }
 #gagaball-section .score-ctrl button.minus { background: #e74c3c; }
 #gagaball-section .inactive-grid .score-item { border-color: #ddd; background: #fdfdfd; opacity: 0.6; padding: 15px; }
-.student-card-meta { padding-right: 2.6rem; }
+.attendance-row { min-height: 36px; }
 .student-delete-btn { width: 36px; height: 36px; font-size: 1.45rem; line-height: 1; }
 
 /* 모달 레이아웃 최적화 */
@@ -114,6 +114,9 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
     padding-top: 85px; 
 }
 #gagaDrawModal { z-index: 10000; }
+#floating-roulette-btn { z-index: 10010; }
+#rouletteModal { z-index: 10020; }
+#rouletteEditModal, #missionDescModal { z-index: 10030; }
 .gaga-modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 800px; width: 90%; position: relative; }
 .roulette-container { position: relative; width: 100%; max-width: 600px; aspect-ratio: 1 / 1; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
 #rouletteCanvas { border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; height: 100%; }
@@ -360,7 +363,8 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
         min-width: 48px;
     }
 
-    .student-card-meta { padding-right: 2.35rem; }
+    .attendance-row { min-height: 40px; }
+    .student-number { top: 0.5rem; left: 0.4rem; font-size: 0.78rem; }
     .student-delete-btn { width: 40px; height: 40px; top: 4px; right: 4px; }
 
     .ranking-layout {
@@ -558,3 +562,4 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
         transition-duration: 0.01ms !important;
     }
 }
+
