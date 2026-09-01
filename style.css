@@ -116,6 +116,12 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
     padding: 0.75rem;
 }
 #gagaDrawModal { z-index: 9100; }
+#gagaDrawModal .gaga-modal-content {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0;
+    margin: 0 auto !important;
+}
 #floating-roulette-btn { z-index: 9500; top: calc(var(--main-header-height) + (100dvh - var(--main-header-height)) / 2) !important; }
 #rouletteModal { z-index: 9600; }
 #rouletteEditModal, #missionDescModal { z-index: 9700; }
@@ -302,6 +308,19 @@ body.app-header-visible #manage-modal {
 .rank-ticker-track { overscroll-behavior-inline: contain; }
 .rank-ticker-spacer { width: calc(100vw - 2rem); height: 1px; }
 .rank-ticker-card { width: clamp(320px, 38vw, 520px); }
+.rank-podium-name {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: clamp(1.6rem, 3.3vw, 4.4rem) !important;
+}
+.rank-first .rank-podium-name { font-size: clamp(1.8rem, 3.8vw, 5rem) !important; }
+.rank-ticker-name {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: clamp(1.25rem, 2.4vw, 2.5rem);
+    line-height: 1.05;
+}
 #champions-fab-container { bottom: calc(14.5rem + env(safe-area-inset-bottom)) !important; }
 
 @media screen and (max-width: 640px) {
@@ -549,7 +568,8 @@ body.app-header-visible #manage-modal {
         height: 76px !important;
     }
 
-    .rank-podium-name { font-size: 2rem !important; }
+    .rank-podium-name,
+    .rank-first .rank-podium-name { font-size: clamp(1.45rem, 7vw, 2rem) !important; }
     .rank-podium-score { font-size: 1.7rem !important; }
 
     #gaga-view-rank { padding-bottom: 12rem !important; }
@@ -562,7 +582,7 @@ body.app-header-visible #manage-modal {
         width: min(88vw, 360px);
         min-height: 78px;
     }
-    .rank-ticker-card .text-2xl { font-size: 1.2rem !important; }
+    .rank-ticker-name { font-size: clamp(1.05rem, 5vw, 1.45rem) !important; }
     .rank-ticker-card .w-12 { width: 2.6rem !important; }
     #champions-fab-container { bottom: calc(11.5rem + env(safe-area-inset-bottom)) !important; }
 

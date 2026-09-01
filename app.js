@@ -667,6 +667,22 @@ window.toggleChampionSelection = function(no) {
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
 window.rankTickerScrollLeft = 0;
+window.rankWheelResumeTimer = null;
+
+window.handleRankTickerWheel = function(event) {
+    const ticker = event.currentTarget;
+    const wheelDistance = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+    if (!ticker || wheelDistance === 0) return;
+
+    event.preventDefault();
+    window.autoScrollActive = false;
+    ticker.scrollLeft += wheelDistance;
+    window.rankTickerScrollLeft = ticker.scrollLeft;
+    clearTimeout(window.rankWheelResumeTimer);
+    window.rankWheelResumeTimer = setTimeout(() => {
+        window.autoScrollActive = true;
+    }, 1200);
+};
 
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
@@ -736,8 +752,8 @@ window.renderGagaRanking = function() {
             
             <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="rank-podium-avatar ${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
             
-            <div class="flex flex-col flex-1 items-center justify-center px-2 sm:px-4 truncate h-full">
-                <div class="rank-podium-name ${nameSize} font-black text-slate-800 drop-shadow-sm whitespace-nowrap leading-tight mb-2 sm:mb-4">${escapeHTML(s.name)}</div>
+            <div class="flex flex-col flex-1 min-w-0 items-center justify-center px-2 sm:px-4 h-full">
+                <div class="rank-podium-name ${nameSize} font-black text-slate-800 drop-shadow-sm leading-tight mb-2 sm:mb-4 text-center break-keep">${escapeHTML(s.name)}</div>
                 <div class="rank-podium-score ${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
             </div>
             
@@ -760,7 +776,7 @@ window.renderGagaRanking = function() {
         <div class="rank-ticker-card flex flex-row items-center justify-between ${highlightClass} border-[3px] border-slate-200 rounded-2xl p-2 sm:p-3 shadow-sm transition-transform cursor-pointer shrink-0 h-[80px] sm:h-[96px]" onclick="window.toggleChampionSelection(${s.no})">
             <div class="w-12 sm:w-16 lg:w-20 text-center font-black text-slate-500 text-xl sm:text-2xl lg:text-4xl shrink-0">${s.rank}위</div>
             <img src="${escapeHTML(window.generateCuteAvatar(s))}" alt="${escapeHTML(s.name)} 아바타" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
-            <div class="flex-1 text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 truncate text-left pl-2">${escapeHTML(s.name)}</div>
+            <div class="rank-ticker-name flex-1 min-w-0 font-black text-slate-800 text-center px-1 break-keep">${escapeHTML(s.name)}</div>
             <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-red-600 shrink-0 text-right pr-2">${s.score || 0}점</div>
             
             <div class="cursor-pointer flex flex-col items-center justify-center transition-all transform ${refStampOpacity} shrink-0 mx-2 lg:mx-4" onclick="event.stopPropagation(); window.toggleReferee(${s.no})" title="심판 도장 토글">
@@ -780,7 +796,7 @@ window.renderGagaRanking = function() {
         
         listHTML = `
         <div class="ranking-ticker-shell">
-            <div id="gaga-ranking-list" class="rank-ticker-track flex flex-row items-center gap-3 w-full overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;" onscroll="window.rankTickerScrollLeft = this.scrollLeft" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
+            <div id="gaga-ranking-list" class="rank-ticker-track flex flex-row items-center gap-3 w-full overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;" onwheel="window.handleRankTickerWheel(event)" onscroll="window.rankTickerScrollLeft = this.scrollLeft" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true" ontouchcancel="window.autoScrollActive = true">
                 <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>
                 <div class="rank-ticker-spacer shrink-0" aria-hidden="true"></div>
                 ${cardsHTML}
