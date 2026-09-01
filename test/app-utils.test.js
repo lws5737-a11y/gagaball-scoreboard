@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     escapeHTML,
+    getRefereeEligibleTeams,
     limitSelectedReferees,
     mergeStudent,
     normalizeGender,
@@ -44,4 +45,30 @@ test('limitSelectedReferees replaces enough referees to satisfy the limit', () =
     const result = limitSelectedReferees(picked, remaining, 2);
     assert.equal(result.filter((student) => student.isReferee).length, 2);
     assert.deepEqual(result.map((student) => student.no).sort(), [1, 2, 5, 6]);
+});
+
+test('limitSelectedReferees keeps at most one referee in an individual match', () => {
+    const picked = [1, 2, 3].map((no) => ({ no, isReferee: true }));
+    const remaining = [{ no: 4, isReferee: false }, { no: 5, isReferee: false }];
+    const result = limitSelectedReferees(picked, remaining, 1);
+    assert.equal(result.filter((student) => student.isReferee).length, 1);
+});
+
+test('limitSelectedReferees removes excess referees when no replacement exists', () => {
+    const result = limitSelectedReferees([
+        { no: 1, isReferee: true },
+        { no: 2, isReferee: true }
+    ], [], 1);
+    assert.deepEqual(result.map((student) => student.no), [1]);
+});
+
+test('getRefereeEligibleTeams keeps referees out of the opposing team', () => {
+    const referee = { no: 1, isReferee: true };
+    const teams = [
+        { id: 1, members: [referee], targetSize: 3 },
+        { id: 2, members: [], targetSize: 3 },
+        { id: 3, members: [], targetSize: 3 },
+        { id: 4, members: [], targetSize: 3 }
+    ];
+    assert.deepEqual(getRefereeEligibleTeams(teams).map((team) => team.id), [3, 4]);
 });

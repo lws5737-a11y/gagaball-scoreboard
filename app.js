@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { escapeHTML, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
+import { escapeHTML, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -420,7 +420,14 @@ async function flushSaveData() {
 // ==========================================
 // 4. 앱 UI 제어 및 학급 선택 로직
 // ==========================================
+window.syncHeaderOffset = function() {
+    const header = document.getElementById('main-header');
+    if (!header || document.getElementById('app-container').classList.contains('hidden')) return;
+    document.documentElement.style.setProperty('--main-header-height', `${header.offsetHeight}px`);
+};
+
 window.openClassSelection = function() {
+    document.body.classList.remove('app-header-visible');
     document.getElementById('app-container').classList.add('hidden');
     document.getElementById('class-selection-screen').classList.remove('hidden');
     document.getElementById('class-selection-screen').classList.add('flex');
@@ -467,6 +474,8 @@ window.selectClass = function(className) {
     document.getElementById('class-selection-screen').classList.add('hidden');
     document.getElementById('class-selection-screen').classList.remove('flex');
     document.getElementById('app-container').classList.remove('hidden');
+    document.body.classList.add('app-header-visible');
+    requestAnimationFrame(window.syncHeaderOffset);
     
     const displayBtn = document.getElementById('current-class-display');
     if (displayBtn) {
@@ -477,6 +486,13 @@ window.selectClass = function(className) {
     
     window.showTab(currentTab);
 };
+
+const mainHeader = document.getElementById('main-header');
+if (mainHeader && 'ResizeObserver' in window) {
+    new ResizeObserver(window.syncHeaderOffset).observe(mainHeader);
+}
+window.addEventListener('resize', window.syncHeaderOffset);
+window.addEventListener('orientationchange', () => requestAnimationFrame(window.syncHeaderOffset));
 
 window.showTab = function(tabName) {
     currentTab = tabName;
@@ -647,33 +663,16 @@ window.toggleChampionSelection = function(no) {
     window.renderGagaRanking();
 }
 
-// 스크롤 제어를 위한 변수들 및 상단 복귀 함수 설정
+// 명예의전당 하단 순위 티커 제어
 window.rankAutoScrollInterval = null;
 window.autoScrollActive = true;
-window.rankAutoScrollReachedBottom = false;
-
-window.scrollToRankTop = function() {
-    const list = document.getElementById('gaga-ranking-list');
-    const returnBtn = document.getElementById('gaga-rank-return-btn');
-    if (list) {
-        window.autoScrollActive = false; 
-        list.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        if(returnBtn) {
-            returnBtn.classList.add('opacity-0', 'pointer-events-none');
-            returnBtn.classList.remove('opacity-100', 'pointer-events-auto');
-        }
-        
-        setTimeout(() => {
-            window.rankAutoScrollReachedBottom = false;
-            window.autoScrollActive = true;
-        }, 800);
-    }
-};
+window.rankTickerScrollLeft = 0;
 
 window.renderGagaRanking = function() {
     const container = document.getElementById('gaga-hall-of-fame-grid'); 
     if(!container || !currentClass) return;
+    const existingTicker = document.getElementById('gaga-ranking-list');
+    const preservedTickerPosition = existingTicker?.scrollLeft ?? window.rankTickerScrollLeft ?? 0;
     
     const studentsForRank = [...(classData[currentClass] || [])]
         .filter(s => s.attendance)
@@ -758,7 +757,7 @@ window.renderGagaRanking = function() {
         const refStampColor = s.isReferee ? 'border-red-500 text-red-500' : 'border-slate-300 text-slate-400';
 
         return `
-        <div class="flex flex-row items-center justify-between ${highlightClass} border-[3px] border-slate-200 rounded-2xl p-2 sm:p-4 lg:p-5 shadow-sm transition-transform cursor-pointer w-full shrink-0 h-[80px] sm:h-[110px] lg:h-[140px]" onclick="window.toggleChampionSelection(${s.no})">
+        <div class="rank-ticker-card flex flex-row items-center justify-between ${highlightClass} border-[3px] border-slate-200 rounded-2xl p-2 sm:p-3 shadow-sm transition-transform cursor-pointer shrink-0 h-[80px] sm:h-[96px]" onclick="window.toggleChampionSelection(${s.no})">
             <div class="w-12 sm:w-16 lg:w-20 text-center font-black text-slate-500 text-xl sm:text-2xl lg:text-4xl shrink-0">${s.rank}위</div>
             <img src="${escapeHTML(window.generateCuteAvatar(s))}" alt="${escapeHTML(s.name)} 아바타" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
             <div class="flex-1 text-2xl sm:text-4xl lg:text-5xl font-black text-slate-800 truncate text-left pl-2">${escapeHTML(s.name)}</div>
@@ -780,14 +779,12 @@ window.renderGagaRanking = function() {
         others.forEach(s => { cardsHTML += createListCard(s); });
         
         listHTML = `
-        <div class="relative w-full h-full">
-            <div id="gaga-ranking-list" class="absolute inset-0 flex flex-col gap-3 lg:gap-5 w-full px-1 overflow-y-auto scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
+        <div class="ranking-ticker-shell">
+            <div id="gaga-ranking-list" class="rank-ticker-track flex flex-row items-center gap-3 w-full overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;" onscroll="window.rankTickerScrollLeft = this.scrollLeft" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true">
                 <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>
+                <div class="rank-ticker-spacer shrink-0" aria-hidden="true"></div>
                 ${cardsHTML}
             </div>
-            <button id="gaga-rank-return-btn" class="absolute bottom-12 -right-4 sm:-right-8 bg-slate-800 hover:bg-slate-900 text-white w-10 h-10 sm:w-14 sm:h-14 rounded-full shadow-[0_5px_15px_rgba(0,0,0,0.4)] transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center transform hover:scale-110 border-2 border-slate-500" onclick="window.scrollToRankTop()" title="위로 가기">
-                <svg class="w-5 h-5 sm:w-8 sm:h-8 -mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 15l7-7 7 7"></path></svg>
-            </button>
         </div>`;
     }
 
@@ -808,43 +805,31 @@ window.renderGagaRanking = function() {
                 ${p3}
             </div>
         </div>
-        ${listHTML ? `<div class="ranking-list-wrap w-full max-w-4xl mx-auto mt-6 sm:mt-10 relative h-[400px] sm:h-[500px] lg:h-[600px] pb-10">${listHTML}</div>` : ''}
+        ${listHTML ? `<div class="ranking-list-wrap">${listHTML}</div>` : ''}
         `;
     } else {
-        podiumHTML = `<div class="relative w-full max-w-4xl mx-auto h-[500px] mt-10">${listHTML}</div>`;
+        podiumHTML = `<div class="ranking-list-wrap">${listHTML}</div>`;
     }
 
     container.innerHTML = podiumHTML;
+    const ticker = document.getElementById('gaga-ranking-list');
+    if (ticker) {
+        ticker.scrollLeft = Math.min(preservedTickerPosition, Math.max(0, ticker.scrollWidth - ticker.clientWidth));
+        window.rankTickerScrollLeft = ticker.scrollLeft;
+    }
 
-    // 새로운 자동 스크롤 로직 (버그 픽스 포함: 초기화 보장)
-    clearInterval(window.rankAutoScrollInterval);
-    window.rankAutoScrollReachedBottom = false; // ★ 화면을 다시 그릴 때 반드시 스크롤 상태도 초기화
-    
-    if (others.length > 0) {
+    if (others.length > 0 && !window.rankAutoScrollInterval) {
         window.rankAutoScrollInterval = setInterval(() => {
             if(!window.autoScrollActive) return;
             const list = document.getElementById('gaga-ranking-list');
-            const returnBtn = document.getElementById('gaga-rank-return-btn');
-            
-            if (list) {
-                // 맨 밑바닥에 도달했는지 확인 (안전하게 -1 픽셀 여유 계산)
-                if (Math.ceil(list.scrollTop + list.clientHeight) >= list.scrollHeight - 1) {
-                    if (!window.rankAutoScrollReachedBottom) {
-                        window.rankAutoScrollReachedBottom = true;
-                        // 화살표 버튼 스르륵 나타나기
-                        if(returnBtn) {
-                            returnBtn.classList.remove('opacity-0', 'pointer-events-none');
-                            returnBtn.classList.add('opacity-100', 'pointer-events-auto');
-                        }
-                    }
-                } else if (!window.rankAutoScrollReachedBottom) {
-                    // 바닥에 닿기 전까지만 계속 스크롤
-                    list.scrollTop += 1;
-                }
+            if (!list) return;
+            if (Math.ceil(list.scrollLeft + list.clientWidth) >= list.scrollWidth - 1) {
+                list.scrollLeft = 0;
             } else {
-                clearInterval(window.rankAutoScrollInterval);
+                list.scrollLeft += 2;
             }
-        }, 20); 
+            window.rankTickerScrollLeft = list.scrollLeft;
+        }, 16);
     }
 
     const fab = document.getElementById('champions-fab-container');
@@ -1127,7 +1112,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
     let picked = available.slice(0, actualDrawCount);
     
-    picked = limitSelectedReferees(picked, available.slice(actualDrawCount), 2);
+    picked = limitSelectedReferees(picked, available.slice(actualDrawCount), 1);
 
     picked.forEach(s => s.gagaDrawn = true);
     
@@ -1222,15 +1207,7 @@ window.executeGagaTeams = function(numTeams, available) {
     }
 
     referees.forEach((ref) => {
-        let eligibleTeams = teams.filter(t => t.members.length < t.targetSize);
-        let validTeams = eligibleTeams.filter(t => {
-            let matchupId = Math.floor((t.id - 1) / 2);
-            let refsInMatchup = teams.filter(tm => Math.floor((tm.id - 1) / 2) === matchupId)
-                                     .reduce((sum, tm) => sum + tm.members.filter(m => m.isReferee).length, 0);
-            return refsInMatchup < 2;
-        });
-        
-        if(validTeams.length === 0) validTeams = eligibleTeams;
+        const validTeams = getRefereeEligibleTeams(teams);
         
         let minMembers = Math.min(...validTeams.map(t => t.members.length));
         let candidates = validTeams.filter(t => t.members.length === minMembers);
@@ -1710,4 +1687,3 @@ document.addEventListener('keydown', (event) => {
         window.closeManageModal();
     }
 });
-

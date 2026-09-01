@@ -60,8 +60,22 @@ export function limitSelectedReferees(picked, remaining, maximumReferees = 2) {
         .map((student, index) => student.isReferee ? index : -1)
         .filter((index) => index >= 0);
 
-    while (refereeIndexes.length > maximumReferees && replacements.length > 0) {
-        result[refereeIndexes.pop()] = replacements.shift();
+    while (refereeIndexes.length > maximumReferees) {
+        const refereeIndex = refereeIndexes.pop();
+        if (replacements.length > 0) result[refereeIndex] = replacements.shift();
+        else result.splice(refereeIndex, 1);
     }
     return result;
+}
+
+export function getRefereeEligibleTeams(teams) {
+    const eligibleTeams = teams.filter((team) => team.members.length < team.targetSize);
+    const teamsWithoutMatchupReferee = eligibleTeams.filter((team) => {
+        const matchupId = Math.floor((team.id - 1) / 2);
+        return !teams
+            .filter((candidate) => Math.floor((candidate.id - 1) / 2) === matchupId)
+            .some((candidate) => candidate.members.some((member) => member.isReferee));
+    });
+
+    return teamsWithoutMatchupReferee.length > 0 ? teamsWithoutMatchupReferee : eligibleTeams;
 }
