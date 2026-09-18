@@ -1709,4 +1709,3 @@ document.addEventListener('keydown', (event) => {
         window.closeManageModal();
     }
 });
-
