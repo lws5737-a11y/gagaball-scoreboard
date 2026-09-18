@@ -32,6 +32,44 @@ export function mergeStudent(existingStudent, { no, name, gender }) {
         : defaults;
 }
 
+export function avatarPaths(gender) {
+    const prefix = gender === '남' ? 'boy' : gender === '여' ? 'girl' : null;
+    return prefix ? Array.from({ length: 50 }, (_, index) =>
+        `images/avatars/v2/${prefix}_${String(index + 1).padStart(2, '0')}.webp`) : [];
+}
+
+// Keep valid manual choices, then give every remaining student a distinct random avatar.
+// Mutates the roster so the assignment survives subsequent renders and cloud syncs.
+export function assignUniqueClassAvatars(students, random = Math.random) {
+    let changed = false;
+    for (const gender of ['남', '여']) {
+        const roster = students.filter(student => student.gender === gender);
+        const paths = avatarPaths(gender);
+        const used = new Set();
+        const pending = [];
+        for (const student of roster) {
+            if (paths.includes(student.customAvatar) && !used.has(student.customAvatar)) {
+                used.add(student.customAvatar);
+            } else {
+                pending.push(student);
+            }
+        }
+        const available = paths.filter(path => !used.has(path));
+        for (let index = available.length - 1; index > 0; index--) {
+            const swapIndex = Math.floor(random() * (index + 1));
+            [available[index], available[swapIndex]] = [available[swapIndex], available[index]];
+        }
+        for (const student of pending) {
+            const next = available.pop() || null;
+            if (student.customAvatar !== next) {
+                student.customAvatar = next;
+                changed = true;
+            }
+        }
+    }
+    return changed;
+}
+
 export function validateMissions(missions) {
     if (!Array.isArray(missions) || missions.length === 0) {
         return { valid: false, message: '룰렛 항목을 1개 이상 등록해주세요.' };

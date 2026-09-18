@@ -741,3 +741,20 @@ body.app-header-visible #manage-modal {
         transition-duration: 0.01ms !important;
     }
 }
+#avatar-grid-container .avatar-choice {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+    width: 100%;
+    overflow: hidden;
+    padding: 0;
+}
+
+#avatar-grid-container .avatar-choice img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}

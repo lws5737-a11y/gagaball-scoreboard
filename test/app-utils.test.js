@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    assignUniqueClassAvatars,
+    avatarPaths,
     escapeHTML,
     getRefereeEligibleTeams,
     limitSelectedReferees,
@@ -8,6 +10,31 @@ import {
     normalizeGender,
     validateMissions
 } from '../app-utils.js';
+
+test('assigns distinct new avatars by gender and keeps choices stable', () => {
+    const students = [
+        ...Array.from({ length: 25 }, (_, index) => ({ no: index + 1, gender: '남' })),
+        ...Array.from({ length: 25 }, (_, index) => ({ no: index + 26, gender: '여' }))
+    ];
+    assert.equal(assignUniqueClassAvatars(students, () => 0.5), true);
+    assert.equal(new Set(students.map(student => student.customAvatar)).size, 50);
+    for (const student of students) assert.ok(avatarPaths(student.gender).includes(student.customAvatar));
+    assert.equal(assignUniqueClassAvatars(students, () => 0.1), false);
+});
+
+test('replaces legacy and duplicate avatars without moving a valid first choice', () => {
+    const chosen = avatarPaths('남')[0];
+    const students = [
+        { no: 1, gender: '남', customAvatar: chosen },
+        { no: 2, gender: '남', customAvatar: chosen },
+        { no: 3, gender: '남', customAvatar: 'images/avatars/boy_1-3.png' },
+        { no: 4, gender: '여', customAvatar: chosen }
+    ];
+    assignUniqueClassAvatars(students, () => 0);
+    assert.equal(students[0].customAvatar, chosen);
+    assert.equal(new Set(students.map(student => student.customAvatar)).size, 4);
+    assert.ok(avatarPaths('여').includes(students[3].customAvatar));
+});
 
 test('escapeHTML escapes markup and attribute delimiters', () => {
     assert.equal(escapeHTML(`<img src="x" onerror='bad'>`), '&lt;img src=&quot;x&quot; onerror=&#39;bad&#39;&gt;');

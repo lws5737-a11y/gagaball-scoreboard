@@ -344,11 +344,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
             <h2 class="text-xl sm:text-3xl font-black text-slate-800 font-jua">🖼️ 아바타 선택</h2>
             <button class="text-3xl text-slate-400 hover:text-red-500 font-black leading-none" onclick="window.closeAvatarSelectModal()">&times;</button>
         </div>
-        <div class="flex gap-2 mb-4 shrink-0">
-            <button onclick="window.renderAvatarGrid('boy')" class="flex-1 py-2 sm:py-2.5 bg-blue-100 text-blue-600 font-bold rounded-xl hover:bg-blue-200 transition text-sm sm:text-lg">👦 남학생 아바타</button>
-            <button onclick="window.renderAvatarGrid('girl')" class="flex-1 py-2 sm:py-2.5 bg-pink-100 text-pink-600 font-bold rounded-xl hover:bg-pink-200 transition text-sm sm:text-lg">👧 여학생 아바타</button>
-        </div>
-        <div id="avatar-grid-container" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-3 overflow-y-auto pr-2 pb-2 content-start flex-1" style="min-height: 0;"></div>
+        <div id="avatar-grid-container" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-3 overflow-y-auto pr-2 pb-2 flex-1" style="min-height: 0; align-content: start; grid-auto-rows: max-content;"></div>
     </div>
 </div>
 

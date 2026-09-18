@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { escapeHTML, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -185,17 +185,7 @@ const fallbackSVG = `data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3
 window.generateCuteAvatar = function(student) {
     if (!student) return fallbackSVG;
     if (student.customAvatar) return student.customAvatar;
-    const studentsInClass = classData[currentClass] || [];
-    let sameGenderStudents = studentsInClass.filter(s => s.gender === student.gender);
-    sameGenderStudents.sort((a, b) => a.no - b.no);
-    let index = sameGenderStudents.findIndex(s => s.no === student.no);
-    if (index === -1) index = 0; 
-    let avatarIndex = index % 50; 
-    let row = Math.floor(avatarIndex / 10) + 1;
-    let col = (avatarIndex % 10) + 1; 
-    if (student.gender !== '남' && student.gender !== '여') return fallbackSVG;
-    let prefix = student.gender === '남' ? 'boy' : 'girl';
-    return `images/avatars/${prefix}_${row}-${col}.png`;
+    return fallbackSVG;
 }
 
 window.toggleReferee = function(no) {
@@ -257,6 +247,9 @@ window.addStudent = function() {
     if (gender !== '남' && gender !== '여') return alert("성별을 선택해주세요.");
     if (classData[currentClass].some(student => Number(student.no) === no)) {
         return alert(`${no}번 학생이 이미 등록되어 있습니다.`);
+    }
+    if (classData[currentClass].filter(student => student.gender === gender).length >= 50) {
+        return alert(`${gender}학생 아바타 50종이 모두 사용 중입니다.`);
     }
 
     classData[currentClass].push(mergeStudent(null, { no, name, gender }));
@@ -348,6 +341,11 @@ function setupFirestoreListener() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             classData = data.data || {}; groupScores = data.scores || {}; groupRecords = data.records || {}; classStamps = data.stamps || {};
+            let avatarsChanged = false;
+            Object.values(classData).forEach(students => {
+                if (Array.isArray(students) && assignUniqueClassAvatars(students)) avatarsChanged = true;
+            });
+            if (avatarsChanged) saveData();
             hiddenClasses = data.hiddenClasses || [];
             if (data.stampImage) { globalStampImage = data.stampImage; localStorage.setItem('customStamp', globalStampImage); document.querySelectorAll('.stamp-img').forEach(img => { img.src = globalStampImage; }); }
             
@@ -377,6 +375,9 @@ function setupFirestoreListener() {
 
 function saveData() {
     if (!userId || !db) return;
+    Object.values(classData).forEach(students => {
+        if (Array.isArray(students)) assignUniqueClassAvatars(students);
+    });
     saveRequested = true;
     clearTimeout(saveTimer);
     setSyncStatus('saving');
@@ -1485,32 +1486,47 @@ window.openAvatarSelectModal = function(studentNo) {
     const student = classData[currentClass].find(s => s.no == studentNo);
     if(!student) return;
     document.getElementById('avatarSelectModal').style.display = 'flex';
-    window.renderAvatarGrid(student.gender === '여' ? 'girl' : 'boy');
+    window.renderAvatarGrid();
 };
 window.closeAvatarSelectModal = function() { document.getElementById('avatarSelectModal').style.display = 'none'; currentAvatarStudentNo = null; };
-window.renderAvatarGrid = function(prefix) {
+window.renderAvatarGrid = function() {
+    const students = classData[currentClass] || [];
+    const student = students.find(item => item.no == currentAvatarStudentNo);
+    if (!student) return;
+    const paths = avatarPaths(student.gender);
+    const usedByOthers = new Set(students.filter(item => item !== student).map(item => item.customAvatar));
     const container = document.getElementById('avatar-grid-container'); let html = '';
-    html += `<div class="cursor-pointer border-4 border-slate-200 hover:border-slate-400 rounded-2xl flex flex-col items-center justify-center bg-slate-50 shadow-sm aspect-square transition" onclick="window.selectAvatar(null)">
-        <div class="text-2xl sm:text-3xl mb-1">🔄</div><span class="text-[10px] sm:text-xs font-bold text-slate-500 font-sans">기본 아바타</span>
-    </div>`;
-    html += '<h3 class="col-span-full text-left text-sm sm:text-base font-black text-slate-700 mt-2">✨ 새 동산 체육 아바타 50종</h3>';
-    for (let index = 1; index <= 50; index++) {
-        const path = `images/avatars/v2/${prefix}_${String(index).padStart(2, '0')}.webp`;
-        html += `<button type="button" class="rounded-2xl border-4 border-transparent hover:border-blue-500 focus-visible:border-blue-500 transition bg-slate-50 shadow-sm overflow-hidden" onclick="window.selectAvatar('${path}')" aria-label="새 ${prefix === 'girl' ? '여학생' : '남학생'} 아바타 ${index} 선택"><img src="${path}" alt="" loading="lazy" class="w-full aspect-square object-cover" onerror="this.parentElement.style.display='none'"></button>`;
-    }
-    html += '<h3 class="col-span-full text-left text-sm sm:text-base font-black text-slate-700 mt-3">기존 아바타</h3>';
-    for(let row=1; row<=5; row++) {
-        for(let col=1; col<=10; col++) {
-            let path = `images/avatars/${prefix}_${row}-${col}.png`;
-            html += `<img src="${path}" class="w-full aspect-square rounded-2xl cursor-pointer border-4 border-transparent hover:border-blue-500 hover:scale-105 transition bg-slate-50 shadow-sm object-cover" onclick="window.selectAvatar('${path}')" onerror="this.style.display='none'">`;
-        }
-    }
+    html += '<p class="col-span-full text-left text-sm font-bold text-slate-600">다른 학생이 사용 중인 아바타는 선택할 수 없습니다.</p>';
+    html += `<button type="button" class="avatar-choice rounded-2xl border-4 border-slate-200 hover:border-blue-500 bg-slate-50 shadow-sm flex flex-col items-center justify-center" onclick="window.rerollAvatar()" aria-label="아바타 무작위로 다시 선택"><span class="text-3xl">🔄</span><span class="text-xs font-bold">무작위 선택</span></button>`;
+    paths.forEach((path, index) => {
+        const inUse = usedByOthers.has(path);
+        const selected = student.customAvatar === path;
+        html += `<button type="button" class="avatar-choice rounded-2xl border-4 ${selected ? 'border-blue-500' : 'border-transparent'} ${inUse ? 'opacity-40 cursor-not-allowed' : 'hover:border-blue-500 focus-visible:border-blue-500'} bg-slate-50 shadow-sm" ${inUse ? 'disabled' : `onclick="window.selectAvatar('${path}')"`} aria-label="${student.gender === '여' ? '여학생' : '남학생'} 아바타 ${index + 1}${inUse ? ' 사용 중' : selected ? ' 현재 선택됨' : ' 선택'}" ${selected ? 'aria-pressed="true"' : ''}><img src="${path}" alt="" loading="lazy" class="w-full h-full object-contain" onerror="this.parentElement.style.display='none'"></button>`;
+    });
     container.innerHTML = html;
+};
+window.rerollAvatar = function() {
+    const students = classData[currentClass] || [];
+    const student = students.find(item => item.no == currentAvatarStudentNo);
+    if (!student) return;
+    const used = new Set(students.filter(item => item !== student).map(item => item.customAvatar));
+    const available = avatarPaths(student.gender).filter(path => !used.has(path));
+    const alternatives = available.filter(path => path !== student.customAvatar);
+    const choices = alternatives.length ? alternatives : available;
+    if (!choices.length) return alert('선택할 수 있는 아바타가 없습니다.');
+    window.selectAvatar(choices[Math.floor(Math.random() * choices.length)]);
 };
 window.selectAvatar = function(path) {
     if(!currentAvatarStudentNo) return;
-    const student = classData[currentClass].find(s => s.no == currentAvatarStudentNo);
-    if(student) { student.customAvatar = path; saveData(); window.renderGagaball(); if(currentGagaTeams && currentGagaTeams.length > 0) window.renderGagaTeamView(); }
+    const students = classData[currentClass] || [];
+    const student = students.find(s => s.no == currentAvatarStudentNo);
+    if (!student || !avatarPaths(student.gender).includes(path)) return;
+    if (students.some(item => item !== student && item.customAvatar === path)) return alert('같은 학급에서 이미 사용 중인 아바타입니다.');
+    student.customAvatar = path;
+    saveData();
+    window.renderGagaball();
+    window.renderGagaRanking();
+    if(currentGagaTeams && currentGagaTeams.length > 0) window.renderGagaTeamView();
     window.closeAvatarSelectModal();
 };
 
@@ -1653,7 +1669,7 @@ window.importFromExcel = function() {
     
     const lines = input.split('\n');
     let addedCount = 0;
-    let currentStudents = classData[currentClass] || [];
+    let currentStudents = [...(classData[currentClass] || [])];
 
     lines.forEach(line => {
         const parts = line.trim().split(/\s+/);
@@ -1671,6 +1687,9 @@ window.importFromExcel = function() {
     });
 
     if (addedCount > 0) {
+        if (['남', '여'].some(gender => currentStudents.filter(student => student.gender === gender).length > 50)) {
+            return alert('한 학급에서 남학생과 여학생은 각각 최대 50명까지 등록할 수 있습니다. 아바타 중복을 방지하기 위해 명단을 저장하지 않았습니다.');
+        }
         classData[currentClass] = currentStudents;
         saveData(); document.getElementById('excel-input').value = "";
         alert(`${addedCount}명의 학생이 등록/수정되었습니다.`);
