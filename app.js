@@ -1493,6 +1493,12 @@ window.renderAvatarGrid = function(prefix) {
     html += `<div class="cursor-pointer border-4 border-slate-200 hover:border-slate-400 rounded-2xl flex flex-col items-center justify-center bg-slate-50 shadow-sm aspect-square transition" onclick="window.selectAvatar(null)">
         <div class="text-2xl sm:text-3xl mb-1">🔄</div><span class="text-[10px] sm:text-xs font-bold text-slate-500 font-sans">기본 아바타</span>
     </div>`;
+    html += '<h3 class="col-span-full text-left text-sm sm:text-base font-black text-slate-700 mt-2">✨ 새 동산 체육 아바타</h3>';
+    for (let index = 1; index <= 5; index++) {
+        const path = `images/avatars/v2/${prefix}_${String(index).padStart(2, '0')}.png`;
+        html += `<button type="button" class="rounded-2xl border-4 border-transparent hover:border-blue-500 focus-visible:border-blue-500 transition bg-slate-50 shadow-sm overflow-hidden" onclick="window.selectAvatar('${path}')" aria-label="새 ${prefix === 'girl' ? '여학생' : '남학생'} 아바타 ${index} 선택"><img src="${path}" alt="" loading="lazy" class="w-full aspect-square object-cover" onerror="this.parentElement.style.display='none'"></button>`;
+    }
+    html += '<h3 class="col-span-full text-left text-sm sm:text-base font-black text-slate-700 mt-3">기존 아바타</h3>';
     for(let row=1; row<=5; row++) {
         for(let col=1; col<=10; col++) {
             let path = `images/avatars/${prefix}_${row}-${col}.png`;
@@ -1703,3 +1709,4 @@ document.addEventListener('keydown', (event) => {
         window.closeManageModal();
     }
 });
+
