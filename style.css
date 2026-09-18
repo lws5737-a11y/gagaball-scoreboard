@@ -758,3 +758,78 @@ body.app-header-visible #manage-modal {
     height: 100%;
     object-fit: contain;
 }
+
+.timer-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 11000;
+    background: #211d27 url('images/gagaball-colosseum-timer.png') center center / cover no-repeat;
+    color: white;
+    font-family: 'Jua', sans-serif;
+}
+.timer-screen-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(13, 18, 31, .53), rgba(13, 18, 31, .16) 40%, rgba(13, 18, 31, .70));
+    pointer-events: none;
+}
+.timer-screen-content {
+    position: relative;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: max(18px, env(safe-area-inset-top)) 24px max(18px, env(safe-area-inset-bottom));
+}
+.timer-screen-header, .timer-screen-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.timer-screen-header h2 { font-size: clamp(1.1rem, 3vw, 2.2rem); text-shadow: 0 3px 9px #14131a; }
+.timer-screen-header span { font-size: clamp(1rem, 2vw, 1.5rem); white-space: nowrap; }
+.timer-screen-center {
+    width: min(100%, 580px);
+    margin: auto;
+    padding: 14px 26px 22px;
+    text-align: center;
+    background: rgba(12, 19, 37, .68);
+    border: 2px solid rgba(255, 225, 161, .65);
+    border-radius: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.42), inset 0 0 34px rgba(255,188,74,.10);
+    backdrop-filter: blur(7px);
+}
+.timer-phase-label { font-size: clamp(1.1rem, 2.5vw, 1.8rem); letter-spacing: .08em; color: #ffe5a2; }
+.timer-main-number {
+    font-size: clamp(6rem, 22vw, 14rem);
+    line-height: .95;
+    font-variant-numeric: tabular-nums;
+    color: #fff9e8;
+    text-shadow: 0 5px 0 #8c531d, 0 0 26px rgba(255, 197, 78, .72);
+}
+.timer-word-label { min-height: 1.7em; font-size: clamp(1.3rem, 3vw, 2.2rem); letter-spacing: .12em; color: #ffe5a2; }
+.timer-progress-track { height: 11px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.2); }
+.timer-progress-fill { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #f0ab36, #fff2b5); }
+.timer-screen-controls { justify-content: center; flex-wrap: wrap; }
+.timer-screen-controls button {
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: rgba(14, 22, 40, .86);
+    border: 1px solid rgba(255,255,255,.55);
+    font: 700 1rem system-ui, sans-serif;
+}
+.timer-screen-controls button:hover { background: rgba(194, 88, 25, .92); }
+.timer-screen[data-phase="final"] .timer-screen-center { border-color: #ff776e; box-shadow: 0 0 55px rgba(255, 66, 54, .48); }
+.timer-screen[data-phase="final"] .timer-main-number { color: #fff1dd; text-shadow: 0 5px 0 #a42020, 0 0 32px #ff4a35; }
+.timer-screen[data-phase="done"] .timer-screen-center { border-color: #ffe18a; box-shadow: 0 0 65px rgba(255, 205, 74, .58); }
+.timer-screen .timer-beat { animation: timerBeat .55s ease-out; }
+@keyframes timerBeat { from { transform: scale(1.22); filter: brightness(1.8); } to { transform: scale(1); filter: brightness(1); } }
+@media (max-width: 600px) {
+    .timer-screen { background-image: url('images/gagaball-colosseum-timer-mobile.png'); background-position: center center; }
+    .timer-screen-content { padding-left: 12px; padding-right: 12px; }
+    .timer-screen-header { flex-wrap: wrap; justify-content: center; text-align: center; }
+    .timer-screen-center { padding: 14px 12px 18px; }
+    .timer-screen-controls button { flex: 1 1 42%; }
+}

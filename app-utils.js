@@ -70,6 +70,16 @@ export function assignUniqueClassAvatars(students, random = Math.random) {
     return changed;
 }
 
+export function getCountdownState(audioSeconds, gameSeconds) {
+    const elapsed = Math.max(0, Number(audioSeconds) || 0);
+    if (elapsed < 3) {
+        return { phase: 'intro', number: 3 - Math.floor(elapsed), remaining: gameSeconds };
+    }
+    const remaining = Math.max(0, Math.ceil(gameSeconds - (elapsed - 3)));
+    if (remaining === 0) return { phase: 'done', number: 0, remaining: 0 };
+    return { phase: remaining <= 10 ? 'final' : 'running', number: remaining, remaining };
+}
+
 export function validateMissions(missions) {
     if (!Array.isArray(missions) || missions.length === 0) {
         return { valid: false, message: '룰렛 항목을 1개 이상 등록해주세요.' };

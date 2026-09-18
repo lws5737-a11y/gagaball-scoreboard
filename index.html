@@ -288,8 +288,30 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
     <div class="gaga-modal-content" style="max-width: 400px; padding:30px;" onclick="event.stopPropagation()">
         <h2 id="timer-select-title" class="text-3xl font-black text-orange-500 mb-6">⏱️ 가가볼 타이머</h2>
         <div class="flex flex-col gap-4 font-sans">
-            <button class="bg-orange-500 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-600 transition" onclick="window.open('https://youtu.be/Nn9Exxw5Gg4', '_blank'); window.closeTimerSelectModal();">99초 타이머</button>
-            <button class="bg-orange-700 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-800 transition" onclick="window.open('https://youtu.be/eVGSsArJF6k', '_blank'); window.closeTimerSelectModal();">60초 타이머</button>
+            <button class="bg-orange-500 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-600 transition" onclick="window.openGagaTimer(100)">100초 타이머</button>
+            <button class="bg-orange-700 text-white py-4 rounded-xl font-bold text-lg sm:text-2xl shadow-md hover:bg-orange-800 transition" onclick="window.openGagaTimer(60)">60초 타이머</button>
+        </div>
+    </div>
+</div>
+
+<div id="timerScreen" class="timer-screen" role="dialog" aria-modal="true" aria-labelledby="timer-screen-title" data-phase="intro" style="display:none">
+    <div class="timer-screen-shade"></div>
+    <div class="timer-screen-content">
+        <div class="timer-screen-header">
+            <h2 id="timer-screen-title">🏟️ 동산초 가가볼 콜로세움</h2>
+            <span id="timer-duration-label">100초 경기</span>
+        </div>
+        <div class="timer-screen-center">
+            <p id="timer-phase-label" class="timer-phase-label">시작 준비</p>
+            <div id="timer-main-number" class="timer-main-number" aria-live="off">3</div>
+            <p id="timer-word-label" class="timer-word-label">THREE</p>
+            <div class="timer-progress-track"><div id="timer-progress-fill" class="timer-progress-fill"></div></div>
+        </div>
+        <div class="timer-screen-controls">
+            <button id="timer-pause-button" type="button" onclick="window.toggleGagaTimerPause()">⏸️ 일시정지</button>
+            <button type="button" onclick="window.restartGagaTimer()">↺ 다시 시작</button>
+            <button type="button" onclick="window.toggleGagaTimerFullscreen()">⛶ 전체 화면</button>
+            <button type="button" onclick="window.closeGagaTimer()">✕ 닫기</button>
         </div>
     </div>
 </div>

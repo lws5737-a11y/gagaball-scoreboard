@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -10,6 +10,7 @@ window.isGlobalMuted = false;
 
 window.toggleGlobalMute = function() {
     window.isGlobalMuted = !window.isGlobalMuted;
+    if (activeTimerAudio) activeTimerAudio.muted = window.isGlobalMuted;
     const btn = document.getElementById('global-mute-btn');
     if(btn) {
         btn.innerText = window.isGlobalMuted ? '🔇' : '🔊';
@@ -1350,6 +1351,103 @@ window.addGagaTeamScore = function(teamId, val) {
 window.openTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'flex'; }
 window.closeTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
+let activeTimerAudio = null;
+let activeTimerDuration = 0;
+let timerAnimationFrame = null;
+let lastTimerNumber = '';
+const finalTimerWords = ['TIME UP!', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN'];
+
+function renderTimerScreen() {
+    if (!activeTimerAudio) return;
+    const elapsed = activeTimerAudio.currentTime;
+    const state = getCountdownState(elapsed, activeTimerDuration);
+    const screen = document.getElementById('timerScreen');
+    const number = document.getElementById('timer-main-number');
+    const phase = document.getElementById('timer-phase-label');
+    const word = document.getElementById('timer-word-label');
+    const showGo = elapsed >= 3 && elapsed < 3.7;
+    const display = showGo ? 'GO!' : state.phase === 'done' ? '0' : String(state.number);
+
+    screen.dataset.phase = state.phase;
+    phase.textContent = state.phase === 'intro' ? '시작 준비' : state.phase === 'done' ? '경기 종료!' : state.phase === 'final' ? '마지막 10초!' : '경기 중';
+    word.textContent = state.phase === 'intro' ? ['THREE', 'TWO', 'ONE'][3 - state.number]
+        : showGo ? '가가볼 시작!' : state.phase === 'final' ? finalTimerWords[state.number]
+        : state.phase === 'done' ? 'TIME UP!' : 'GAGA BALL';
+    if (display !== lastTimerNumber) {
+        number.textContent = display;
+        number.classList.remove('timer-beat');
+        void number.offsetWidth;
+        number.classList.add('timer-beat');
+        lastTimerNumber = display;
+    }
+    document.getElementById('timer-progress-fill').style.width = `${state.remaining / activeTimerDuration * 100}%`;
+    if (!activeTimerAudio.ended) timerAnimationFrame = requestAnimationFrame(renderTimerScreen);
+}
+
+window.openGagaTimer = function(duration) {
+    if (duration !== 60 && duration !== 100) return;
+    window.closeTimerSelectModal();
+    window.closeGagaTimer();
+    window.fadeOutMP3('anthem');
+    activeTimerDuration = duration;
+    activeTimerAudio = new Audio(`sound/countdown-${duration}s.mp3`);
+    activeTimerAudio.preload = 'auto';
+    activeTimerAudio.muted = window.isGlobalMuted;
+    activeTimerAudio.onended = renderTimerScreen;
+    lastTimerNumber = '';
+    document.getElementById('timer-duration-label').textContent = `${duration}초 경기`;
+    document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
+    document.getElementById('timerScreen').style.display = 'block';
+    renderTimerScreen();
+    activeTimerAudio.play().catch(error => {
+        console.error('타이머 음원 재생 실패:', error);
+        window.closeGagaTimer();
+        alert('타이머 음원을 재생할 수 없습니다. 브라우저의 소리 설정을 확인해주세요.');
+    });
+};
+
+window.toggleGagaTimerPause = function() {
+    if (!activeTimerAudio || activeTimerAudio.ended) return;
+    const button = document.getElementById('timer-pause-button');
+    if (activeTimerAudio.paused) {
+        activeTimerAudio.play().then(() => { button.textContent = '⏸️ 일시정지'; });
+    } else {
+        activeTimerAudio.pause();
+        button.textContent = '▶️ 계속';
+    }
+};
+
+window.restartGagaTimer = function() {
+    if (!activeTimerAudio) return;
+    activeTimerAudio.pause();
+    activeTimerAudio.currentTime = 0;
+    lastTimerNumber = '';
+    document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
+    if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+    renderTimerScreen();
+    activeTimerAudio.play().catch(error => console.error('타이머 재시작 실패:', error));
+};
+
+window.toggleGagaTimerFullscreen = function() {
+    const screen = document.getElementById('timerScreen');
+    if (document.fullscreenElement === screen) document.exitFullscreen();
+    else if (screen.requestFullscreen) screen.requestFullscreen().catch(error => console.error('전체 화면 전환 실패:', error));
+};
+
+window.closeGagaTimer = function() {
+    if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+    timerAnimationFrame = null;
+    if (activeTimerAudio) {
+        activeTimerAudio.pause();
+        activeTimerAudio.onended = null;
+        activeTimerAudio.currentTime = 0;
+        activeTimerAudio = null;
+    }
+    const screen = document.getElementById('timerScreen');
+    if (screen) screen.style.display = 'none';
+    if (document.fullscreenElement === screen) document.exitFullscreen().catch(() => {});
+};
+
 // ==========================================
 // 6. 도장판 모드
 // ==========================================
@@ -1708,6 +1806,7 @@ document.addEventListener('keydown', (event) => {
         ['stampSelectModal', window.closeStampSelectModal],
         ['gagaDrawModal', window.closeGagaDrawModal],
         ['timerSelectModal', window.closeTimerSelectModal],
+        ['timerScreen', window.closeGagaTimer],
         ['rouletteModal', window.closeRouletteModal]
     ];
 

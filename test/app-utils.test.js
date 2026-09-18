@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
     assignUniqueClassAvatars,
     avatarPaths,
+    getCountdownState,
     escapeHTML,
     getRefereeEligibleTeams,
     limitSelectedReferees,
@@ -10,6 +11,16 @@ import {
     normalizeGender,
     validateMissions
 } from '../app-utils.js';
+
+test('countdown visuals follow the audio intro and final spoken seconds', () => {
+    assert.deepEqual(getCountdownState(0, 60), { phase: 'intro', number: 3, remaining: 60 });
+    assert.deepEqual(getCountdownState(2.1, 60), { phase: 'intro', number: 1, remaining: 60 });
+    assert.deepEqual(getCountdownState(3, 60), { phase: 'running', number: 60, remaining: 60 });
+    assert.deepEqual(getCountdownState(53, 60), { phase: 'final', number: 10, remaining: 10 });
+    assert.deepEqual(getCountdownState(62, 60), { phase: 'final', number: 1, remaining: 1 });
+    assert.deepEqual(getCountdownState(63, 60), { phase: 'done', number: 0, remaining: 0 });
+    assert.deepEqual(getCountdownState(93, 100), { phase: 'final', number: 10, remaining: 10 });
+});
 
 test('assigns distinct new avatars by gender and keeps choices stable', () => {
     const students = [
