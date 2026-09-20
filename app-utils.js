@@ -73,7 +73,8 @@ export function assignUniqueClassAvatars(students, random = Math.random) {
 export function getCountdownState(audioSeconds, gameSeconds) {
     const elapsed = Math.max(0, Number(audioSeconds) || 0);
     if (elapsed < 3) {
-        return { phase: 'intro', number: 3 - Math.floor(elapsed), remaining: gameSeconds };
+        const startStage = elapsed >= 2.3 ? 4 : elapsed >= 1.56 ? 3 : elapsed >= 0.78 ? 2 : 1;
+        return { phase: 'intro', number: null, remaining: gameSeconds, startStage };
     }
     const remaining = Math.max(0, Math.ceil(gameSeconds - (elapsed - 3)));
     if (remaining === 0) return { phase: 'done', number: 0, remaining: 0 };

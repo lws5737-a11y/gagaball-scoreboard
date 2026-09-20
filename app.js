@@ -1367,18 +1367,27 @@ function renderTimerScreen() {
     const word = document.getElementById('timer-word-label');
     const showGo = elapsed >= 3 && elapsed < 3.7;
     const display = showGo ? 'GO!' : state.phase === 'done' ? '0' : String(state.number);
+    const displayKey = state.phase === 'intro' ? `lights-${state.startStage}` : display;
 
     screen.dataset.phase = state.phase;
     phase.textContent = state.phase === 'intro' ? '시작 준비' : state.phase === 'done' ? '경기 종료!' : state.phase === 'final' ? '마지막 10초!' : '경기 중';
-    word.textContent = state.phase === 'intro' ? ['THREE', 'TWO', 'ONE'][3 - state.number]
+    word.textContent = state.phase === 'intro' ? (state.startStage === 4 ? 'GO!' : 'START LIGHTS')
         : showGo ? '가가볼 시작!' : state.phase === 'final' ? finalTimerWords[state.number]
         : state.phase === 'done' ? 'TIME UP!' : 'GAGA BALL';
-    if (display !== lastTimerNumber) {
-        number.textContent = display;
+    if (displayKey !== lastTimerNumber) {
+        if (state.phase === 'intro') {
+            number.classList.add('timer-race-lights');
+            number.innerHTML = Array.from({ length: 4 }, (_, index) =>
+                `<span class="timer-race-light ${index < state.startStage ? 'active' : ''} ${index === 3 && state.startStage === 4 ? 'go' : ''}">●</span>`
+            ).join('');
+        } else {
+            number.classList.remove('timer-race-lights');
+            number.textContent = display;
+        }
         number.classList.remove('timer-beat');
         void number.offsetWidth;
         number.classList.add('timer-beat');
-        lastTimerNumber = display;
+        lastTimerNumber = displayKey;
     }
     document.getElementById('timer-progress-fill').style.width = `${state.remaining / activeTimerDuration * 100}%`;
     if (!activeTimerAudio.ended) timerAnimationFrame = requestAnimationFrame(renderTimerScreen);
