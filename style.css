@@ -808,6 +808,30 @@ body.app-header-visible #manage-modal {
     color: #fff9e8;
     text-shadow: 0 5px 0 #8c531d, 0 0 26px rgba(255, 197, 78, .72);
 }
+.timer-main-number.timer-race-lights {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(.45rem, 2vw, 1rem);
+    min-height: clamp(6rem, 22vw, 14rem);
+    font-size: clamp(3.2rem, 10vw, 6.5rem);
+    letter-spacing: 0;
+    text-shadow: none;
+}
+.timer-race-light {
+    color: #302d35;
+    filter: drop-shadow(0 3px 1px rgba(0, 0, 0, .75));
+    transition: color .08s, filter .08s, transform .08s;
+}
+.timer-race-light.active {
+    color: #ff3b30;
+    filter: drop-shadow(0 0 13px #ff3b30) drop-shadow(0 0 25px rgba(255, 59, 48, .65));
+    transform: scale(1.08);
+}
+.timer-race-light.active.go {
+    color: #41e56b;
+    filter: drop-shadow(0 0 15px #41e56b) drop-shadow(0 0 28px rgba(65, 229, 107, .72));
+}
 .timer-word-label { min-height: 1.7em; font-size: clamp(1.3rem, 3vw, 2.2rem); letter-spacing: .12em; color: #ffe5a2; }
 .timer-progress-track { height: 11px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.2); }
 .timer-progress-fill { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #f0ab36, #fff2b5); }

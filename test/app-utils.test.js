@@ -13,8 +13,10 @@ import {
 } from '../app-utils.js';
 
 test('countdown visuals follow the audio intro and final spoken seconds', () => {
-    assert.deepEqual(getCountdownState(0, 60), { phase: 'intro', number: 3, remaining: 60 });
-    assert.deepEqual(getCountdownState(2.1, 60), { phase: 'intro', number: 1, remaining: 60 });
+    assert.deepEqual(getCountdownState(0, 60), { phase: 'intro', number: null, remaining: 60, startStage: 1 });
+    assert.deepEqual(getCountdownState(0.78, 60), { phase: 'intro', number: null, remaining: 60, startStage: 2 });
+    assert.deepEqual(getCountdownState(1.56, 60), { phase: 'intro', number: null, remaining: 60, startStage: 3 });
+    assert.deepEqual(getCountdownState(2.3, 60), { phase: 'intro', number: null, remaining: 60, startStage: 4 });
     assert.deepEqual(getCountdownState(3, 60), { phase: 'running', number: 60, remaining: 60 });
     assert.deepEqual(getCountdownState(53, 60), { phase: 'final', number: 10, remaining: 10 });
     assert.deepEqual(getCountdownState(62, 60), { phase: 'final', number: 1, remaining: 1 });
