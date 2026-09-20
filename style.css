@@ -833,8 +833,40 @@ body.app-header-visible #manage-modal {
     filter: drop-shadow(0 0 15px #41e56b) drop-shadow(0 0 28px rgba(65, 229, 107, .72));
 }
 .timer-word-label { min-height: 1.7em; font-size: clamp(1.3rem, 3vw, 2.2rem); letter-spacing: .12em; color: #ffe5a2; }
-.timer-progress-track { height: 11px; margin-top: 10px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.2); }
-.timer-progress-fill { height: 100%; width: 100%; border-radius: inherit; background: linear-gradient(90deg, #f0ab36, #fff2b5); }
+.timer-seek-control { display: block; margin-top: 8px; }
+.timer-seek-input {
+    --timer-seek-progress: 0%;
+    display: block;
+    width: 100%;
+    height: 30px;
+    margin: 0;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    touch-action: none;
+}
+.timer-seek-input::-webkit-slider-runnable-track {
+    height: 12px;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #f0ab36 0 var(--timer-seek-progress), rgba(255,255,255,.24) var(--timer-seek-progress) 100%);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.42);
+}
+.timer-seek-input::-moz-range-track { height: 12px; border-radius: 99px; background: rgba(255,255,255,.24); box-shadow: inset 0 1px 3px rgba(0,0,0,.42); }
+.timer-seek-input::-moz-range-progress { height: 12px; border-radius: 99px; background: #f0ab36; }
+.timer-seek-input::-webkit-slider-thumb {
+    width: 25px;
+    height: 25px;
+    margin-top: -6.5px;
+    border: 3px solid #fff7dc;
+    border-radius: 50%;
+    background: #f0ab36;
+    box-shadow: 0 2px 9px rgba(0,0,0,.55);
+    -webkit-appearance: none;
+}
+.timer-seek-input::-moz-range-thumb { width: 21px; height: 21px; border: 3px solid #fff7dc; border-radius: 50%; background: #f0ab36; box-shadow: 0 2px 9px rgba(0,0,0,.55); }
+.timer-seek-input:focus-visible { outline: 3px solid #fff2b5; outline-offset: 3px; border-radius: 99px; }
+.timer-seek-times { display: flex; justify-content: space-between; margin-top: -2px; color: #fff2c2; font: 700 .82rem system-ui, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,.75); }
 .timer-screen-controls { justify-content: center; flex-wrap: wrap; }
 .timer-screen-controls button {
     min-height: 44px;

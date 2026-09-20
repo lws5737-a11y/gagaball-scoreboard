@@ -305,7 +305,10 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
             <p id="timer-phase-label" class="timer-phase-label">시작 준비</p>
             <div id="timer-main-number" class="timer-main-number timer-race-lights" aria-live="off"><span class="timer-race-light active">●</span><span class="timer-race-light">●</span><span class="timer-race-light">●</span><span class="timer-race-light">●</span></div>
             <p id="timer-word-label" class="timer-word-label">START LIGHTS</p>
-            <div class="timer-progress-track"><div id="timer-progress-fill" class="timer-progress-fill"></div></div>
+            <label class="timer-seek-control" for="timer-seek-input">
+                <input id="timer-seek-input" class="timer-seek-input" type="range" min="0" max="103" step="0.05" value="0" aria-label="타이머 재생 위치" title="클릭하거나 드래그해서 재생 위치를 이동하세요" oninput="window.seekGagaTimer(this.value)">
+                <span class="timer-seek-times" aria-hidden="true"><span id="timer-seek-current">00:00</span><span id="timer-seek-total">01:43</span></span>
+            </label>
         </div>
         <div class="timer-screen-controls">
             <button id="timer-pause-button" type="button" onclick="window.toggleGagaTimerPause()">⏸️ 일시정지</button>

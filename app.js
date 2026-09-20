@@ -1357,6 +1357,17 @@ let timerAnimationFrame = null;
 let lastTimerNumber = '';
 const finalTimerWords = ['TIME UP!', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN'];
 
+function getTimerSeekMax() {
+    const audioDuration = activeTimerAudio?.duration;
+    return Number.isFinite(audioDuration) && audioDuration > 0 ? audioDuration : activeTimerDuration + 3;
+}
+
+function formatTimerPosition(seconds) {
+    const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(safeSeconds / 60);
+    return `${String(minutes).padStart(2, '0')}:${String(safeSeconds % 60).padStart(2, '0')}`;
+}
+
 function renderTimerScreen() {
     if (!activeTimerAudio) return;
     const elapsed = activeTimerAudio.currentTime;
@@ -1389,9 +1400,27 @@ function renderTimerScreen() {
         number.classList.add('timer-beat');
         lastTimerNumber = displayKey;
     }
-    document.getElementById('timer-progress-fill').style.width = `${state.remaining / activeTimerDuration * 100}%`;
+    const seek = document.getElementById('timer-seek-input');
+    const seekMax = getTimerSeekMax();
+    const seekValue = Math.min(elapsed, seekMax);
+    seek.max = String(seekMax);
+    seek.value = String(seekValue);
+    seek.style.setProperty('--timer-seek-progress', `${seekMax ? seekValue / seekMax * 100 : 0}%`);
+    seek.setAttribute('aria-valuetext', `${formatTimerPosition(seekValue)} / ${formatTimerPosition(seekMax)}`);
+    document.getElementById('timer-seek-current').textContent = formatTimerPosition(seekValue);
+    document.getElementById('timer-seek-total').textContent = formatTimerPosition(seekMax);
     if (!activeTimerAudio.ended) timerAnimationFrame = requestAnimationFrame(renderTimerScreen);
 }
+
+window.seekGagaTimer = function(value) {
+    if (!activeTimerAudio) return;
+    const requestedTime = Number(value);
+    if (!Number.isFinite(requestedTime)) return;
+    activeTimerAudio.currentTime = Math.min(Math.max(requestedTime, 0), getTimerSeekMax());
+    lastTimerNumber = '';
+    if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+    renderTimerScreen();
+};
 
 window.openGagaTimer = function(duration) {
     if (duration !== 60 && duration !== 100) return;
@@ -1403,6 +1432,10 @@ window.openGagaTimer = function(duration) {
     activeTimerAudio.preload = 'auto';
     activeTimerAudio.muted = window.isGlobalMuted;
     activeTimerAudio.onended = renderTimerScreen;
+    activeTimerAudio.onloadedmetadata = () => {
+        if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+        renderTimerScreen();
+    };
     lastTimerNumber = '';
     document.getElementById('timer-duration-label').textContent = `${duration}초 경기`;
     document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
@@ -1449,6 +1482,7 @@ window.closeGagaTimer = function() {
     if (activeTimerAudio) {
         activeTimerAudio.pause();
         activeTimerAudio.onended = null;
+        activeTimerAudio.onloadedmetadata = null;
         activeTimerAudio.currentTime = 0;
         activeTimerAudio = null;
     }
