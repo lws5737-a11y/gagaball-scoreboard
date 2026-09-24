@@ -115,7 +115,24 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 .participant-sort-control { display: inline-flex; align-items: center; gap: .6rem; padding: .35rem .5rem .35rem .85rem; border: 1px solid #bfdbfe; border-radius: .85rem; color: #1e40af; background: linear-gradient(135deg,#fff,#eff6ff); box-shadow: 0 4px 12px rgba(37,99,235,.08); font-weight: 800; }
 .participant-sort-control select { min-height: 36px; max-width: 62vw; padding: .25rem .65rem; border: 0; border-radius: .55rem; color: #1e3a8a; background: #fff; font: inherit; cursor: pointer; }
 
-.class-selection-backdrop { background: url('images/gagaball-colosseum-class-cheering-emblem.png') center / cover no-repeat; }
+#class-selection-screen { display: block; isolation: isolate; overflow: hidden; }
+#class-selection-screen.hidden, #startup-class-panel.hidden, #title-audio-toggle.hidden { display: none !important; }
+.class-selection-backdrop { position: absolute; inset: 0; z-index: -2; background: url('images/gagaball-colosseum-class-cheering-emblem.png') center / cover no-repeat; }
+.class-selection-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(4, 12, 31, .5), rgba(4, 12, 31, .06) 42%, rgba(4, 12, 31, .25)); pointer-events: none; }
+.title-stage { position: absolute; top: max(.35rem, env(safe-area-inset-top)); left: 50%; z-index: 1; width: min(94vw, 950px); transform: translateX(-50%); text-align: center; }
+#title-start-button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 8px 18px rgba(0, 0, 0, .65)); transition: transform .2s ease, filter .2s ease; }
+#title-start-button img { display: block; width: 100%; max-height: min(34dvh, 350px); margin: 0 auto; object-fit: contain; }
+#title-start-button:hover { transform: scale(1.025); filter: drop-shadow(0 9px 25px rgba(245, 186, 75, .55)); }
+#title-start-button:active { transform: scale(.98); }
+#title-start-hint { display: inline-block; margin: -.5rem 0 0; padding: .4rem 1.1rem; border: 1px solid rgba(255, 220, 142, .75); border-radius: 999px; background: rgba(11, 25, 52, .75); box-shadow: 0 4px 18px rgba(0, 0, 0, .4); color: #fff4d4; font: 800 clamp(.85rem, 1.6vw, 1.15rem) 'Jua', sans-serif; letter-spacing: .03em; }
+#startup-class-panel { position: absolute; right: max(1rem, 2vw); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 2; display: flex; flex-direction: column; gap: .8rem; width: min(425px, 38vw); max-height: min(56dvh, 540px); padding: 1.1rem; border: 1px solid rgba(255, 226, 151, .8); border-radius: 1.4rem; background: rgba(248, 250, 252, .92); box-shadow: 0 18px 55px rgba(2, 6, 23, .55), inset 0 1px rgba(255, 255, 255, .8); backdrop-filter: blur(16px); }
+.startup-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.startup-panel-heading h2 { margin: 0; color: #172554; font: 800 clamp(1.2rem, 2vw, 1.6rem) 'Jua', sans-serif; }
+.startup-panel-heading button { flex: none; width: 42px; height: 42px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155; font-weight: 800; cursor: pointer; }
+#startup-class-list { min-height: 70px; max-height: 34dvh; padding: .5rem; border-radius: .9rem; background: rgba(226, 232, 240, .48); }
+.startup-manage-button { min-height: 46px; padding: .55rem .8rem; border: 1px solid #cbd5e1; border-radius: .8rem; background: #fff; color: #334155; font-size: .95rem; font-weight: 800; cursor: pointer; }
+.startup-manage-button:hover, .startup-panel-heading button:hover { background: #eff6ff; color: #1d4ed8; }
+#title-audio-toggle { position: absolute; left: max(1rem, env(safe-area-inset-left)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 2; min-height: 44px; padding: .55rem .85rem; border: 1px solid rgba(255, 226, 151, .7); border-radius: 999px; background: rgba(9, 23, 49, .82); box-shadow: 0 6px 20px rgba(0, 0, 0, .4); color: #fff4d4; font-weight: 800; cursor: pointer; }
 
 #event-loading-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 50% 42%, #30456c 0%, #101b35 48%, #060a18 100%); backdrop-filter: blur(12px); color: #fff; }
 #event-loading-overlay.hidden { display: none !important; }
@@ -699,22 +716,16 @@ body.app-header-visible #manage-modal {
 
     #rouletteModalTitle { font-size: 1.65rem !important; }
 
-    #class-selection-screen {
-        padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
-    }
-
     .class-selection-backdrop {
         background-image: url('images/gagaball-colosseum-class-cheering-mobile-emblem.png');
         background-position: center;
     }
-
-    #class-selection-screen > div.relative {
-        padding: 1rem !important;
-        margin: 0 !important;
-    }
-
-    #class-selection-screen h2 { font-size: 2rem !important; }
-    #startup-class-list { max-height: 56dvh !important; }
+    .title-stage { top: max(.5rem, env(safe-area-inset-top)); width: min(98vw, 620px); }
+    #title-start-button img { max-height: 25dvh; }
+    #title-start-hint { margin-top: -.1rem; }
+    #startup-class-panel { left: max(.65rem, env(safe-area-inset-left)); right: max(.65rem, env(safe-area-inset-right)); bottom: max(.65rem, env(safe-area-inset-bottom)); width: auto; max-height: 48dvh; padding: .8rem; }
+    #startup-class-list { max-height: 24dvh; }
+    #title-audio-toggle { top: calc(max(.5rem, env(safe-area-inset-top)) + 25dvh + 2rem); bottom: auto; }
 
     #manage-modal {
         padding: max(0.6rem, env(safe-area-inset-top)) 0.6rem max(0.6rem, env(safe-area-inset-bottom)) !important;

@@ -17,11 +17,20 @@ window.toggleGlobalMute = function() {
         btn.setAttribute('aria-label', window.isGlobalMuted ? '소리 켜기' : '소리 끄기');
         btn.setAttribute('aria-pressed', String(window.isGlobalMuted));
     }
+    const titleAudioBtn = document.getElementById('title-audio-toggle');
+    if (titleAudioBtn) {
+        titleAudioBtn.innerText = window.isGlobalMuted ? '🔇 음악 켜기' : '🔊 음악 끄기';
+        titleAudioBtn.setAttribute('aria-label', window.isGlobalMuted ? '배경 음악 켜기' : '배경 음악 끄기');
+        titleAudioBtn.setAttribute('aria-pressed', String(window.isGlobalMuted));
+    }
     
     if(window.isGlobalMuted) {
         Object.values(audioFiles).forEach(a => a.pause());
     } else {
-        if(currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden') && document.getElementById('gagaDrawModal').style.display !== 'flex') {
+        const titleScreen = document.getElementById('class-selection-screen');
+        if (titleScreen && !titleScreen.classList.contains('hidden') && titleAudioBtn && !titleAudioBtn.classList.contains('hidden')) {
+            window.playMP3('anthem');
+        } else if(!document.getElementById('app-container').classList.contains('hidden') && currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden') && document.getElementById('gagaDrawModal').style.display !== 'flex') {
             window.playMP3('anthem');
         }
     }
@@ -35,10 +44,18 @@ const audioFiles = {
     goodresult: new Audio('sound/goodresult.mp3')
 };
 audioFiles.anthem.loop = true;
+const audioFadeIntervals = new Map();
+
+function cancelAudioFade(key) {
+    const interval = audioFadeIntervals.get(key);
+    if (interval) clearInterval(interval);
+    audioFadeIntervals.delete(key);
+}
 
 window.playMP3 = function(key) {
     if (window.isGlobalMuted) return;
     if (audioFiles[key]) {
+        cancelAudioFade(key);
         audioFiles[key].currentTime = 0;
         audioFiles[key].volume = 1;
         audioFiles[key].play().catch(e => console.log("오디오 재생 제한:", e));
@@ -47,6 +64,7 @@ window.playMP3 = function(key) {
 
 window.stopMP3 = function(key) {
     if (audioFiles[key]) {
+        cancelAudioFade(key);
         audioFiles[key].pause();
         audioFiles[key].currentTime = 0;
     }
@@ -54,6 +72,7 @@ window.stopMP3 = function(key) {
 
 window.fadeOutMP3 = function(key) {
     const audio = audioFiles[key];
+    cancelAudioFade(key);
     if (audio && !audio.paused) {
         let vol = audio.volume;
         let fadeInterval = setInterval(() => {
@@ -62,19 +81,16 @@ window.fadeOutMP3 = function(key) {
                 audio.volume = vol;
             } else {
                 clearInterval(fadeInterval);
+                audioFadeIntervals.delete(key);
                 audio.pause();
                 audio.currentTime = 0;
             }
         }, 50);
+        audioFadeIntervals.set(key, fadeInterval);
     }
 };
 
-let firstInteraction = false;
 const handleFirstInteraction = () => {
-    if (!firstInteraction && !currentClass) {
-        firstInteraction = true;
-        window.playMP3('anthem');
-    }
     if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 };
@@ -321,10 +337,13 @@ if (auth && db) {
         } else {
             userId = null;
             if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+            window.stopMP3('anthem');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('class-selection-screen').classList.add('hidden');
             document.getElementById('class-selection-screen').classList.remove('flex');
+            window.closeStartupClassPanel();
+            document.getElementById('title-audio-toggle').classList.add('hidden');
             classData = {}; groupScores = {}; groupRecords = {}; classStamps = {}; hiddenClasses = [];
             currentClass = ""; 
         }
@@ -430,11 +449,33 @@ window.syncHeaderOffset = function() {
 };
 
 window.openClassSelection = function() {
+    const screen = document.getElementById('class-selection-screen');
+    if (screen.classList.contains('hidden')) {
+        window.stopMP3('anthem');
+        window.closeStartupClassPanel();
+        document.getElementById('title-audio-toggle').classList.add('hidden');
+    }
     document.body.classList.remove('app-header-visible');
     document.getElementById('app-container').classList.add('hidden');
-    document.getElementById('class-selection-screen').classList.remove('hidden');
-    document.getElementById('class-selection-screen').classList.add('flex');
+    screen.classList.remove('hidden');
     window.renderStartupClassList();
+};
+
+window.openStartupClassPanel = function() {
+    const panel = document.getElementById('startup-class-panel');
+    if (!panel.classList.contains('hidden')) return;
+    // 이 재생 호출은 타이틀 버튼 클릭 안에서 실행되어 브라우저 자동 재생 제한을 피한다.
+    if (audioFiles.anthem.paused) window.playMP3('anthem');
+    panel.classList.remove('hidden');
+    document.getElementById('title-start-button').setAttribute('aria-expanded', 'true');
+    document.getElementById('title-start-hint').textContent = '학급을 선택하세요';
+    document.getElementById('title-audio-toggle').classList.remove('hidden');
+};
+
+window.closeStartupClassPanel = function() {
+    document.getElementById('startup-class-panel').classList.add('hidden');
+    document.getElementById('title-start-button').setAttribute('aria-expanded', 'false');
+    document.getElementById('title-start-hint').textContent = '타이틀을 눌러 시작하세요';
 };
 
 window.renderStartupClassList = function() {
