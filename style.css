@@ -97,6 +97,17 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #gagaball-section .score-item.drawn .avatar-wrapper img {
     border-color: #cbd5e1 !important; 
 }
+#gagaball-section .score-item.participant-selected { border-color: #7c3aed !important; box-shadow: 0 0 0 5px #ddd6fe, 0 12px 28px rgba(76,29,149,.25); background-color: #f5f3ff !important; }
+.participant-select-button { position: absolute; top: .35rem; left: .35rem; z-index: 30; min-height: 36px; padding: .25rem .6rem; border: 1px solid #c4b5fd; border-radius: 999px; background: #fff; color: #6d28d9; font-size: .85rem; font-weight: 900; cursor: pointer; }
+.participant-select-button[aria-pressed="true"] { background: #6d28d9; border-color: #6d28d9; color: #fff; }
+.referee-badge { position: relative; z-index: 20; display: inline-block; margin-top: .2rem; padding: .2rem .65rem; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: .9rem; font-weight: 900; }
+#participant-actions-fab { position: fixed; left: 50%; bottom: calc(6.2rem + env(safe-area-inset-bottom)); z-index: 120; display: flex; align-items: center; justify-content: center; gap: .55rem; width: min(95vw, 620px); padding: .65rem; border: 2px solid #fcd34d; border-radius: 1.3rem; background: rgba(15, 23, 42, .94); box-shadow: 0 14px 32px rgba(15, 23, 42, .45); transform: translateX(-50%); backdrop-filter: blur(12px); }
+#participant-actions-fab.hidden { display: none !important; }
+#participant-selection-count { flex: none; color: #fef3c7; font-weight: 900; }
+#participant-actions-fab button { min-height: 44px; padding: .5rem .85rem; border: 1px solid rgba(255,255,255,.5); border-radius: .85rem; color: #fff; font-weight: 900; cursor: pointer; }
+#assign-referee-button { background: linear-gradient(145deg, #f59e0b, #b45309); }
+#start-selected-champions-button { background: linear-gradient(145deg, #a78bfa, #6d28d9); }
+#participant-actions-fab button:disabled { opacity: .5; cursor: not-allowed; }
 
 #gagaball-section .score-item .name { font-size: 2.2rem; margin-bottom: 5px; color: #2c3e50; }
 #gagaball-section .score-item .score-val { font-size: 5rem; color: #e74c3c; margin: 10px 0; line-height: 1; text-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
@@ -132,6 +143,9 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #startup-class-list { min-height: 70px; max-height: 34dvh; padding: .5rem; border-radius: .9rem; background: rgba(226, 232, 240, .48); }
 .startup-manage-button { min-height: 46px; padding: .55rem .8rem; border: 1px solid #cbd5e1; border-radius: .8rem; background: #fff; color: #334155; font-size: .95rem; font-weight: 800; cursor: pointer; }
 .startup-manage-button:hover, .startup-panel-heading button:hover { background: #eff6ff; color: #1d4ed8; }
+.startup-grade-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; width: 100%; }
+.startup-class-button { min-width: 0; min-height: 46px; padding: .4rem .2rem; border: 2px solid rgba(255,255,255,.95); border-radius: .75rem; background: rgba(255,255,255,.82); color: #1e293b; box-shadow: 0 4px 10px rgba(15,23,42,.12); font: 900 clamp(1rem, 2.5vw, 1.4rem) 'Jua', sans-serif; cursor: pointer; transition: transform .15s, background .15s; }
+.startup-class-button:hover { background: #fff; transform: translateY(-2px); }
 #title-audio-toggle { position: absolute; left: max(1rem, env(safe-area-inset-left)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 2; min-height: 44px; padding: .55rem .85rem; border: 1px solid rgba(255, 226, 151, .7); border-radius: 999px; background: rgba(9, 23, 49, .82); box-shadow: 0 6px 20px rgba(0, 0, 0, .4); color: #fff4d4; font-weight: 800; cursor: pointer; }
 
 #event-loading-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 50% 42%, #30456c 0%, #101b35 48%, #060a18 100%); backdrop-filter: blur(12px); color: #fff; }
@@ -171,7 +185,7 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 }
 #floating-roulette-btn { z-index: 9500; top: calc(var(--main-header-height) + (100dvh - var(--main-header-height)) / 2) !important; }
 #rouletteModal { z-index: 9600; }
-#rouletteEditModal, #missionDescModal { z-index: 9700; }
+#rouletteEditModal { z-index: 9700; }
 body.app-header-visible #event-loading-overlay,
 body.app-header-visible #manage-modal {
     top: var(--main-header-height) !important;
@@ -180,9 +194,26 @@ body.app-header-visible #manage-modal {
 #event-loading-overlay { z-index: 9800 !important; }
 #main-container { margin-top: calc(var(--main-header-height) + 0.5rem) !important; }
 .gaga-modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 800px; width: 90%; position: relative; }
-.roulette-container { position: relative; width: 100%; max-width: 600px; aspect-ratio: 1 / 1; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
+#rouletteModal .gaga-modal-content { max-height: calc(100dvh - var(--main-header-height) - 1.5rem); overflow-y: auto; padding: clamp(1rem, 3vw, 2.5rem) !important; }
+.roulette-container { position: relative; width: 100%; max-width: min(54dvh, 560px); aspect-ratio: 1 / 1; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
 #rouletteCanvas { border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; height: 100%; }
 .roulette-pointer { position: absolute; top: -45px; left: 50%; transform: translateX(-50%); font-size: 5rem; text-shadow: 0 5px 10px rgba(0,0,0,0.4); z-index: 10; }
+.roulette-result-summary { display: flex; flex-direction: column; gap: .25rem; margin: 1.1rem auto .75rem; padding: .65rem .9rem; border: 1px solid #c7d2fe; border-radius: .9rem; background: #eef2ff; color: #312e81; font-weight: 800; }
+.roulette-result-summary strong { font-size: 1.25rem; }
+.roulette-result-summary span { font-size: .95rem; }
+.roulette-timer-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.roulette-timer-button { min-height: 58px; padding: .65rem; border: 1px solid #fdba74; border-radius: 1rem; background: linear-gradient(145deg, #fb923c, #c2410c); box-shadow: inset 0 1px rgba(255,255,255,.5), 0 7px 15px rgba(154,52,18,.25); color: white; font-size: clamp(1rem, 2.3vw, 1.5rem); font-weight: 900; cursor: pointer; }
+.roulette-timer-button:disabled { opacity: .5; cursor: wait; }
+.match-mission-result { display: flex; flex-direction: column; gap: .2rem; margin: .25rem auto .75rem; padding: .55rem .85rem; border: 2px solid #fcd34d; border-radius: .9rem; background: rgba(30,41,59,.94); box-shadow: 0 7px 19px rgba(15,23,42,.3); color: #fef3c7; text-align: center; font-weight: 800; }
+.match-mission-result.hidden { display: none !important; }
+.match-mission-result strong { font-size: clamp(1rem, 2vw, 1.3rem); }
+.match-mission-result span { font-size: clamp(.8rem, 1.6vw, 1rem); }
+.matchup-mission-result { width: 100%; margin: .2rem 0; }
+.premium-score-btn { display: inline-grid; place-items: center; width: 48px; height: 48px; flex: none; border: 1px solid rgba(255,255,255,.55); border-radius: 14px; box-shadow: inset 0 1px rgba(255,255,255,.6), 0 8px 15px rgba(15,23,42,.25); color: white; font-size: 1.9rem; font-weight: 900; line-height: 1; cursor: pointer; transition: transform .15s, box-shadow .15s, filter .15s; }
+.premium-score-btn.minus { background: linear-gradient(145deg, #fb7185, #be123c); }
+.premium-score-btn.plus { background: linear-gradient(145deg, #60a5fa, #1d4ed8); }
+.premium-score-btn:hover { transform: translateY(-2px); filter: brightness(1.08); box-shadow: inset 0 1px rgba(255,255,255,.75), 0 12px 18px rgba(15,23,42,.3); }
+.premium-score-btn:active { transform: translateY(1px) scale(.96); }
 
 /* 개인전 결과: 현상수배 포스터 효과 */
 .draw-result-card {
@@ -260,11 +291,12 @@ body.app-header-visible #manage-modal {
     background: radial-gradient(circle, rgba(254, 240, 138, 0.9), rgba(245, 158, 11, 0.22) 68%, transparent 70%);
 }
 .team-king-effect { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+.team-king-avatar { margin-bottom: 2rem !important; }
 .king-crown {
     position: absolute;
-    top: -2.8rem;
+    top: -25%;
     left: 50%;
-    font-size: clamp(3.5rem, 7vw, 6.5rem);
+    font-size: clamp(2.1rem, 5vw, 4.2rem);
     line-height: 1;
     transform: translateX(-50%) rotate(8deg);
     filter: drop-shadow(0 8px 7px rgba(120, 53, 15, 0.55));
@@ -276,15 +308,15 @@ body.app-header-visible #manage-modal {
 .king-label {
     position: absolute;
     left: 50%;
-    bottom: -1rem;
+    top: calc(100% + .1rem);
     transform: translateX(-50%) rotate(-2deg);
-    min-width: 4.2rem;
-    padding: 0.2rem 0.8rem;
-    border: 3px solid #fef3c7;
+    min-width: 2.8rem;
+    padding: 0.1rem 0.45rem;
+    border: 2px solid #fef3c7;
     border-radius: 999px;
     background: linear-gradient(135deg, #b45309, #f59e0b);
     color: white;
-    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-size: clamp(.85rem, 2vw, 1.3rem);
     font-weight: 900;
     line-height: 1.1;
     text-shadow: 0 2px 0 #78350f;
@@ -368,8 +400,6 @@ body.app-header-visible #manage-modal {
     font-size: clamp(1.25rem, 2.4vw, 2.5rem);
     line-height: 1.05;
 }
-#champions-fab-container { bottom: calc(14.5rem + env(safe-area-inset-bottom)) !important; }
-
 @media screen and (max-width: 640px) {
     body {
         padding-bottom: calc(5.75rem + env(safe-area-inset-bottom)) !important;
@@ -630,7 +660,9 @@ body.app-header-visible #manage-modal {
     }
     .rank-ticker-name { font-size: clamp(1.05rem, 5vw, 1.45rem) !important; }
     .rank-ticker-card .w-12 { width: 2.6rem !important; }
-    #champions-fab-container { bottom: calc(11.5rem + env(safe-area-inset-bottom)) !important; }
+    #participant-actions-fab { bottom: calc(5.6rem + env(safe-area-inset-bottom)); flex-wrap: wrap; width: min(96vw, 500px); }
+    #participant-selection-count { width: 100%; text-align: center; }
+    #participant-actions-fab button { flex: 1; min-width: 130px; }
 
     #gaga-team-matchups > div {
         padding: 0.45rem !important;
@@ -768,7 +800,7 @@ body.app-header-visible #manage-modal {
 
     .draw-result-avatar { max-height: 76px !important; }
     .draw-result-name { font-size: 1.25rem !important; margin: 0.1rem 0 !important; }
-    .draw-result-card button { width: 40px !important; height: 40px !important; }
+    .draw-result-card button { width: 44px !important; height: 44px !important; }
 
     #gagaDrawModal .gaga-modal-content > button {
         min-height: 46px;

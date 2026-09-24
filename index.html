@@ -145,18 +145,18 @@ Google 계정으로 시작하기
 </div>
 <div id="gaga-active-grid" class="scoreboard-grid"></div>
 
+<div id="participant-actions-fab" class="hidden" role="group" aria-label="선택한 참가 학생 작업">
+    <span id="participant-selection-count">0명 선택</span>
+    <button id="assign-referee-button" type="button" onclick="window.assignSelectedReferees()">⚖️ 심판 임명</button>
+    <button id="start-selected-champions-button" type="button" onclick="window.startChampionsTournament()">👑 왕중왕전</button>
+</div>
+
 <h3 class="text-2xl sm:text-4xl font-black text-slate-500 mt-12 mb-6 tracking-wide font-jua">🛑 불참 학생</h3>
 <div id="gaga-inactive-grid" class="scoreboard-grid inactive-grid"></div>
 </div>
 
 <div id="gaga-view-rank" class="hidden relative pb-32 pt-2">
 <div id="gaga-hall-of-fame-grid" class="w-full"></div>
-
-<div id="champions-fab-container" class="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100] hidden w-[90%] sm:w-auto">
-    <button onclick="window.startChampionsTournament()" class="w-full sm:w-auto justify-center bg-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-black text-xl sm:text-2xl shadow-[0_10px_25px_rgba(147,51,234,0.5)] hover:bg-purple-700 hover:scale-105 transition flex items-center gap-2 border-4 border-purple-300">
-        👑 <span id="champions-fab-text">왕중왕전 시작 (0명)</span>
-    </button>
-</div>
 </div>
 
 <div id="gaga-view-team" class="hidden">
@@ -171,6 +171,7 @@ Google 계정으로 시작하기
 <button onclick="window.triggerGagaTeams()" class="flex-1 bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black shadow-md hover:bg-purple-700 text-lg sm:text-2xl transition transform hover:scale-105 whitespace-nowrap">👥 밸런스 편성</button>
 </div>
 </div>
+<div id="team-global-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
 <div id="gaga-team-matchups" class="flex flex-col gap-4"></div>
 </div>
 </section>
@@ -299,6 +300,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div id="gagaDrawModal" class="gaga-modal-overlay flex-col overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="gagaDrawMainTitle">
 <div class="gaga-modal-content font-sans bg-transparent shadow-none flex flex-col h-[98vh] w-[98vw] max-w-none mx-auto p-2 sm:p-4" onclick="event.stopPropagation()">
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
+<div id="gaga-draw-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
 <div id="gagaDrawResultGrid" class=""></div>
 <button class="bg-slate-800 text-white w-full max-w-4xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-3xl sm:text-5xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
@@ -349,7 +351,11 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
         <div class="roulette-pointer">🔽</div>
         <canvas id="rouletteCanvas" width="800" height="800"></canvas>
     </div>
-    <button class="w-full mt-10 py-4 sm:py-6 text-2xl sm:text-4xl font-black bg-pink-500 text-white rounded-3xl shadow-xl hover:bg-pink-600 transition transform hover:scale-105" onclick="window.spinRoulette()">🎯 룰렛 돌리기!</button>
+    <div id="roulette-result-summary" class="roulette-result-summary" role="status" aria-live="polite">룰렛이 자동으로 돌아갑니다…</div>
+    <div class="roulette-timer-actions">
+        <button type="button" class="roulette-timer-button" onclick="window.openTimerFromRoulette(100)" disabled>⏱️ 100초 타이머</button>
+        <button type="button" class="roulette-timer-button" onclick="window.openTimerFromRoulette(60)" disabled>⏱️ 60초 타이머</button>
+    </div>
 </div>
 </div>
 
@@ -363,14 +369,6 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
         <button onclick="window.addRouletteItem()" class="w-full py-3 border-2 border-dashed border-blue-400 text-blue-500 font-bold rounded-xl mb-4 hover:bg-blue-50">+ 항목 추가</button>
         <button onclick="window.saveRouletteEdit()" class="w-full py-4 bg-blue-600 text-white font-black rounded-xl hover:bg-blue-700 text-lg sm:text-xl">저장하기</button>
     </div>
-</div>
-
-<div id="missionDescModal" class="gaga-modal-overlay" onclick="window.closeMissionDescModal()">
-<div class="gaga-modal-content font-sans" style="max-width: 550px; padding: 30px sm:padding-40px;" onclick="event.stopPropagation()">
-<h2 id="missionDescTitle" class="text-2xl sm:text-4xl font-black text-blue-500 mb-4 font-jua"></h2>
-<p id="missionDescText" class="text-lg sm:text-2xl leading-relaxed text-slate-700 bg-slate-50 p-4 sm:p-6 rounded-2xl mb-8 border border-slate-200"></p>
-<button class="w-full py-4 text-xl sm:text-2xl font-black bg-blue-600 text-white rounded-xl shadow-md hover:bg-blue-700 transition" onclick="window.closeMissionDescModal()">미션 확인!</button>
-</div>
 </div>
 
 <div id="stampSelectModal" class="gaga-modal-overlay" onclick="window.closeStampSelectModal()">

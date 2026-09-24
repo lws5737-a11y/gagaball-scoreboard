@@ -130,3 +130,26 @@ test('getRefereeEligibleTeams keeps referees out of the opposing team', () => {
     ];
     assert.deepEqual(getRefereeEligibleTeams(teams).map((team) => team.id), [3, 4]);
 });
+
+test('getRefereeEligibleTeams spreads appointed referees across matchups before pairing them', () => {
+    const teams = Array.from({ length: 8 }, (_, index) => ({ id: index + 1, members: [], targetSize: 3 }));
+    for (let no = 1; no <= 4; no++) {
+        const eligible = getRefereeEligibleTeams(teams);
+        eligible[0].members.push({ no, isReferee: true });
+    }
+    for (let index = 0; index < 8; index += 2) {
+        const refereeCount = [...teams[index].members, ...teams[index + 1].members].filter(member => member.isReferee).length;
+        assert.equal(refereeCount, 1);
+    }
+});
+
+test('when no separate matchup remains, referees are spread across teams', () => {
+    const referee = { isReferee: true };
+    const teams = [
+        { id: 1, members: [referee], targetSize: 3 },
+        { id: 2, members: [], targetSize: 3 },
+        { id: 3, members: [referee], targetSize: 3 },
+        { id: 4, members: [], targetSize: 3 }
+    ];
+    assert.deepEqual(getRefereeEligibleTeams(teams).map(team => team.id), [2, 4]);
+});
