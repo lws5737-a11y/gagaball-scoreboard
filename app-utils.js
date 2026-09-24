@@ -135,12 +135,16 @@ export function limitSelectedReferees(picked, remaining, maximumReferees = 2) {
 
 export function getRefereeEligibleTeams(teams) {
     const eligibleTeams = teams.filter((team) => team.members.length < team.targetSize);
-    const teamsWithoutMatchupReferee = eligibleTeams.filter((team) => {
+    if (!eligibleTeams.length) return [];
+    const refereeCounts = eligibleTeams.map((team) => {
         const matchupId = Math.floor((team.id - 1) / 2);
-        return !teams
+        const matchupReferees = teams
             .filter((candidate) => Math.floor((candidate.id - 1) / 2) === matchupId)
-            .some((candidate) => candidate.members.some((member) => member.isReferee));
+            .reduce((count, candidate) => count + candidate.members.filter((member) => member.isReferee).length, 0);
+        return { team, matchupReferees, teamReferees: team.members.filter((member) => member.isReferee).length };
     });
-
-    return teamsWithoutMatchupReferee.length > 0 ? teamsWithoutMatchupReferee : eligibleTeams;
+    const fewestInMatchup = Math.min(...refereeCounts.map((entry) => entry.matchupReferees));
+    const bestMatchups = refereeCounts.filter((entry) => entry.matchupReferees === fewestInMatchup);
+    const fewestInTeam = Math.min(...bestMatchups.map((entry) => entry.teamReferees));
+    return bestMatchups.filter((entry) => entry.teamReferees === fewestInTeam).map((entry) => entry.team);
 }
