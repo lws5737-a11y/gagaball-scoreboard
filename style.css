@@ -101,12 +101,42 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 #gagaball-section .score-item .name { font-size: 2.2rem; margin-bottom: 5px; color: #2c3e50; }
 #gagaball-section .score-item .score-val { font-size: 5rem; color: #e74c3c; margin: 10px 0; line-height: 1; text-shadow: 2px 2px 0px rgba(0,0,0,0.05); }
 #gagaball-section .score-ctrl { display: flex; justify-content: center; gap: 8px; margin-top: 10px;}
-#gagaball-section .score-ctrl button { font-size: 2.5rem; width: 65px; height: 50px; background: #3498db; color: white; border: none; border-radius: 8px; cursor: pointer; transition: 0.1s; display: flex; align-items: center; justify-content: center;}
-#gagaball-section .score-ctrl button:active { transform: scale(0.9); }
-#gagaball-section .score-ctrl button.minus { background: #e74c3c; }
+#gagaball-section .score-ctrl button { font-size: 2.1rem; font-weight: 800; width: 65px; height: 50px; color: white; border: 1px solid rgba(255,255,255,.46); border-radius: 14px; cursor: pointer; transition: transform .18s, box-shadow .18s, filter .18s; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px rgba(255,255,255,.55), 0 7px 13px rgba(15,23,42,.22); }
+#gagaball-section .score-ctrl button:hover { transform: translateY(-2px); filter: brightness(1.09); box-shadow: inset 0 1px rgba(255,255,255,.65), 0 10px 18px rgba(15,23,42,.25); }
+#gagaball-section .score-ctrl button:active { transform: translateY(1px) scale(.96); }
+#gagaball-section .score-ctrl button.minus { background: linear-gradient(145deg, #fb7185, #be123c); }
+#gagaball-section .score-ctrl button.plus { background: linear-gradient(145deg, #60a5fa, #1d4ed8); }
+#gagaball-section .score-ctrl button:focus-visible, .student-delete-btn:focus-visible, .participant-sort-control select:focus-visible { outline: 3px solid #fbbf24; outline-offset: 3px; }
 #gagaball-section .inactive-grid .score-item { border-color: #ddd; background: #fdfdfd; opacity: 0.6; padding: 15px; }
 .attendance-row { min-height: 36px; }
-.student-delete-btn { width: 36px; height: 36px; font-size: 1.45rem; line-height: 1; }
+.student-delete-btn { width: 36px; height: 36px; display: grid; place-items: center; color: #9f1239; background: linear-gradient(145deg,#fff,#ffe4e6); border: 1px solid #fecdd3; border-radius: 12px; box-shadow: 0 4px 10px rgba(136,19,55,.12), inset 0 1px #fff; transition: transform .18s, background .18s, color .18s; }
+.student-delete-btn svg { width: 17px; height: 17px; }
+.student-delete-btn:hover { transform: translateY(-2px); color: white; background: linear-gradient(145deg,#fb7185,#be123c); }
+.participant-sort-control { display: inline-flex; align-items: center; gap: .6rem; padding: .35rem .5rem .35rem .85rem; border: 1px solid #bfdbfe; border-radius: .85rem; color: #1e40af; background: linear-gradient(135deg,#fff,#eff6ff); box-shadow: 0 4px 12px rgba(37,99,235,.08); font-weight: 800; }
+.participant-sort-control select { min-height: 36px; max-width: 62vw; padding: .25rem .65rem; border: 0; border-radius: .55rem; color: #1e3a8a; background: #fff; font: inherit; cursor: pointer; }
+
+.class-selection-backdrop { background: url('images/gagaball-colosseum-class.png') center / cover no-repeat; }
+
+#event-loading-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 50% 42%, #30456c 0%, #101b35 48%, #060a18 100%); backdrop-filter: blur(12px); color: #fff; }
+#event-loading-overlay.hidden { display: none !important; }
+#event-loading-overlay::before, #event-loading-overlay::after { content: ''; position: absolute; inset: -40%; pointer-events: none; background: conic-gradient(from 0deg, transparent 0 35deg, rgba(253,210,120,.1) 45deg, transparent 62deg 135deg, rgba(253,210,120,.1) 150deg, transparent 170deg); animation: eventLightSweep 9s linear infinite; }
+#event-loading-overlay::after { animation-direction: reverse; opacity: .55; }
+.event-arena-glow { position: absolute; width: min(80vw, 760px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(251,191,36,.18), transparent 68%); filter: blur(18px); }
+.event-orbit { position: absolute; width: min(68vw, 520px); aspect-ratio: 1; border: 1px solid rgba(251,191,36,.4); border-radius: 50%; box-shadow: 0 0 25px rgba(251,191,36,.2), inset 0 0 25px rgba(251,191,36,.12); animation: eventOrbitPulse 2.4s ease-in-out infinite; }
+.event-orbit-two { width: min(82vw, 640px); animation-delay: .6s; opacity: .55; }
+.event-stage { position: relative; z-index: 1; width: min(90vw, 720px); text-align: center; padding: 2rem 1rem; }
+.event-eyebrow { display: block; color: #fcd58b; font-size: clamp(.7rem, 1.7vw, 1rem); font-weight: 800; letter-spacing: .23em; text-shadow: 0 0 12px #b45309; }
+.event-emblem { width: clamp(100px, 16vw, 145px); height: clamp(100px, 16vw, 145px); margin: 1.4rem auto; display: grid; place-items: center; border-radius: 50%; border: 3px solid #fcd58b; color: #fff4cf; font-size: clamp(3rem, 8vw, 5.5rem); background: radial-gradient(circle at 35% 28%,#806634,#312442 70%); box-shadow: 0 0 0 9px rgba(251,191,36,.08), 0 0 35px rgba(251,191,36,.5), inset 0 2px rgba(255,255,255,.55); animation: eventEmblem 2.4s ease-in-out infinite; }
+#event-loading-text { font-family: 'Jua', sans-serif; font-size: clamp(2.1rem, 6vw, 4.8rem); line-height: 1.15; font-weight: 900; text-shadow: 0 3px 20px rgba(0,0,0,.7); }
+#event-loading-subtitle { margin-top: .8rem; color: #fef3c7; font-size: clamp(.95rem, 2vw, 1.4rem); font-weight: 700; }
+.event-progress { width: min(68vw, 360px); height: 6px; margin: 2rem auto 0; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.17); }
+.event-progress span { display: block; width: 100%; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#a16207,#fde68a,#f59e0b); box-shadow: 0 0 15px #fbbf24; transform-origin: left; animation: eventProgress 2.4s linear both; }
+#event-loading-overlay[data-mode='team'] .event-emblem { background: radial-gradient(circle at 35% 28%,#5973af,#26204a 70%); border-color: #c4b5fd; box-shadow: 0 0 0 9px rgba(196,181,253,.08), 0 0 35px rgba(167,139,250,.55), inset 0 2px rgba(255,255,255,.55); }
+#event-loading-overlay[data-mode='team'] .event-progress span { background: linear-gradient(90deg,#6d28d9,#ddd6fe,#8b5cf6); }
+@keyframes eventLightSweep { to { transform: rotate(360deg); } }
+@keyframes eventOrbitPulse { 50% { transform: scale(1.07); opacity: .32; } }
+@keyframes eventEmblem { 50% { transform: scale(1.08); filter: brightness(1.25); } }
+@keyframes eventProgress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* 모달 레이아웃 최적화 */
 .gaga-modal-overlay { 
@@ -538,7 +568,6 @@ body.app-header-visible #manage-modal {
     }
 
     .attendance-row { min-height: 40px; }
-    .student-number { top: 0.5rem; left: 0.4rem; font-size: 0.78rem; }
     .student-delete-btn { width: 40px; height: 40px; top: 4px; right: 4px; }
 
     .ranking-layout {

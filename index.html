@@ -10,9 +10,17 @@
 </head>
 <body class="bg-gray-50 min-h-screen pb-28 sm:pb-32 text-slate-800 overflow-x-hidden w-full max-w-[100vw] no-select">
 
-<div id="event-loading-overlay" class="fixed inset-0 bg-slate-900/85 z-[9998] hidden flex-col items-center justify-center backdrop-blur-md">
-<div class="text-7xl sm:text-9xl animate-shake mb-8" style="filter: drop-shadow(0px 10px 10px rgba(0,0,0,0.5));">🥁</div>
-<h2 id="event-loading-text" class="text-4xl sm:text-6xl font-black text-white font-jua tracking-widest text-shadow-lg animate-pulse">두구두구두구...</h2>
+<div id="event-loading-overlay" class="fixed inset-0 z-[9998] hidden flex-col items-center justify-center" role="status" aria-live="polite">
+<div class="event-arena-glow" aria-hidden="true"></div>
+<div class="event-orbit event-orbit-one" aria-hidden="true"></div>
+<div class="event-orbit event-orbit-two" aria-hidden="true"></div>
+<div class="event-stage">
+    <span class="event-eyebrow">DONGSAN GAGABALL COLOSSEUM</span>
+    <div id="event-loading-icon" class="event-emblem" aria-hidden="true">✦</div>
+    <h2 id="event-loading-text">선수를 뽑고 있습니다</h2>
+    <p id="event-loading-subtitle">오늘의 경기 주인공이 곧 공개됩니다</p>
+    <div class="event-progress" aria-hidden="true"><span></span></div>
+</div>
 </div>
 
 <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-[9999] hidden"></canvas>
@@ -34,9 +42,9 @@ Google 계정으로 시작하기
 </div>
 
 <div id="class-selection-screen" class="fixed inset-0 z-[150] hidden flex-col items-center justify-start pt-12 sm:pt-24 p-4 overflow-y-auto">
-    <div class="fixed inset-0 bg-[url('image_0.png')] bg-cover bg-center opacity-90 -z-10"></div>
-    <div class="fixed inset-0 bg-white/20 -z-10"></div>
-    <div class="relative z-10 text-center max-w-4xl w-full bg-white/30 p-6 sm:p-12 rounded-3xl shadow-2xl border border-white/50 backdrop-blur-md my-4 sm:my-0">
+    <div class="class-selection-backdrop fixed inset-0 -z-10"></div>
+    <div class="fixed inset-0 bg-slate-950/20 -z-10"></div>
+    <div class="relative z-10 text-center max-w-4xl w-full bg-white/75 p-6 sm:p-12 rounded-3xl shadow-2xl border border-white/70 backdrop-blur-xl my-4 sm:my-0">
         <h2 class="text-4xl sm:text-7xl font-black text-slate-800 mb-4 font-jua drop-shadow-sm">🏫 동산초 가가볼 콜로세움</h2>
         <h3 class="text-xl sm:text-3xl font-black text-slate-600 mb-8 font-sans drop-shadow-sm">MADE BY 우석쌤</h3>
         <h3 class="text-lg sm:text-2xl text-slate-700 mb-6 font-bold">플레이할 학급을 선택해주세요</h3>
@@ -122,6 +130,12 @@ Google 계정으로 시작하기
 
 <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
 <h3 class="text-2xl sm:text-4xl font-black text-blue-600 tracking-wide font-jua">🏃 참가 학생</h3>
+<label class="participant-sort-control" for="gaga-participant-sort"><span>정렬</span>
+<select id="gaga-participant-sort" onchange="window.setGagaParticipantSort(this.value)" aria-label="참가 학생 정렬">
+<option value="number">번호순</option><option value="score">점수순</option>
+<option value="boys-number">남학생 번호순</option><option value="girls-number">여학생 번호순</option>
+<option value="boys-score">남학생 점수순</option><option value="girls-score">여학생 점수순</option>
+</select></label>
 </div>
 <div id="gaga-active-grid" class="scoreboard-grid"></div>
 
