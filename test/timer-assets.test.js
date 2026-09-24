@@ -15,3 +15,14 @@ test('both timer soundtracks and desktop/mobile backgrounds are bundled', async 
         assert.ok((await stat(source)).size > 100_000);
     }
 });
+
+test('class selection uses the bundled cheering crowd background', async () => {
+    const styles = await readFile(new URL('../style.css', import.meta.url), 'utf8');
+    for (const image of ['gagaball-colosseum-class-cheering.png', 'gagaball-colosseum-class-cheering-mobile.png']) {
+        const data = await readFile(new URL(`../images/${image}`, import.meta.url));
+        assert.equal(data.subarray(1, 4).toString(), 'PNG');
+        assert.ok(data.length > 100_000);
+        assert.ok(styles.includes(image));
+    }
+    assert.match(styles, /\.class-selection-backdrop\s*\{[^}]*gagaball-colosseum-class-cheering\.png/);
+});

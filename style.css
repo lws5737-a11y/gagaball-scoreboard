@@ -115,7 +115,7 @@ width: 85%; height: 85%; object-fit: contain; opacity: 0; pointer-events: none;
 .participant-sort-control { display: inline-flex; align-items: center; gap: .6rem; padding: .35rem .5rem .35rem .85rem; border: 1px solid #bfdbfe; border-radius: .85rem; color: #1e40af; background: linear-gradient(135deg,#fff,#eff6ff); box-shadow: 0 4px 12px rgba(37,99,235,.08); font-weight: 800; }
 .participant-sort-control select { min-height: 36px; max-width: 62vw; padding: .25rem .65rem; border: 0; border-radius: .55rem; color: #1e3a8a; background: #fff; font: inherit; cursor: pointer; }
 
-.class-selection-backdrop { background: url('images/gagaball-colosseum-class.png') center / cover no-repeat; }
+.class-selection-backdrop { background: url('images/gagaball-colosseum-class-cheering.png') center / cover no-repeat; }
 
 #event-loading-overlay { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; isolation: isolate; background: radial-gradient(circle at 50% 42%, #30456c 0%, #101b35 48%, #060a18 100%); backdrop-filter: blur(12px); color: #fff; }
 #event-loading-overlay.hidden { display: none !important; }
@@ -701,6 +701,11 @@ body.app-header-visible #manage-modal {
 
     #class-selection-screen {
         padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+    }
+
+    .class-selection-backdrop {
+        background-image: url('images/gagaball-colosseum-class-cheering-mobile.png');
+        background-position: center;
     }
 
     #class-selection-screen > div.relative {
