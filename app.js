@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -21,7 +21,7 @@ window.toggleGlobalMute = function() {
     if(window.isGlobalMuted) {
         Object.values(audioFiles).forEach(a => a.pause());
     } else {
-        if(currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden')) {
+        if(currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden') && document.getElementById('gagaDrawModal').style.display !== 'flex') {
             window.playMP3('anthem');
         }
     }
@@ -31,6 +31,7 @@ const audioFiles = {
     anthem: new Audio('sound/orchestral-anthem.mp3'),
     tadaa: new Audio('sound/tadaa01.mp3'),
     spinner: new Audio('sound/spinner01.mp3'),
+    fanfare: new Audio('sound/fanfare.mp3'),
     goodresult: new Audio('sound/goodresult.mp3')
 };
 audioFiles.anthem.loop = true;
@@ -573,13 +574,19 @@ window.changeDrawCount = function(delta) {
     input.value = val;
 }
 
+let participantSortMode = 'number';
+window.setGagaParticipantSort = function(mode) {
+    participantSortMode = ['number', 'score', 'boys-number', 'girls-number', 'boys-score', 'girls-score'].includes(mode) ? mode : 'number';
+    window.renderGagaball();
+};
+
 window.renderGagaball = function() {
     const activeGrid = document.getElementById('gaga-active-grid');
     const inactiveGrid = document.getElementById('gaga-inactive-grid');
     if(!activeGrid || !currentClass || !classData[currentClass]) return;
 
     let availableTotal = 0, availableBoys = 0, availableGirls = 0;
-    const students = [...classData[currentClass]].sort((a,b) => a.no - b.no);
+    const students = sortParticipants(classData[currentClass], participantSortMode);
 
     let activeHTML = ''; let inactiveHTML = '';
 
@@ -598,8 +605,7 @@ window.renderGagaball = function() {
 
         const cardHTML = `
             <article class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점">
-                <span class="student-number absolute top-2 left-2 z-30 font-mono font-bold text-slate-500 text-sm sm:text-lg">${s.no}번</span>
-                <button class="student-delete-btn absolute top-1.5 right-1.5 z-30 bg-white/90 text-red-500 border border-red-200 rounded-full font-black shadow-sm hover:bg-red-500 hover:text-white transition" onclick="window.deleteStudent(${s.no})" aria-label="${escapeHTML(s.name)} 학생 삭제" title="학생 삭제">&times;</button>
+                <button class="student-delete-btn absolute top-1.5 right-1.5 z-30" onclick="window.deleteStudent(${s.no})" aria-label="${escapeHTML(s.name)} 학생 삭제" title="학생 삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
                 <div class="attendance-row flex justify-center items-center mb-2 sm:mb-3 relative z-20">
                     <button class="attendance-btn ${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${btnText} 상태 변경">${btnText}</button>
                 </div>
@@ -616,8 +622,8 @@ window.renderGagaball = function() {
                 <div class="name relative z-20">${escapeHTML(s.name)} <span class="text-xs sm:text-lg">(${escapeHTML(s.gender)})</span></div>
                 <div class="score-val relative z-20">${s.score || 0}</div>
                 <div class="score-ctrl relative z-20">
-                    <button class="minus hover:bg-red-600" onclick="window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">-</button>
-                    <button class="hover:bg-blue-600" onclick="window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
+                    <button class="minus" onclick="window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">−</button>
+                    <button class="plus" onclick="window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
                 </div>
             </article>
         `;
@@ -626,6 +632,7 @@ window.renderGagaball = function() {
 
     activeGrid.innerHTML = activeHTML;
     inactiveGrid.innerHTML = inactiveHTML;
+    document.getElementById('gaga-participant-sort').value = participantSortMode;
     document.getElementById('gaga-draw-stats').innerText = `대기: 총 ${availableTotal}명 (남 ${availableBoys} / 여 ${availableGirls})`;
 };
 
@@ -908,6 +915,7 @@ window.handleWantedEffectKey = function(event) {
 
 window.startChampionsTournament = function() {
     if(window.championsSelection.length === 0) return;
+    window.stopMP3('anthem');
     let selectedStudents = window.championsSelection.map(no => classData[currentClass].find(s => s.no === no)).filter(Boolean);
 
     document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
@@ -1109,20 +1117,37 @@ window.closeMissionDescModal = function() {
     }
 }
 
+function showEventReveal(mode) {
+    const overlay = document.getElementById('event-loading-overlay');
+    overlay.dataset.mode = mode;
+    document.getElementById('event-loading-icon').textContent = mode === 'team' ? '⚔' : '✦';
+    document.getElementById('event-loading-text').textContent = mode === 'team' ? '팀을 편성하고 있습니다' : '선수를 뽑고 있습니다';
+    document.getElementById('event-loading-subtitle').textContent = mode === 'team' ? '균형 잡힌 대결이 곧 시작됩니다' : '오늘의 경기 주인공이 곧 공개됩니다';
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    window.playMP3('spinner');
+}
+
+function finishEventReveal() {
+    const overlay = document.getElementById('event-loading-overlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    window.stopMP3('spinner');
+    window.playMP3('fanfare');
+}
+
 window.triggerGagaDraw = function(targetGender) {
     if(!currentClass) return;
     const drawCount = parseInt(document.getElementById('gaga-draw-count').value, 10);
     let available = classData[currentClass].filter(s => s.attendance && !s.gagaDrawn && (targetGender === 'all' || s.gender === targetGender));
     if(available.length === 0) return alert("현재 대기 중인 학생이 없습니다.");
 
-    document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
-
-    window.playMP3('tadaa'); 
+    showEventReveal('draw');
 
     setTimeout(() => {
-        document.getElementById('event-loading-overlay').classList.add('hidden'); document.getElementById('event-loading-overlay').classList.remove('flex');
+        finishEventReveal();
         window.executeGagaDraw(targetGender, drawCount, available);
-    }, 2200);
+    }, 2400);
 }
 
 window.executeGagaDraw = function(targetGender, drawCount, available) {
@@ -1185,15 +1210,12 @@ window.triggerGagaTeams = function() {
     let available = classData[currentClass].filter(s => s.attendance);
     if(available.length < numTeams) return alert("참가 학생이 너무 적습니다.");
 
-    document.getElementById('event-loading-overlay').classList.remove('hidden'); document.getElementById('event-loading-overlay').classList.add('flex');
-    document.getElementById('event-loading-text').innerText = "팀 밸런스 조정중..."; 
-
-    window.playMP3('tadaa');
+    showEventReveal('team');
 
     setTimeout(() => {
-        document.getElementById('event-loading-overlay').classList.add('hidden'); document.getElementById('event-loading-overlay').classList.remove('flex');
-        document.getElementById('event-loading-text').innerText = "두구두구두구..."; window.executeGagaTeams(numTeams, available);
-    }, 2200);
+        finishEventReveal();
+        window.executeGagaTeams(numTeams, available);
+    }, 2400);
 }
 
 window.executeGagaTeams = function(numTeams, available) {

@@ -9,8 +9,26 @@ import {
     limitSelectedReferees,
     mergeStudent,
     normalizeGender,
+    sortParticipants,
     validateMissions
 } from '../app-utils.js';
+
+test('sorts participants by number, score, or prioritized gender without hiding anyone', () => {
+    const roster = [
+        { no: 4, gender: '여', score: 3 },
+        { no: 1, gender: '남', score: 2 },
+        { no: 3, gender: '여', score: 5 },
+        { no: 2, gender: '남', score: 5 }
+    ];
+    const numbers = mode => sortParticipants(roster, mode).map(student => student.no);
+    assert.deepEqual(numbers('number'), [1, 2, 3, 4]);
+    assert.deepEqual(numbers('score'), [2, 3, 4, 1]);
+    assert.deepEqual(numbers('boys-number'), [1, 2, 3, 4]);
+    assert.deepEqual(numbers('girls-number'), [3, 4, 1, 2]);
+    assert.deepEqual(numbers('boys-score'), [2, 1, 3, 4]);
+    assert.deepEqual(numbers('girls-score'), [3, 4, 2, 1]);
+    assert.deepEqual(roster.map(student => student.no), [4, 1, 3, 2]);
+});
 
 test('countdown visuals follow the audio intro and final spoken seconds', () => {
     assert.deepEqual(getCountdownState(0, 60), { phase: 'intro', number: null, remaining: 60, startStage: 1 });

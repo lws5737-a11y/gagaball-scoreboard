@@ -32,6 +32,22 @@ export function mergeStudent(existingStudent, { no, name, gender }) {
         : defaults;
 }
 
+// Gender-specific options prioritize that group without removing other participants.
+export function sortParticipants(students, mode = 'number') {
+    const [targetGender, criterion] = mode.startsWith('boys-') ? ['남', mode.slice(5)]
+        : mode.startsWith('girls-') ? ['여', mode.slice(6)] : [null, mode];
+    return [...students].sort((a, b) => {
+        if (targetGender && (a.gender === targetGender) !== (b.gender === targetGender)) {
+            return a.gender === targetGender ? -1 : 1;
+        }
+        if (criterion === 'score') {
+            const scoreDifference = (Number(b.score) || 0) - (Number(a.score) || 0);
+            if (scoreDifference) return scoreDifference;
+        }
+        return (Number(a.no) || 0) - (Number(b.no) || 0);
+    });
+}
+
 export function avatarPaths(gender) {
     const prefix = gender === '남' ? 'boy' : gender === '여' ? 'girl' : null;
     return prefix ? Array.from({ length: 50 }, (_, index) =>
