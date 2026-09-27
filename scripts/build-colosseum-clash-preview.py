@@ -135,10 +135,15 @@ def prepare_music(source_music, game_seconds):
     return np.concatenate([body[:-overlap], final_music], axis=0)
 
 
-def build(game_seconds, output, source_path=SOURCE):
+def build(game_seconds, output, source_path=SOURCE, continuous_music=False):
     music, music_rate = read_wav(source_path)
     music = resample(music, music_rate, RATE)
-    music = prepare_music(music, game_seconds)
+    if continuous_music:
+        if len(music) < round(game_seconds * RATE):
+            raise ValueError("source music is shorter than the game timer")
+        music = music[:round(game_seconds * RATE)]
+    else:
+        music = prepare_music(music, game_seconds)
     length = INTRO + game_seconds + 3.4
     music_track = np.zeros((round(length * RATE), 2), dtype=np.float32)
     effects_track = np.zeros_like(music_track)
@@ -177,9 +182,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--game-seconds", type=int, default=22)
     parser.add_argument("--source", type=Path, default=SOURCE)
+    parser.add_argument("--continuous-music", action="store_true",
+                        help="use the supplied music from its beginning without a final-ten-second splice")
     parser.add_argument("--output", type=Path,
                         default=ROOT / "sound" / "colosseum-clash-race-preview-v4.mp3")
     args = parser.parse_args()
     if args.game_seconds < 10:
         parser.error("game seconds must be at least 10")
-    build(args.game_seconds, args.output, args.source)
+    build(args.game_seconds, args.output, args.source, args.continuous_music)

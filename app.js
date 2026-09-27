@@ -6,100 +6,141 @@ import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getCountdownState, g
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
 // ==========================================
-window.isGlobalMuted = false;
-
-window.toggleGlobalMute = function() {
-    window.isGlobalMuted = !window.isGlobalMuted;
-    if (activeTimerAudio) activeTimerAudio.muted = window.isGlobalMuted;
-    const btn = document.getElementById('global-mute-btn');
-    if(btn) {
-        btn.innerText = window.isGlobalMuted ? '🔇' : '🔊';
-        btn.setAttribute('aria-label', window.isGlobalMuted ? '소리 켜기' : '소리 끄기');
-        btn.setAttribute('aria-pressed', String(window.isGlobalMuted));
-    }
-    const titleAudioBtn = document.getElementById('title-audio-toggle');
-    if (titleAudioBtn) {
-        titleAudioBtn.innerText = window.isGlobalMuted ? '🔇 음악 켜기' : '🔊 음악 끄기';
-        titleAudioBtn.setAttribute('aria-label', window.isGlobalMuted ? '배경 음악 켜기' : '배경 음악 끄기');
-        titleAudioBtn.setAttribute('aria-pressed', String(window.isGlobalMuted));
-    }
-    
-    if(window.isGlobalMuted) {
-        Object.values(audioFiles).forEach(a => a.pause());
-    } else {
-        const titleScreen = document.getElementById('class-selection-screen');
-        if (titleScreen && !titleScreen.classList.contains('hidden') && titleAudioBtn && !titleAudioBtn.classList.contains('hidden')) {
-            window.playMP3('anthem');
-        } else if(!document.getElementById('app-container').classList.contains('hidden') && currentTab === 'gagaball' && !document.getElementById('gaga-view-rank').classList.contains('hidden') && document.getElementById('gagaDrawModal').style.display !== 'flex') {
-            window.playMP3('anthem');
-        }
-    }
-};
+const storedVolume = localStorage.getItem('gaga-volume');
+const savedVolume = Number(storedVolume);
+window.globalVolume = storedVolume !== null && Number.isFinite(savedVolume) && savedVolume >= 0 && savedVolume <= 1 ? savedVolume : 0.8;
+window.isGlobalMuted = localStorage.getItem('gaga-muted') === 'true';
+let currentDrawIsChampions = false;
 
 const audioFiles = {
     anthem: new Audio('sound/orchestral-anthem.mp3'),
+    waiting: new Audio('sound/pixels-in-motion.mp3'),
     tadaa: new Audio('sound/tadaa01.mp3'),
     spinner: new Audio('sound/spinner01.mp3'),
     fanfare: new Audio('sound/fanfare.mp3'),
     goodresult: new Audio('sound/goodresult.mp3')
 };
 audioFiles.anthem.loop = true;
-const audioFadeIntervals = new Map();
-
-function cancelAudioFade(key) {
-    const interval = audioFadeIntervals.get(key);
-    if (interval) clearInterval(interval);
-    audioFadeIntervals.delete(key);
-}
+audioFiles.waiting.loop = true;
 
 window.playMP3 = function(key) {
     if (window.isGlobalMuted) return;
     if (audioFiles[key]) {
-        cancelAudioFade(key);
+        if (audioFiles[key].loop && !audioFiles[key].paused) return;
         audioFiles[key].currentTime = 0;
-        audioFiles[key].volume = 1;
+        audioFiles[key].volume = window.globalVolume;
+        audioFiles[key].muted = false;
         audioFiles[key].play().catch(e => console.log("오디오 재생 제한:", e));
     }
 };
 
 window.stopMP3 = function(key) {
     if (audioFiles[key]) {
-        cancelAudioFade(key);
         audioFiles[key].pause();
         audioFiles[key].currentTime = 0;
     }
 };
 
-window.fadeOutMP3 = function(key) {
-    const audio = audioFiles[key];
-    cancelAudioFade(key);
-    if (audio && !audio.paused) {
-        let vol = audio.volume;
-        let fadeInterval = setInterval(() => {
-            if (vol > 0.05) {
-                vol -= 0.05;
-                audio.volume = vol;
-            } else {
-                clearInterval(fadeInterval);
-                audioFadeIntervals.delete(key);
-                audio.pause();
-                audio.currentTime = 0;
-            }
-        }, 50);
-        audioFadeIntervals.set(key, fadeInterval);
+function syncBackgroundMusic() {
+    const titleScreen = document.getElementById('class-selection-screen');
+    const titleToggle = document.getElementById('title-audio-toggle');
+    const app = document.getElementById('app-container');
+    const timer = document.getElementById('timerScreen');
+    const draw = document.getElementById('gagaDrawModal');
+    const reveal = document.getElementById('event-loading-overlay');
+    let track = null;
+    if (!titleScreen.classList.contains('hidden') && !titleToggle.classList.contains('hidden')) {
+        track = 'anthem';
+    } else if (!app.classList.contains('hidden') && currentTab === 'gagaball'
+        && timer.style.display !== 'block' && draw.style.display !== 'flex'
+        && reveal.classList.contains('hidden')) {
+        track = document.getElementById('gaga-view-rank').classList.contains('hidden') ? 'waiting' : 'anthem';
     }
+    for (const key of ['anthem', 'waiting']) {
+        if (key !== track || window.isGlobalMuted) window.stopMP3(key);
+        else window.playMP3(key);
+    }
+}
+
+function applyGlobalVolume() {
+    const muted = window.isGlobalMuted || window.globalVolume === 0;
+    Object.values(audioFiles).forEach(audio => {
+        audio.volume = window.globalVolume;
+        audio.muted = muted;
+    });
+    if (activeTimerAudio) {
+        activeTimerAudio.volume = window.globalVolume;
+        activeTimerAudio.muted = muted;
+    }
+    if (masterGain && audioCtx) masterGain.gain.setValueAtTime(muted ? 0 : window.globalVolume, audioCtx.currentTime);
+    const muteButton = document.getElementById('global-mute-btn');
+    if (muteButton) {
+        muteButton.textContent = muted ? '🔇' : '🔊';
+        muteButton.setAttribute('aria-label', muted ? '소리 켜기' : '소리 끄기');
+        muteButton.setAttribute('aria-pressed', String(muted));
+    }
+    const titleButton = document.getElementById('title-audio-toggle');
+    if (titleButton) {
+        titleButton.textContent = muted ? '🔇 음악 켜기' : '🔊 음악 끄기';
+        titleButton.setAttribute('aria-label', muted ? '배경 음악 켜기' : '배경 음악 끄기');
+        titleButton.setAttribute('aria-pressed', String(muted));
+    }
+    document.querySelectorAll('.volume-slider').forEach(slider => { slider.value = String(Math.round(window.globalVolume * 100)); });
+    document.querySelectorAll('.volume-value').forEach(label => { label.textContent = `${Math.round(window.globalVolume * 100)}%`; });
+}
+
+window.toggleGlobalMute = function() {
+    window.isGlobalMuted = !window.isGlobalMuted;
+    if (!window.isGlobalMuted && window.globalVolume === 0) window.globalVolume = 0.8;
+    localStorage.setItem('gaga-muted', String(window.isGlobalMuted));
+    localStorage.setItem('gaga-volume', String(window.globalVolume));
+    applyGlobalVolume();
+    if (!window.isGlobalMuted) syncBackgroundMusic();
 };
 
-const handleFirstInteraction = () => {
-    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+window.setGlobalVolume = function(value) {
+    const percent = Math.min(100, Math.max(0, Number(value)));
+    if (!Number.isFinite(percent)) return;
+    window.globalVolume = percent / 100;
+    window.isGlobalMuted = percent === 0;
+    localStorage.setItem('gaga-volume', String(window.globalVolume));
+    localStorage.setItem('gaga-muted', String(window.isGlobalMuted));
+    applyGlobalVolume();
+    if (!window.isGlobalMuted) syncBackgroundMusic();
 };
+
+window.toggleVolumePanel = function(panelId) {
+    const panel = document.getElementById(panelId);
+    const button = document.querySelector(`[aria-controls="${panelId}"]`);
+    const opening = panel.classList.contains('hidden');
+    document.querySelectorAll('.volume-panel').forEach(other => other.classList.add('hidden'));
+    document.querySelectorAll('[aria-controls$="volume-panel"]').forEach(control => control.setAttribute('aria-expanded', 'false'));
+    panel.classList.toggle('hidden', !opening);
+    button?.setAttribute('aria-expanded', String(opening));
+    if (opening) panel.querySelector('input')?.focus();
+};
+
+document.addEventListener('click', event => {
+    if (!event.target.closest('.volume-control')) {
+        document.querySelectorAll('.volume-panel').forEach(panel => panel.classList.add('hidden'));
+        document.querySelectorAll('[aria-controls$="volume-panel"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+    }
+});
+queueMicrotask(applyGlobalVolume);
+
+const handleFirstInteraction = () => { initAudio(); };
 document.body.addEventListener('click', handleFirstInteraction);
 document.body.addEventListener('touchstart', handleFirstInteraction);
 
 let audioCtx;
+let masterGain;
 function initAudio() {
-    if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = window.isGlobalMuted ? 0 : window.globalVolume;
+        masterGain.connect(audioCtx.destination);
+    }
     if (audioCtx.state === 'suspended') { audioCtx.resume(); }
     return audioCtx;
 }
@@ -109,7 +150,7 @@ window.playCoinSound = function() {
     try {
         const ctx = initAudio();
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.type = 'sine'; osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.connect(gain); gain.connect(masterGain);
         osc.frequency.setValueAtTime(987.77, ctx.currentTime);
         osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08);
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
@@ -123,7 +164,7 @@ window.playBumpSound = function() {
     try {
         const ctx = initAudio();
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
-        osc.type = 'triangle'; osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'triangle'; osc.connect(gain); gain.connect(masterGain);
         osc.frequency.setValueAtTime(150, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.2);
         gain.gain.setValueAtTime(0.2, ctx.currentTime);
@@ -331,12 +372,14 @@ if (auth && db) {
             userId = null;
             if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
             window.stopMP3('anthem');
+            window.stopMP3('waiting');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('class-selection-screen').classList.add('hidden');
             document.getElementById('class-selection-screen').classList.remove('flex');
             window.closeStartupClassPanel();
             document.getElementById('title-audio-toggle').classList.add('hidden');
+            document.getElementById('title-volume-trigger').classList.add('hidden');
             classData = {}; groupScores = {}; groupRecords = {}; classStamps = {}; hiddenClasses = [];
             currentClass = ""; 
             window.selectedParticipants = [];
@@ -449,8 +492,10 @@ window.openClassSelection = function() {
     const screen = document.getElementById('class-selection-screen');
     if (screen.classList.contains('hidden')) {
         window.stopMP3('anthem');
+        window.stopMP3('waiting');
         window.closeStartupClassPanel();
         document.getElementById('title-audio-toggle').classList.add('hidden');
+        document.getElementById('title-volume-trigger').classList.add('hidden');
     }
     document.body.classList.remove('app-header-visible');
     document.getElementById('app-container').classList.add('hidden');
@@ -467,6 +512,8 @@ window.openStartupClassPanel = function() {
     document.getElementById('title-start-button').setAttribute('aria-expanded', 'true');
     document.getElementById('title-start-hint').textContent = '학급을 선택하세요';
     document.getElementById('title-audio-toggle').classList.remove('hidden');
+    document.getElementById('title-volume-trigger').classList.remove('hidden');
+    syncBackgroundMusic();
 };
 
 window.closeStartupClassPanel = function() {
@@ -510,11 +557,13 @@ window.renderStartupClassList = function() {
 
 window.selectClass = function(className) {
     currentClass = className;
+    currentDrawIsChampions = false;
     window.selectedParticipants = [];
     currentGagaTeams = [];
     individualMissionResult = null;
     teamMissionResults = {};
-    window.fadeOutMP3('anthem');
+    window.stopMP3('anthem');
+    window.stopMP3('waiting');
     
     document.getElementById('class-selection-screen').classList.add('hidden');
     document.getElementById('class-selection-screen').classList.remove('flex');
@@ -547,9 +596,6 @@ window.showTab = function(tabName) {
     const tabStamp = document.getElementById('tab-stamp');
     const gagaHeaderTabs = document.getElementById('gaga-header-tabs');
 
-    if (tabName !== 'gagaball' || !document.getElementById('gaga-view-rank').classList.contains('hidden')) {
-         window.fadeOutMP3('anthem');
-    }
     window.hideFloatingRouletteBtn();
 
     if (tabName === 'gagaball') {
@@ -572,6 +618,7 @@ window.showTab = function(tabName) {
             gagaHeaderTabs.classList.remove('flex');
         }
         window.renderStampBoard();
+        syncBackgroundMusic();
     }
 }
 
@@ -594,16 +641,15 @@ window.switchGagaTab = function(tab) {
         activeBtn.classList.remove('text-slate-400', 'bg-transparent');
     }
 
-    if (tab !== 'rank') window.fadeOutMP3('anthem');
     window.hideFloatingRouletteBtn();
 
     if(tab === 'score') window.renderGagaball();
     if(tab === 'rank') { 
-        window.playMP3('anthem'); 
-        window.renderGagaRanking(); 
+        window.renderGagaRanking();
     }
     if(tab === 'team') window.renderGagaTeamView();
     window.updateParticipantActions();
+    syncBackgroundMusic();
 }
 
 window.changeDrawCount = function(delta) {
@@ -968,9 +1014,11 @@ window.handleWantedEffectKey = function(event) {
 window.startChampionsTournament = function() {
     if(window.selectedParticipants.length < 2) return alert('왕중왕전에는 학생 2명 이상을 선택해주세요.');
     if(window.selectedParticipants.length > 10) return alert('왕중왕전은 최대 10명까지 진행할 수 있습니다.');
-    window.stopMP3('anthem');
     let selectedStudents = window.selectedParticipants.map(no => classData[currentClass].find(s => Number(s.no) === no && s.attendance)).filter(Boolean);
     if (selectedStudents.length < 2) return alert('참가 중인 학생을 2명 이상 선택해주세요.');
+    currentDrawIsChampions = true;
+    window.stopMP3('anthem');
+    window.stopMP3('waiting');
 
     document.getElementById('gagaDrawMainTitle').innerText = "👑 왕중왕전 👑";
     document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-purple-600 mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
@@ -1191,6 +1239,7 @@ function showEventReveal(mode) {
     document.getElementById('event-loading-subtitle').textContent = mode === 'team' ? '균형 잡힌 대결이 곧 시작됩니다' : '오늘의 경기 주인공이 곧 공개됩니다';
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
+    window.stopMP3('waiting');
     window.playMP3('spinner');
 }
 
@@ -1217,6 +1266,7 @@ window.triggerGagaDraw = function(targetGender) {
 }
 
 window.executeGagaDraw = function(targetGender, drawCount, available) {
+    currentDrawIsChampions = false;
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
     let picked = available.slice(0, actualDrawCount);
@@ -1255,9 +1305,11 @@ window.resetGagaDraw = function() {
         saveData(); window.renderGagaball();
     }
 }
-window.closeGagaDrawModal = function() { 
-    document.getElementById('gagaDrawModal').style.display = 'none'; 
+window.closeGagaDrawModal = function() {
+    document.getElementById('gagaDrawModal').style.display = 'none';
+    currentDrawIsChampions = false;
     window.hideFloatingRouletteBtn();
+    syncBackgroundMusic();
 }
 
 // 팀 편성 로직
@@ -1331,6 +1383,7 @@ window.executeGagaTeams = function(numTeams, available) {
     currentGagaTeams = teams; 
     teamMissionResults = {};
     window.renderGagaTeamView(); 
+    syncBackgroundMusic();
     window.fireConfetti();
 }
 
@@ -1520,12 +1573,14 @@ window.seekGagaTimer = function(value) {
 window.openGagaTimer = function(duration) {
     if (duration !== 60 && duration !== 100) return;
     window.closeTimerSelectModal();
-    window.closeGagaTimer();
-    window.fadeOutMP3('anthem');
+    window.closeGagaTimer(false);
+    window.stopMP3('anthem');
+    window.stopMP3('waiting');
     activeTimerDuration = duration;
-    activeTimerAudio = new Audio(`sound/countdown-${duration}s.mp3`);
+    activeTimerAudio = new Audio(`sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`);
     activeTimerAudio.preload = 'auto';
     activeTimerAudio.muted = window.isGlobalMuted;
+    activeTimerAudio.volume = window.globalVolume;
     activeTimerAudio.onended = renderTimerScreen;
     activeTimerAudio.onloadedmetadata = () => {
         if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
@@ -1571,7 +1626,7 @@ window.toggleGagaTimerFullscreen = function() {
     else if (screen.requestFullscreen) screen.requestFullscreen().catch(error => console.error('전체 화면 전환 실패:', error));
 };
 
-window.closeGagaTimer = function() {
+window.closeGagaTimer = function(resumeMusic = true) {
     if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
     timerAnimationFrame = null;
     if (activeTimerAudio) {
@@ -1584,6 +1639,7 @@ window.closeGagaTimer = function() {
     const screen = document.getElementById('timerScreen');
     if (screen) screen.style.display = 'none';
     if (document.fullscreenElement === screen) document.exitFullscreen().catch(() => {});
+    if (resumeMusic) syncBackgroundMusic();
 };
 
 // ==========================================
@@ -1675,12 +1731,12 @@ window.playStampSound = () => {
     const fallOsc = ctx.createOscillator(); const fallGain = ctx.createGain();
     fallOsc.type = 'sine'; fallOsc.frequency.setValueAtTime(900, now); fallOsc.frequency.exponentialRampToValueAtTime(100, now + 0.35);
     fallGain.gain.setValueAtTime(0, now); fallGain.gain.linearRampToValueAtTime(0.4, now + 0.15); fallGain.gain.linearRampToValueAtTime(0, now + 0.35);
-    fallOsc.connect(fallGain); fallGain.connect(ctx.destination); fallOsc.start(now); fallOsc.stop(now + 0.35);
+    fallOsc.connect(fallGain); fallGain.connect(masterGain); fallOsc.start(now); fallOsc.stop(now + 0.35);
 
     const boomOsc = ctx.createOscillator(); const boomGain = ctx.createGain();
     boomOsc.type = 'square'; boomOsc.frequency.setValueAtTime(150, now + 0.35); boomOsc.frequency.exponentialRampToValueAtTime(20, now + 0.7);
     boomGain.gain.setValueAtTime(0, now + 0.34); boomGain.gain.setValueAtTime(1.5, now + 0.35); boomGain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
-    boomOsc.connect(boomGain); boomGain.connect(ctx.destination); boomOsc.start(now + 0.35); boomOsc.stop(now + 0.7);
+    boomOsc.connect(boomGain); boomGain.connect(masterGain); boomOsc.start(now + 0.35); boomOsc.stop(now + 0.7);
 };
 
 const playTone = (freq, type, duration, gainVal) => {
@@ -1689,7 +1745,7 @@ const playTone = (freq, type, duration, gainVal) => {
     const osc = ctx.createOscillator(); const gain = ctx.createGain();
     osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
     gain.gain.setValueAtTime(gainVal, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-    osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + duration);
+    osc.connect(gain); gain.connect(masterGain); osc.start(); osc.stop(ctx.currentTime + duration);
 };
 window.playEraseSound = () => [659, 880, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.4, 0.15), i * 50));
 

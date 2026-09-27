@@ -58,7 +58,14 @@ Google 계정으로 시작하기
         <div id="startup-class-list" class="flex flex-col gap-3 overflow-y-auto"></div>
         <button type="button" onclick="window.openManageModal()" class="startup-manage-button">⚙️ 학급 설정 및 명단 관리</button>
     </div>
-    <button id="title-audio-toggle" type="button" class="hidden" onclick="window.toggleGlobalMute()" aria-label="배경 음악 끄기" aria-pressed="false">🔊 음악 끄기</button>
+    <div class="volume-control title-audio-control">
+        <button id="title-audio-toggle" type="button" class="hidden" onclick="window.toggleGlobalMute()" aria-label="배경 음악 끄기" aria-pressed="false">🔊 음악 끄기</button>
+        <button id="title-volume-trigger" type="button" class="hidden volume-trigger" onclick="window.toggleVolumePanel('title-volume-panel')" aria-label="볼륨 조절" aria-controls="title-volume-panel" aria-expanded="false">⚙</button>
+        <div id="title-volume-panel" class="volume-panel hidden" role="group" aria-label="볼륨 조절">
+            <label for="title-volume-slider">볼륨 <output class="volume-value">80%</output></label>
+            <input id="title-volume-slider" class="volume-slider" type="range" min="0" max="100" value="80" oninput="window.setGlobalVolume(this.value)" aria-label="전체 소리 크기">
+        </div>
+    </div>
 </div>
 
 <div id="app-container" class="hidden">
@@ -89,7 +96,14 @@ Google 계정으로 시작하기
 <svg class="animate-spin h-3 w-3 text-white mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
 <span class="hidden sm:inline" data-sync-label>동기화</span>
 </div>
+<div class="volume-control header-volume-control">
 <button onclick="window.toggleGlobalMute()" id="global-mute-btn" class="bg-slate-700 hover:bg-slate-600 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-slate-500 shadow-sm transition cursor-pointer text-sm sm:text-base" title="음소거/해제" aria-label="소리 끄기" aria-pressed="false">🔊</button>
+<button type="button" class="volume-trigger header-volume-trigger" onclick="window.toggleVolumePanel('header-volume-panel')" aria-label="볼륨 조절" aria-controls="header-volume-panel" aria-expanded="false">▾</button>
+<div id="header-volume-panel" class="volume-panel hidden" role="group" aria-label="볼륨 조절">
+<label for="header-volume-slider">볼륨 <output class="volume-value">80%</output></label>
+<input id="header-volume-slider" class="volume-slider" type="range" min="0" max="100" value="80" oninput="window.setGlobalVolume(this.value)" aria-label="전체 소리 크기">
+</div>
+</div>
 <button onclick="window.openClassSelection()" id="current-class-display" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 sm:px-4 rounded-full text-xs sm:text-sm font-medium border border-slate-500 whitespace-nowrap shadow-sm transition cursor-pointer flex items-center gap-1.5">
 <span>🔄 학급 변경</span>
 </button>
