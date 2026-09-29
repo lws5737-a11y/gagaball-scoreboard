@@ -22,13 +22,18 @@ const audioFiles = {
 };
 audioFiles.anthem.loop = true;
 audioFiles.waiting.loop = true;
+const WAITING_BGM_GAIN = 0.3;
+
+function getAudioVolume(key) {
+    return window.globalVolume * (key === 'waiting' ? WAITING_BGM_GAIN : 1);
+}
 
 window.playMP3 = function(key) {
     if (window.isGlobalMuted) return;
     if (audioFiles[key]) {
         if (audioFiles[key].loop && !audioFiles[key].paused) return;
         audioFiles[key].currentTime = 0;
-        audioFiles[key].volume = window.globalVolume;
+        audioFiles[key].volume = getAudioVolume(key);
         audioFiles[key].muted = false;
         audioFiles[key].play().catch(e => console.log("오디오 재생 제한:", e));
     }
@@ -47,12 +52,14 @@ function syncBackgroundMusic() {
     const app = document.getElementById('app-container');
     const timer = document.getElementById('timerScreen');
     const draw = document.getElementById('gagaDrawModal');
+    const roulette = document.getElementById('rouletteModal');
     const reveal = document.getElementById('event-loading-overlay');
     let track = null;
     if (!titleScreen.classList.contains('hidden') && !titleToggle.classList.contains('hidden')) {
         track = 'anthem';
     } else if (!app.classList.contains('hidden') && currentTab === 'gagaball'
-        && timer.style.display !== 'block' && draw.style.display !== 'flex'
+        && timer.style.display !== 'block' && roulette.style.display !== 'flex'
+        && (draw.style.display !== 'flex' || !currentDrawIsChampions)
         && reveal.classList.contains('hidden')) {
         track = document.getElementById('gaga-view-rank').classList.contains('hidden') ? 'waiting' : 'anthem';
     }
@@ -64,8 +71,8 @@ function syncBackgroundMusic() {
 
 function applyGlobalVolume() {
     const muted = window.isGlobalMuted || window.globalVolume === 0;
-    Object.values(audioFiles).forEach(audio => {
-        audio.volume = window.globalVolume;
+    Object.entries(audioFiles).forEach(([key, audio]) => {
+        audio.volume = getAudioVolume(key);
         audio.muted = muted;
     });
     if (activeTimerAudio) {
@@ -85,6 +92,8 @@ function applyGlobalVolume() {
         titleButton.setAttribute('aria-label', muted ? '배경 음악 켜기' : '배경 음악 끄기');
         titleButton.setAttribute('aria-pressed', String(muted));
     }
+    const timerVolumeIcon = document.getElementById('timer-volume-icon');
+    if (timerVolumeIcon) timerVolumeIcon.textContent = muted ? '🔇 볼륨' : '🔊 볼륨';
     document.querySelectorAll('.volume-slider').forEach(slider => { slider.value = String(Math.round(window.globalVolume * 100)); });
     document.querySelectorAll('.volume-value').forEach(label => { label.textContent = `${Math.round(window.globalVolume * 100)}%`; });
 }
@@ -109,23 +118,6 @@ window.setGlobalVolume = function(value) {
     if (!window.isGlobalMuted) syncBackgroundMusic();
 };
 
-window.toggleVolumePanel = function(panelId) {
-    const panel = document.getElementById(panelId);
-    const button = document.querySelector(`[aria-controls="${panelId}"]`);
-    const opening = panel.classList.contains('hidden');
-    document.querySelectorAll('.volume-panel').forEach(other => other.classList.add('hidden'));
-    document.querySelectorAll('[aria-controls$="volume-panel"]').forEach(control => control.setAttribute('aria-expanded', 'false'));
-    panel.classList.toggle('hidden', !opening);
-    button?.setAttribute('aria-expanded', String(opening));
-    if (opening) panel.querySelector('input')?.focus();
-};
-
-document.addEventListener('click', event => {
-    if (!event.target.closest('.volume-control')) {
-        document.querySelectorAll('.volume-panel').forEach(panel => panel.classList.add('hidden'));
-        document.querySelectorAll('[aria-controls$="volume-panel"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
-    }
-});
 queueMicrotask(applyGlobalVolume);
 
 const handleFirstInteraction = () => { initAudio(); };
@@ -379,7 +371,7 @@ if (auth && db) {
             document.getElementById('class-selection-screen').classList.remove('flex');
             window.closeStartupClassPanel();
             document.getElementById('title-audio-toggle').classList.add('hidden');
-            document.getElementById('title-volume-trigger').classList.add('hidden');
+            document.getElementById('title-volume-slider').classList.add('hidden');
             classData = {}; groupScores = {}; groupRecords = {}; classStamps = {}; hiddenClasses = [];
             currentClass = ""; 
             window.selectedParticipants = [];
@@ -495,7 +487,7 @@ window.openClassSelection = function() {
         window.stopMP3('waiting');
         window.closeStartupClassPanel();
         document.getElementById('title-audio-toggle').classList.add('hidden');
-        document.getElementById('title-volume-trigger').classList.add('hidden');
+        document.getElementById('title-volume-slider').classList.add('hidden');
     }
     document.body.classList.remove('app-header-visible');
     document.getElementById('app-container').classList.add('hidden');
@@ -512,7 +504,7 @@ window.openStartupClassPanel = function() {
     document.getElementById('title-start-button').setAttribute('aria-expanded', 'true');
     document.getElementById('title-start-hint').textContent = '학급을 선택하세요';
     document.getElementById('title-audio-toggle').classList.remove('hidden');
-    document.getElementById('title-volume-trigger').classList.remove('hidden');
+    document.getElementById('title-volume-slider').classList.remove('hidden');
     syncBackgroundMusic();
 };
 
@@ -1047,7 +1039,7 @@ window.startChampionsTournament = function() {
 }
 
 // -----------------------------------------------------------
-// 룰렛 플로팅 창 중앙 고정 및 원클릭 실행 로직
+// 개인전·왕중왕전 결과창의 룰렛 버튼
 // -----------------------------------------------------------
 window.currentFloatingContext = 'individual';
 window.currentTeamRouletteBtnId = null;
@@ -1103,10 +1095,18 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     document.getElementById('roulette-result-summary').textContent = '룰렛이 자동으로 돌아갑니다…';
     document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = true; });
     document.getElementById('rouletteModal').style.display = 'flex';
+    window.stopMP3('waiting');
     setTimeout(() => { window.drawRoulette(); window.spinRoulette(); }, 100);
     return true;
 }
-window.closeRouletteModal = function() { if(isSpinning) return; document.getElementById('rouletteModal').style.display = 'none'; }
+window.closeRouletteModal = function() {
+    if (isSpinning) return;
+    document.getElementById('rouletteModal').style.display = 'none';
+    if (document.getElementById('gagaDrawModal').style.display === 'flex') {
+        window.showFloatingRouletteBtn('individual');
+    }
+    syncBackgroundMusic();
+};
 window.openTimerFromRoulette = function(duration) {
     if (isSpinning) return;
     window.closeRouletteModal();
@@ -1295,6 +1295,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
     window.showFloatingRouletteBtn('individual');
+    syncBackgroundMusic();
     window.fireConfetti();
 }
 
@@ -1468,7 +1469,7 @@ window.renderGagaTeamView = function() {
                 </div>
                 ${teamB ? `
                 <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full ${matchupMission ? 'xl:w-48' : 'xl:w-20'} shrink-0 gap-1 sm:gap-2">
-                    ${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : `<button id="${matchupId}" class="bg-gradient-to-b from-purple-500 to-indigo-600 text-white rounded-full w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 flex items-center justify-center shadow-lg border-[3px] sm:border-[4px] border-white hover:scale-110 transition z-20 shrink-0 text-2xl sm:text-3xl lg:text-4xl" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛">🎡</button>`}
+                    ${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : `<button id="${matchupId}" type="button" class="matchup-roulette-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>`}
                     <div class="text-xl sm:text-3xl lg:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm">VS</div>
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">

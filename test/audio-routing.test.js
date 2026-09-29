@@ -10,22 +10,38 @@ test('waiting music and both champion timer soundtracks are bundled', async () =
     }
 });
 
-test('champions use their own timers and waiting music does not overlap a timer', async () => {
+test('champions use their own timers while individual results continue waiting music', async () => {
     const script = await readFile(new URL('../app.js', import.meta.url), 'utf8');
     assert.match(script, /currentDrawIsChampions = true;[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /window\.executeGagaDraw = function[\s\S]*?currentDrawIsChampions = false/);
     assert.match(script, /new Audio\(`sound\/countdown-\$\{currentDrawIsChampions \? 'champions-' : ''\}\$\{duration\}s\.mp3`\)/);
     assert.match(script, /window\.openGagaTimer = function[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /audioFiles\.waiting\.loop = true/);
+    assert.match(script, /draw\.style\.display !== 'flex' \|\| !currentDrawIsChampions/);
+    assert.match(script, /window\.executeGagaDraw = function[\s\S]*?window\.showFloatingRouletteBtn\('individual'\);\s*syncBackgroundMusic\(\)/);
 });
 
-test('volume controls cover title and game screens', async () => {
+test('inline volume controls cover title, game, and timer screens with a quieter waiting track', async () => {
     const [html, script] = await Promise.all([
         readFile(new URL('../index.html', import.meta.url), 'utf8'),
         readFile(new URL('../app.js', import.meta.url), 'utf8')
     ]);
-    for (const id of ['title-volume-slider', 'header-volume-slider']) assert.ok(html.includes(`id="${id}"`));
+    for (const id of ['title-volume-slider', 'header-volume-slider', 'timer-volume-slider']) assert.ok(html.includes(`id="${id}"`));
+    assert.doesNotMatch(html, /id="(?:header|title)-volume-panel"/);
+    assert.match(script, /const WAITING_BGM_GAIN = 0\.3/);
+    assert.match(script, /audio\.volume = getAudioVolume\(key\)/);
     assert.match(script, /activeTimerAudio\.volume = window\.globalVolume/);
     assert.match(script, /masterGain\.gain\.setValueAtTime/);
-    assert.match(script, /audio\.volume = window\.globalVolume/);
+});
+
+test('draw and team roulette buttons use the transparent new wheel icon', async () => {
+    const [html, script, icon] = await Promise.all([
+        readFile(new URL('../index.html', import.meta.url), 'utf8'),
+        readFile(new URL('../app.js', import.meta.url), 'utf8'),
+        readFile(new URL('../images/gaga-roulette-icon.png', import.meta.url))
+    ]);
+    assert.equal(icon.subarray(1, 4).toString(), 'PNG');
+    assert.equal(icon[25], 6, 'wheel icon must retain alpha transparency');
+    assert.match(html, /id="floating-roulette-btn"[^>]*draw-roulette-button[^>]*><img src="images\/gaga-roulette-icon\.png"/);
+    assert.match(script, /class="matchup-roulette-button"[^`]*images\/gaga-roulette-icon\.png/);
 });
