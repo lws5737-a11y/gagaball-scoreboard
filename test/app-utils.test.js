@@ -5,6 +5,7 @@ import {
     avatarPaths,
     buildRankingPages,
     getCountdownState,
+    getRankingGridLayout,
     escapeHTML,
     getRefereeEligibleTeams,
     limitSelectedReferees,
@@ -34,6 +35,18 @@ test('ranking retains shared competition ranks at page boundaries', () => {
     assert.deepEqual(podium.map(student => student.rank), [1, 1, 3]);
     assert.deepEqual(pages.flat().map(student => student.rank), [3, 5, 6, 7]);
     assert.deepEqual(pages.map(page => page.length), [2, 2]);
+});
+
+test('ranking grid fits five TV columns and as many readable rows as available', () => {
+    assert.deepEqual(getRankingGridLayout(2048, 600, 27), {
+        columns: 5, rows: 6, pageSize: 30, height: 600
+    });
+    assert.deepEqual(getRankingGridLayout(2048, 360, 27), {
+        columns: 5, rows: 3, pageSize: 15, height: 360
+    });
+    assert.deepEqual(getRankingGridLayout(500, 0, 27), {
+        columns: 2, rows: 3, pageSize: 6, height: 372
+    });
 });
 
 test('sorts participants by number, score, or prioritized gender without hiding anyone', () => {
