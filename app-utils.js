@@ -68,6 +68,23 @@ export function buildRankingPages(students, pageSize = 12) {
     return { podium: ranked.slice(0, 3), pages };
 }
 
+export function getRankingGridLayout(viewportWidth, availableHeight, remainingCount) {
+    const width = Number(viewportWidth) || 0;
+    const columns = width >= 1600 ? 5 : width >= 1200 ? 4 : width >= 900 ? 3 : 2;
+    const gap = width < 640 ? 6 : 10;
+    const targetHeight = width < 640 ? 120 : width < 900 ? 108 : width >= 1600 ? 90 : 104;
+    const maximumRows = Math.max(1, Math.ceil(Math.max(0, remainingCount) / columns));
+    const fitRows = availableHeight > 0
+        ? Math.max(1, Math.floor((availableHeight + gap) / (targetHeight + gap)))
+        : 3;
+    const rows = Math.min(maximumRows, width < 900 ? 3 : fitRows);
+    const desiredHeight = rows * (width < 640 ? 120 : 145) + (rows - 1) * gap;
+    const height = width < 900 || availableHeight <= 0
+        ? rows * targetHeight + (rows - 1) * gap
+        : Math.max(targetHeight, Math.min(availableHeight, desiredHeight));
+    return { columns, rows, pageSize: columns * rows, height };
+}
+
 export function avatarPaths(gender) {
     const prefix = gender === '남' ? 'boy' : gender === '여' ? 'girl' : null;
     return prefix ? Array.from({ length: 50 }, (_, index) =>

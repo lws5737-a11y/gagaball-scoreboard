@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getRankingGridLayout, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -805,10 +805,7 @@ let rankPageSize = 12;
 let rankAutoplay = true;
 let rankPageTimer = null;
 let rankTransitionTimer = null;
-
-function getRankingPageSize() {
-    return window.innerWidth < 900 ? 6 : window.innerWidth < 1400 ? 9 : 12;
-}
+let rankResizeTimer = null;
 
 function isRankingVisible() {
     return !document.hidden
@@ -825,6 +822,9 @@ function updateRankingControls() {
         toggle.textContent = rankAutoplay ? '⏸ 자동 넘김' : '▶ 자동 넘김';
         toggle.setAttribute('aria-pressed', String(!rankAutoplay));
     }
+    document.querySelectorAll('.rank-page-controls button').forEach(button => {
+        button.disabled = rankPages.length < 2;
+    });
 }
 
 function showRankingPage(animate = false) {
@@ -877,7 +877,8 @@ window.toggleRankingAutoplay = function() {
 };
 
 window.addEventListener('resize', () => {
-    if (getRankingPageSize() !== rankPageSize) window.renderGagaRanking();
+    clearTimeout(rankResizeTimer);
+    if (isRankingVisible()) rankResizeTimer = setTimeout(() => window.renderGagaRanking(), 120);
 });
 document.addEventListener('visibilitychange', () => window.syncRankingAutoplay());
 
@@ -886,46 +887,68 @@ window.renderGagaRanking = function() {
     if(!container || !currentClass) return;
     clearTimeout(rankTransitionTimer);
     rankTransitionTimer = null;
-    rankPageSize = getRankingPageSize();
     if (rankPageClass !== currentClass) {
         rankPageIndex = 0;
         rankAutoplay = true;
     }
     rankPageClass = currentClass;
-    const { podium, pages } = buildRankingPages(classData[currentClass] || [], rankPageSize);
-    rankPages = pages;
-    rankPageIndex = Math.min(rankPageIndex, Math.max(0, pages.length - 1));
-    
-    const createPodiumCard = (student) => `
-        <div class="rank-podium-card rank-medal-${student.rank}">
-            <span class="rank-podium-badge">${['🥇', '🥈', '🥉'][student.rank - 1]} ${student.rank}위</span>
+    const roster = classData[currentClass] || [];
+    const { podium, pages: individualPages } = buildRankingPages(roster, 1);
+    const createStageStudent = (student, place) => student ? `
+        <div class="rank-stage-student rank-stage-place-${place}">
             <img src="${escapeHTML(window.generateCuteAvatar(student))}" alt="${escapeHTML(student.name)} 아바타" class="rank-podium-avatar">
-            <div class="rank-podium-info">
-                <span class="rank-podium-name">${escapeHTML(student.name)}</span>
-                <span class="rank-podium-score">${Number(student.score) || 0}점</span>
+            <div class="rank-stage-label">
+                <span class="rank-stage-rank">${['🥇', '🥈', '🥉'][student.rank - 1]} ${student.rank}위</span>
+                <span class="rank-stage-name">${escapeHTML(student.name)}</span>
+                <span class="rank-stage-score">${Number(student.score) || 0}점</span>
             </div>
-        </div>`;
-
+        </div>` : '';
+    const createMobilePodiumCard = student => student ? `
+        <div class="rank-mobile-card rank-medal-${student.rank}">
+            <img src="${escapeHTML(window.generateCuteAvatar(student))}" alt="${escapeHTML(student.name)} 아바타" class="rank-podium-avatar">
+            <span class="rank-stage-rank">${['🥇', '🥈', '🥉'][student.rank - 1]} ${student.rank}위</span>
+            <span class="rank-stage-name">${escapeHTML(student.name)}</span>
+            <span class="rank-stage-score">${Number(student.score) || 0}점</span>
+        </div>` : '';
     const podiumHTML = podium.length ? `
-        <div class="ranking-layout" aria-label="상위 세 명 고정 순위">
-            <div class="rank-column rank-second">${podium[1] ? createPodiumCard(podium[1]) : ''}</div>
-            <div class="rank-column rank-first">${createPodiumCard(podium[0])}</div>
-            <div class="rank-column rank-third">${podium[2] ? createPodiumCard(podium[2]) : ''}</div>
+        <div class="rank-podium-scene" role="group" aria-label="상위 세 명 고정 순위">
+            <img src="images/gagaball-rank-podium.png" alt="" aria-hidden="true" class="rank-podium-art">
+            ${createStageStudent(podium[0], 1)}
+            ${createStageStudent(podium[1], 2)}
+            ${createStageStudent(podium[2], 3)}
+            <img src="images/dongsan-school-emblem.png" alt="동산초등학교 엠블럼" class="rank-school-emblem">
+        </div>
+        <div class="rank-mobile-podium" aria-label="상위 세 명 고정 순위">
+            ${podium.map(createMobilePodiumCard).join('')}
         </div>` : '<p class="ranking-empty">참가 중인 학생이 없습니다.</p>';
-    const pagesHTML = pages.length ? `
+    const pagesHTML = individualPages.length ? `
         <section class="ranking-pages" aria-label="나머지 학생 순위">
             <div class="rank-page-toolbar">
-                <h2>🏅 전체 순위 <span>${pages.length > 1 ? '4번째 학생부터 · 6초마다 자동 전환' : '4번째 학생부터'}</span></h2>
                 <div class="rank-page-controls" role="group" aria-label="순위 페이지 조작">
-                    <button type="button" onclick="window.changeRankingPage(-1)" ${pages.length < 2 ? 'disabled' : ''} aria-label="이전 순위 페이지">◀ 이전</button>
+                    <button type="button" onclick="window.changeRankingPage(-1)" aria-label="이전 순위 페이지">◀ 이전</button>
                     <span id="rank-page-status" role="status" aria-live="polite"></span>
-                    <button type="button" onclick="window.changeRankingPage(1)" ${pages.length < 2 ? 'disabled' : ''} aria-label="다음 순위 페이지">다음 ▶</button>
-                    <button id="rank-autoplay-toggle" type="button" onclick="window.toggleRankingAutoplay()" ${pages.length < 2 ? 'disabled' : ''} aria-label="순위 자동 넘김 일시정지 또는 재생"></button>
+                    <button type="button" onclick="window.changeRankingPage(1)" aria-label="다음 순위 페이지">다음 ▶</button>
+                    <button id="rank-autoplay-toggle" type="button" onclick="window.toggleRankingAutoplay()" aria-label="순위 자동 넘김 일시정지 또는 재생"></button>
                 </div>
             </div>
             <div class="rank-page-viewport"><div id="rank-page-grid" class="rank-page-grid"></div></div>
         </section>` : '';
     container.innerHTML = podiumHTML + pagesHTML;
+    const grid = document.getElementById('rank-page-grid');
+    if (grid) {
+        const navTop = document.getElementById('tab-navigation').getBoundingClientRect().top;
+        const availableHeight = isRankingVisible() ? navTop - grid.getBoundingClientRect().top - 12 : 0;
+        const layout = getRankingGridLayout(window.innerWidth, availableHeight, individualPages.length);
+        rankPageSize = layout.pageSize;
+        grid.style.setProperty('--rank-columns', layout.columns);
+        grid.style.setProperty('--rank-rows', layout.rows);
+        grid.style.height = `${layout.height}px`;
+        rankPages = buildRankingPages(roster, rankPageSize).pages;
+        rankPageIndex = Math.min(rankPageIndex, rankPages.length - 1);
+    } else {
+        rankPages = [];
+        rankPageIndex = 0;
+    }
     showRankingPage();
     window.syncRankingAutoplay();
 }
