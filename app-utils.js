@@ -48,6 +48,26 @@ export function sortParticipants(students, mode = 'number') {
     });
 }
 
+export function buildRankingPages(students, pageSize = 12) {
+    const size = Math.max(1, Math.floor(Number(pageSize) || 12));
+    const sorted = [...students]
+        .filter(student => student.attendance)
+        .sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0)
+            || (Number(a.no) || 0) - (Number(b.no) || 0));
+    let rank = 1;
+    const ranked = sorted.map((student, index) => {
+        if (index > 0 && (Number(student.score) || 0) < (Number(sorted[index - 1].score) || 0)) {
+            rank = index + 1;
+        }
+        return { ...student, rank };
+    });
+    const pages = [];
+    for (let index = 3; index < ranked.length; index += size) {
+        pages.push(ranked.slice(index, index + size));
+    }
+    return { podium: ranked.slice(0, 3), pages };
+}
+
 export function avatarPaths(gender) {
     const prefix = gender === '남' ? 'boy' : gender === '여' ? 'girl' : null;
     return prefix ? Array.from({ length: 50 }, (_, index) =>

@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -611,6 +611,7 @@ window.showTab = function(tabName) {
         }
         window.renderStampBoard();
         syncBackgroundMusic();
+        window.syncRankingAutoplay();
     }
 }
 
@@ -642,6 +643,7 @@ window.switchGagaTab = function(tab) {
     if(tab === 'team') window.renderGagaTeamView();
     window.updateParticipantActions();
     syncBackgroundMusic();
+    window.syncRankingAutoplay();
 }
 
 window.changeDrawCount = function(delta) {
@@ -794,167 +796,138 @@ window.resetAllScoresDB = function() {
     }
 }
 
-// 명예의전당 하단 순위 티커 제어
-window.rankAutoScrollInterval = null;
-window.autoScrollActive = true;
-window.rankTickerScrollLeft = 0;
-window.rankWheelResumeTimer = null;
+// 명예의 전당: 상위 세 명은 고정하고 나머지만 TV용 페이지로 넘긴다.
+const RANK_PAGE_INTERVAL = 6000;
+let rankPages = [];
+let rankPageIndex = 0;
+let rankPageClass = null;
+let rankPageSize = 12;
+let rankAutoplay = true;
+let rankPageTimer = null;
+let rankTransitionTimer = null;
 
-window.handleRankTickerWheel = function(event) {
-    const ticker = event.currentTarget;
-    const wheelDistance = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
-    if (!ticker || wheelDistance === 0) return;
+function getRankingPageSize() {
+    return window.innerWidth < 900 ? 6 : window.innerWidth < 1400 ? 9 : 12;
+}
 
-    event.preventDefault();
-    window.autoScrollActive = false;
-    ticker.scrollLeft += wheelDistance;
-    window.rankTickerScrollLeft = ticker.scrollLeft;
-    clearTimeout(window.rankWheelResumeTimer);
-    window.rankWheelResumeTimer = setTimeout(() => {
-        window.autoScrollActive = true;
-    }, 1200);
+function isRankingVisible() {
+    return !document.hidden
+        && !document.getElementById('app-container').classList.contains('hidden')
+        && !document.getElementById('gagaball-section').classList.contains('hidden')
+        && !document.getElementById('gaga-view-rank').classList.contains('hidden');
+}
+
+function updateRankingControls() {
+    const status = document.getElementById('rank-page-status');
+    if (status) status.textContent = `${rankPageIndex + 1} / ${rankPages.length}`;
+    const toggle = document.getElementById('rank-autoplay-toggle');
+    if (toggle) {
+        toggle.textContent = rankAutoplay ? '⏸ 자동 넘김' : '▶ 자동 넘김';
+        toggle.setAttribute('aria-pressed', String(!rankAutoplay));
+    }
+}
+
+function showRankingPage(animate = false) {
+    const grid = document.getElementById('rank-page-grid');
+    if (!grid || !rankPages.length) return;
+    grid.innerHTML = rankPages[rankPageIndex].map(student => `
+        <div class="rank-page-card">
+            <span class="rank-page-place">${student.rank}위</span>
+            <img src="${escapeHTML(window.generateCuteAvatar(student))}" alt="${escapeHTML(student.name)} 아바타" class="rank-page-avatar">
+            <span class="rank-page-name">${escapeHTML(student.name)}</span>
+            <span class="rank-page-score">${Number(student.score) || 0}점</span>
+        </div>`).join('');
+    grid.classList.remove('rank-page-exit', 'rank-page-enter');
+    if (animate) {
+        void grid.offsetWidth;
+        grid.classList.add('rank-page-enter');
+    }
+    updateRankingControls();
+}
+
+window.syncRankingAutoplay = function() {
+    clearInterval(rankPageTimer);
+    rankPageTimer = null;
+    if (rankAutoplay && rankPages.length > 1 && isRankingVisible()) {
+        rankPageTimer = setInterval(() => {
+            if (!isRankingVisible()) { window.syncRankingAutoplay(); return; }
+            window.changeRankingPage(1);
+        }, RANK_PAGE_INTERVAL);
+    }
 };
 
+window.changeRankingPage = function(direction) {
+    if (rankPages.length < 2 || rankTransitionTimer) return;
+    rankPageIndex = (rankPageIndex + direction + rankPages.length) % rankPages.length;
+    const grid = document.getElementById('rank-page-grid');
+    if (!grid) return;
+    grid.classList.remove('rank-page-enter');
+    grid.classList.add('rank-page-exit');
+    rankTransitionTimer = setTimeout(() => {
+        rankTransitionTimer = null;
+        showRankingPage(true);
+    }, 180);
+    window.syncRankingAutoplay();
+};
+
+window.toggleRankingAutoplay = function() {
+    rankAutoplay = !rankAutoplay;
+    updateRankingControls();
+    window.syncRankingAutoplay();
+};
+
+window.addEventListener('resize', () => {
+    if (getRankingPageSize() !== rankPageSize) window.renderGagaRanking();
+});
+document.addEventListener('visibilitychange', () => window.syncRankingAutoplay());
+
 window.renderGagaRanking = function() {
-    const container = document.getElementById('gaga-hall-of-fame-grid'); 
+    const container = document.getElementById('gaga-hall-of-fame-grid');
     if(!container || !currentClass) return;
-    const existingTicker = document.getElementById('gaga-ranking-list');
-    const preservedTickerPosition = existingTicker?.scrollLeft ?? window.rankTickerScrollLeft ?? 0;
+    clearTimeout(rankTransitionTimer);
+    rankTransitionTimer = null;
+    rankPageSize = getRankingPageSize();
+    if (rankPageClass !== currentClass) {
+        rankPageIndex = 0;
+        rankAutoplay = true;
+    }
+    rankPageClass = currentClass;
+    const { podium, pages } = buildRankingPages(classData[currentClass] || [], rankPageSize);
+    rankPages = pages;
+    rankPageIndex = Math.min(rankPageIndex, Math.max(0, pages.length - 1));
     
-    const studentsForRank = [...(classData[currentClass] || [])]
-        .filter(s => s.attendance)
-        .sort((a, b) => (b.score || 0) - (a.score || 0));
-
-    let rankedStudents = [];
-    let currentRank = 1;
-    studentsForRank.forEach((s, i) => {
-        if (i > 0 && (studentsForRank[i].score || 0) < (studentsForRank[i-1].score || 0)) {
-            currentRank = i + 1;
-        }
-        rankedStudents.push({ ...s, rank: currentRank });
-    });
-
-    let podiumHTML = '';
-    let listHTML = '';
-    
-    const createPodiumCard = (s, rank) => {
-        let cardStyle = "bg-white border-[4px] border-slate-200";
-        let rankBadge = `${rank}위`;
-        let badgeStyle = "bg-slate-500 text-white";
-        
-        let sizeClass = "px-4 sm:px-6 py-4 lg:py-6 h-[200px] sm:h-[300px] lg:h-[360px]"; 
-        let avatarSize = "w-24 h-24 sm:w-40 sm:h-40 lg:w-56 lg:h-56 shrink-0"; 
-        let nameSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl"; 
-        let scoreSize = "text-3xl sm:text-4xl lg:text-5xl xl:text-6xl";
-        let transformClass = "";
-
-        if (rank === 1) { 
-            cardStyle = "bg-gradient-to-b from-yellow-50 to-yellow-100 border-[6px] lg:border-[8px] border-yellow-400 shadow-[0_15px_30px_rgba(250,204,21,0.3)]"; 
-            rankBadge = "🥇 1위"; 
-            badgeStyle = "bg-yellow-500 text-white shadow-md text-xl sm:text-3xl lg:text-5xl px-6 py-2 lg:py-3";
-            transformClass += " z-10"; 
-            avatarSize = "w-32 h-32 sm:w-48 sm:h-48 lg:w-64 lg:h-64 shrink-0";
-            nameSize = "text-5xl sm:text-6xl lg:text-7xl xl:text-8xl";
-            scoreSize = "text-4xl sm:text-5xl lg:text-6xl xl:text-7xl";
-            sizeClass = "px-4 sm:px-8 py-6 lg:py-8 h-[240px] sm:h-[360px] lg:h-[440px]";
-        } else if (rank === 2) { 
-            cardStyle = "bg-gradient-to-b from-gray-50 to-gray-100 border-[5px] lg:border-[6px] border-gray-400 shadow-[0_10px_25px_rgba(156,163,175,0.3)]"; 
-            rankBadge = "🥈 2위"; 
-            badgeStyle = "bg-gray-500 text-white shadow-md text-lg sm:text-2xl lg:text-4xl px-5 py-1.5 lg:py-2";
-        } else if (rank === 3) { 
-            cardStyle = "bg-gradient-to-b from-orange-50 to-orange-100 border-[5px] lg:border-[6px] border-orange-400 shadow-[0_10px_25px_rgba(249,115,22,0.3)]"; 
-            rankBadge = "🥉 3위"; 
-            badgeStyle = "bg-orange-600 text-white shadow-md text-lg sm:text-2xl lg:text-4xl px-5 py-1.5 lg:py-2";
-        }
-
-        const cuteAvatar = window.generateCuteAvatar(s);
-        return `
-        <div class="rank-podium-card flex flex-row items-center justify-between rounded-[2rem] lg:rounded-[3rem] ${cardStyle} transition-all ${sizeClass} ${transformClass} w-full relative">
-            <div class="absolute -top-4 sm:-top-6 lg:-top-8 left-1/2 transform -translate-x-1/2 rounded-full font-black whitespace-nowrap z-20 ${badgeStyle}">${rankBadge}</div>
-            
-            <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="rank-podium-avatar ${avatarSize} rounded-full border-[4px] lg:border-[6px] bg-white object-cover border-white shadow-md">
-            
-            <div class="flex flex-col flex-1 min-w-0 items-center justify-center px-2 sm:px-4 h-full">
-                <div class="rank-podium-name ${nameSize} font-black text-slate-800 drop-shadow-sm leading-tight mb-2 sm:mb-4 text-center break-keep">${escapeHTML(s.name)}</div>
-                <div class="rank-podium-score ${scoreSize} font-black text-red-600 drop-shadow-sm leading-tight">${s.score || 0}점</div>
-            </div>
-            
-        </div>
-        `;
-    };
-
-    const createListCard = (s) => {
-        return `
-        <div class="rank-ticker-card flex flex-row items-center justify-between bg-white border-[3px] border-slate-200 rounded-2xl p-2 sm:p-3 shadow-sm transition-transform shrink-0 h-[80px] sm:h-[96px]">
-            <div class="w-12 sm:w-16 lg:w-20 text-center font-black text-slate-500 text-xl sm:text-2xl lg:text-4xl shrink-0">${s.rank}위</div>
-            <img src="${escapeHTML(window.generateCuteAvatar(s))}" alt="${escapeHTML(s.name)} 아바타" class="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full border-[3px] border-slate-200 object-cover mx-2 lg:mx-4 shrink-0 bg-white">
-            <div class="rank-ticker-name flex-1 min-w-0 font-black text-slate-800 text-center px-1 break-keep">${escapeHTML(s.name)}</div>
-            <div class="text-2xl sm:text-4xl lg:text-5xl font-black text-red-600 shrink-0 text-right pr-2">${s.score || 0}점</div>
-            
-        </div>`;
-    };
-
-    let top3 = rankedStudents.slice(0, 3);
-    let others = rankedStudents.slice(3);
-
-    if (others.length > 0) {
-        let cardsHTML = '';
-        others.forEach(s => { cardsHTML += createListCard(s); });
-        
-        listHTML = `
-        <div class="ranking-ticker-shell">
-            <div id="gaga-ranking-list" class="rank-ticker-track flex flex-row items-center gap-3 w-full overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;" onwheel="window.handleRankTickerWheel(event)" onscroll="window.rankTickerScrollLeft = this.scrollLeft" onmouseenter="window.autoScrollActive = false" onmouseleave="window.autoScrollActive = true" ontouchstart="window.autoScrollActive = false" ontouchend="window.autoScrollActive = true" ontouchcancel="window.autoScrollActive = true">
-                <style>#gaga-ranking-list::-webkit-scrollbar { display: none; }</style>
-                <div class="rank-ticker-spacer shrink-0" aria-hidden="true"></div>
-                ${cardsHTML}
+    const createPodiumCard = (student) => `
+        <div class="rank-podium-card rank-medal-${student.rank}">
+            <span class="rank-podium-badge">${['🥇', '🥈', '🥉'][student.rank - 1]} ${student.rank}위</span>
+            <img src="${escapeHTML(window.generateCuteAvatar(student))}" alt="${escapeHTML(student.name)} 아바타" class="rank-podium-avatar">
+            <div class="rank-podium-info">
+                <span class="rank-podium-name">${escapeHTML(student.name)}</span>
+                <span class="rank-podium-score">${Number(student.score) || 0}점</span>
             </div>
         </div>`;
-    }
 
-    if (top3.length > 0) {
-        let p1 = top3[0] ? `<div class="podium-slot w-full flex justify-center z-10 shrink-0">${createPodiumCard(top3[0], 1)}</div>` : '';
-        let p2 = top3[1] ? `<div class="podium-slot w-full flex justify-center shrink-0">${createPodiumCard(top3[1], 2)}</div>` : '';
-        let p3 = top3[2] ? `<div class="podium-slot w-full flex justify-center shrink-0">${createPodiumCard(top3[2], 3)}</div>` : '';
-
-        podiumHTML = `
-        <div class="ranking-layout flex flex-row justify-between items-start w-full max-w-[98%] mx-auto px-2 pt-6 lg:pt-10">
-            <div class="rank-column rank-second w-[32%] flex flex-col items-center pt-24 lg:pt-32 shrink-0">
-                ${p2}
+    const podiumHTML = podium.length ? `
+        <div class="ranking-layout" aria-label="상위 세 명 고정 순위">
+            <div class="rank-column rank-second">${podium[1] ? createPodiumCard(podium[1]) : ''}</div>
+            <div class="rank-column rank-first">${createPodiumCard(podium[0])}</div>
+            <div class="rank-column rank-third">${podium[2] ? createPodiumCard(podium[2]) : ''}</div>
+        </div>` : '<p class="ranking-empty">참가 중인 학생이 없습니다.</p>';
+    const pagesHTML = pages.length ? `
+        <section class="ranking-pages" aria-label="나머지 학생 순위">
+            <div class="rank-page-toolbar">
+                <h2>🏅 전체 순위 <span>${pages.length > 1 ? '4번째 학생부터 · 6초마다 자동 전환' : '4번째 학생부터'}</span></h2>
+                <div class="rank-page-controls" role="group" aria-label="순위 페이지 조작">
+                    <button type="button" onclick="window.changeRankingPage(-1)" ${pages.length < 2 ? 'disabled' : ''} aria-label="이전 순위 페이지">◀ 이전</button>
+                    <span id="rank-page-status" role="status" aria-live="polite"></span>
+                    <button type="button" onclick="window.changeRankingPage(1)" ${pages.length < 2 ? 'disabled' : ''} aria-label="다음 순위 페이지">다음 ▶</button>
+                    <button id="rank-autoplay-toggle" type="button" onclick="window.toggleRankingAutoplay()" ${pages.length < 2 ? 'disabled' : ''} aria-label="순위 자동 넘김 일시정지 또는 재생"></button>
+                </div>
             </div>
-            <div class="rank-column rank-first w-[35%] flex flex-col items-center z-10 shrink-0">
-                ${p1}
-            </div>
-            <div class="rank-column rank-third w-[32%] flex flex-col items-center pt-32 lg:pt-40 shrink-0">
-                ${p3}
-            </div>
-        </div>
-        ${listHTML ? `<div class="ranking-list-wrap">${listHTML}</div>` : ''}
-        `;
-    } else {
-        podiumHTML = `<div class="ranking-list-wrap">${listHTML}</div>`;
-    }
-
-    container.innerHTML = podiumHTML;
-    const ticker = document.getElementById('gaga-ranking-list');
-    if (ticker) {
-        ticker.scrollLeft = Math.min(preservedTickerPosition, Math.max(0, ticker.scrollWidth - ticker.clientWidth));
-        window.rankTickerScrollLeft = ticker.scrollLeft;
-    }
-
-    if (others.length > 0 && !window.rankAutoScrollInterval) {
-        window.rankAutoScrollInterval = setInterval(() => {
-            if(!window.autoScrollActive) return;
-            const list = document.getElementById('gaga-ranking-list');
-            if (!list) return;
-            if (Math.ceil(list.scrollLeft + list.clientWidth) >= list.scrollWidth - 1) {
-                list.scrollLeft = 0;
-            } else {
-                list.scrollLeft += 2;
-            }
-            window.rankTickerScrollLeft = list.scrollLeft;
-        }, 16);
-    }
-
+            <div class="rank-page-viewport"><div id="rank-page-grid" class="rank-page-grid"></div></div>
+        </section>` : '';
+    container.innerHTML = podiumHTML + pagesHTML;
+    showRankingPage();
+    window.syncRankingAutoplay();
 }
 
 const generateGridCards = (students) => {
