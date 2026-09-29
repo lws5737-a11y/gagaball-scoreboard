@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
     assignUniqueClassAvatars,
     avatarPaths,
+    buildRankingPages,
     getCountdownState,
     escapeHTML,
     getRefereeEligibleTeams,
@@ -12,6 +13,28 @@ import {
     sortParticipants,
     validateMissions
 } from '../app-utils.js';
+
+test('ranking keeps three podium students fixed and paginates every other attendee', () => {
+    const roster = Array.from({ length: 31 }, (_, index) => ({
+        no: index + 1, name: `학생${index + 1}`, score: 31 - index, attendance: true
+    }));
+    roster[30].attendance = false;
+    const { podium, pages } = buildRankingPages(roster, 12);
+    assert.deepEqual(podium.map(student => student.no), [1, 2, 3]);
+    assert.deepEqual(pages.map(page => page.length), [12, 12, 3]);
+    assert.deepEqual(pages.flat().map(student => student.no), Array.from({ length: 27 }, (_, index) => index + 4));
+    assert.equal(pages[0][0].rank, 4);
+});
+
+test('ranking retains shared competition ranks at page boundaries', () => {
+    const roster = [10, 10, 9, 9, 8, 7, 6].map((score, index) => ({
+        no: index + 1, score, attendance: true
+    }));
+    const { podium, pages } = buildRankingPages(roster, 2);
+    assert.deepEqual(podium.map(student => student.rank), [1, 1, 3]);
+    assert.deepEqual(pages.flat().map(student => student.rank), [3, 5, 6, 7]);
+    assert.deepEqual(pages.map(page => page.length), [2, 2]);
+});
 
 test('sorts participants by number, score, or prioritized gender without hiding anyone', () => {
     const roster = [
