@@ -243,46 +243,41 @@ body.app-header-visible #manage-modal {
     cursor: pointer;
     transition: transform 0.25s ease, filter 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
-.draw-result-card > :not(.wanted-overlay) { position: relative; z-index: 2; }
-.wanted-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    pointer-events: none;
-    opacity: 0;
+.wanted-mark {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    padding: 0.5rem;
-    color: #fff;
-    border: 8px double #dc2626;
-    background: radial-gradient(circle at center, rgba(127, 29, 29, 0.12), transparent 62%);
-    box-shadow: inset 0 0 30px rgba(220, 38, 38, 0.8);
-    transition: opacity 0.2s ease;
+    gap: .35em;
+    width: 100%;
+    min-height: clamp(28px, 3vw, 48px);
+    flex: none;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
 }
-.wanted-heading,
-.wanted-subtitle {
+.wanted-heading {
     display: block;
-    padding: 0.1em 0.45em;
-    border: 4px solid #fff;
+    padding: .12em .35em;
+    border: 2px solid #fff;
+    border-radius: .35em;
     background: linear-gradient(135deg, #991b1b, #ef4444);
+    color: #fff;
     font-family: Georgia, 'Times New Roman', serif;
     font-weight: 900;
-    letter-spacing: 0.12em;
+    letter-spacing: .08em;
     line-height: 1;
     text-shadow: 0 2px 0 #450a0a;
-    box-shadow: 0 0 0 4px #dc2626, 0 6px 18px rgba(127, 29, 29, 0.75);
+    box-shadow: 0 0 0 2px #dc2626, 0 3px 10px rgba(127, 29, 29, .55);
+    font-size: clamp(.8rem, 1.8vw, 1.5rem);
 }
-.wanted-heading { font-size: clamp(1.4rem, 4vw, 3rem); }
-.wanted-subtitle { font-size: clamp(1rem, 2.5vw, 1.8rem); }
-.wanted-stars { color: #ef4444; font-size: clamp(1rem, 2.5vw, 1.7rem); letter-spacing: 0.25em; text-shadow: 0 0 5px #fff, 0 0 12px #dc2626; }
+.wanted-stars { color: #dc2626; font-size: clamp(.7rem, 1.5vw, 1.25rem); letter-spacing: .05em; text-shadow: 0 0 5px #fff, 0 0 12px #dc2626; }
 .draw-result-card.wanted-active {
     border-color: #dc2626 !important;
     box-shadow: 0 0 0 5px #fca5a5, 0 0 34px 12px rgba(220, 38, 38, 0.68);
 }
-.draw-result-card.wanted-active .wanted-overlay {
+.draw-result-card.wanted-active .wanted-mark {
+    visibility: visible;
     opacity: 1;
     animation: wantedReveal 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.2);
 }

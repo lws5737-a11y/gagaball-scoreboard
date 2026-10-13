@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -966,15 +966,10 @@ const generateGridCards = (students) => {
         
         return `
             <div class="draw-result-card border-[4px] sm:border-[6px] p-2 sm:p-4 rounded-3xl text-center shadow-lg bg-white w-full h-full flex flex-col items-center justify-between" style="border-color: ${borderColor}; box-sizing: border-box;" onclick="window.toggleWantedEffect(event)" onkeydown="window.handleWantedEffectKey(event)" tabindex="0" role="button" aria-pressed="false" aria-label="${escapeHTML(s.name)} 학생 현상수배 효과 켜기">
-                <div class="wanted-overlay" aria-hidden="true">
-                    <span class="wanted-heading">WANTED</span>
-                    <span class="wanted-subtitle">현상수배</span>
-                    <span class="wanted-stars">★ ★ ★</span>
-                </div>
-                 
                 <div class="flex-1 w-full flex items-center justify-center min-h-0 pt-2 relative">
                     <img src="${escapeHTML(cuteAvatar)}" alt="${escapeHTML(s.name)} 아바타" class="draw-result-avatar h-full max-h-[160px] lg:max-h-[200px] xl:max-h-[250px] aspect-square rounded-full mx-auto bg-slate-50 border-4 border-slate-100 cursor-pointer object-cover shadow-sm transition hover:scale-105" onclick="event.stopPropagation(); window.openAvatarSelectModal(${s.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
+                <div class="wanted-mark" aria-hidden="true"><span class="wanted-heading">WANTED</span><span class="wanted-stars">★ ★ ★</span></div>
                 
                 <div class="draw-result-name text-4xl sm:text-5xl lg:text-[3.5rem] xl:text-[4.5rem] font-black text-slate-800 my-2 lg:my-3 whitespace-nowrap truncate leading-tight w-full shrink-0 flex items-center justify-center">${escapeHTML(s.name)}</div>
                 
@@ -1486,12 +1481,10 @@ window.executeGagaTeams = function(numTeams, available) {
 window.toggleTeamKing = function(teamId, memberNo) {
     const team = currentGagaTeams.find(t => t.id === teamId);
     if(!team) return;
-    const member = team.members.find(m => m.no === memberNo);
-    if(!member) return;
-    
-    member.isKing = !member.isKing;
-    
-    if(member.isKing) {
+    const isKing = toggleTeamKingSelection(team.members, memberNo);
+    if(isKing === null) return;
+
+    if(isKing) {
         window.playCoinSound(); 
         window.fireConfetti();
     } else {

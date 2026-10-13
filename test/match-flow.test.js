@@ -30,6 +30,10 @@ test('class picker, participant actions, and roulette timer controls are wired i
     assert.match(script, /rouletteAutoCloseTimer = setTimeout\(\(\) => window\.closeRouletteModal\(true\), 3000\)/);
     assert.match(script, /pendingWantedReveal = isWantedMission\(result\)/);
     assert.match(script, /revealWantedStudent\(\)/);
+    const drawCardMarkup = script.slice(script.indexOf('const generateGridCards'), script.indexOf('let wantedRevealInterval'));
+    assert.match(drawCardMarkup, /draw-result-avatar[\s\S]*wanted-mark[\s\S]*draw-result-name/);
+    assert.doesNotMatch(drawCardMarkup, /wanted-overlay|wanted-subtitle/);
+    assert.match(script, /toggleTeamKingSelection\(team\.members, memberNo\)/);
     assert.match(html, /id="wanted-reveal-overlay"/);
     assert.match(css, /\.roulette-result-summary\.roulette-winning/);
     assert.match(css, /#timerSelectModal\s*\{\s*z-index:\s*10000/);

@@ -194,6 +194,14 @@ export function getTeamRefereePlan(students, numTeams) {
     };
 }
 
+export function toggleTeamKingSelection(members, memberNo) {
+    const selected = members.find(member => Number(member.no) === Number(memberNo));
+    if (!selected) return null;
+    const isKing = !selected.isKing;
+    members.forEach(member => { member.isKing = member === selected && isKing; });
+    return isKing;
+}
+
 export function getRefereeEligibleTeams(teams) {
     const eligibleTeams = teams.filter((team) => team.members.length < team.targetSize);
     if (!eligibleTeams.length) return [];

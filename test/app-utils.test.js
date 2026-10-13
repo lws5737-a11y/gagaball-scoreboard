@@ -15,6 +15,7 @@ import {
     mergeStudent,
     normalizeGender,
     sortParticipants,
+    toggleTeamKingSelection,
     validateMissions
 } from '../app-utils.js';
 
@@ -142,6 +143,18 @@ test('wanted mission detection accepts saved title variants and descriptions', (
     assert.equal(isWantedMission({ text: 'ＷＡＮＴＥＤ' }), true);
     assert.equal(isWantedMission({ text: '특별 미션', desc: '현상수배 대상을 뽑습니다.' }), true);
     assert.equal(isWantedMission({ text: '그냥 가가볼', desc: '평소처럼 진행합니다.' }), false);
+});
+
+test('a team can have only one king, while another team keeps its own king', () => {
+    const firstTeam = [{ no: 1, isKing: false }, { no: 2, isKing: false }, { no: 3, isKing: false }];
+    const secondTeam = [{ no: 4, isKing: true }];
+    assert.equal(toggleTeamKingSelection(firstTeam, 1), true);
+    assert.equal(toggleTeamKingSelection(firstTeam, 2), true);
+    assert.deepEqual(firstTeam.map(member => member.isKing), [false, true, false]);
+    assert.equal(secondTeam[0].isKing, true);
+    assert.equal(toggleTeamKingSelection(firstTeam, 2), false);
+    assert.deepEqual(firstTeam.map(member => member.isKing), [false, false, false]);
+    assert.equal(toggleTeamKingSelection(firstTeam, 99), null);
 });
 
 test('limitSelectedReferees replaces enough referees to satisfy the limit', () => {
