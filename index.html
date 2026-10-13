@@ -174,6 +174,7 @@ Google 계정으로 시작하기
 </div>
 </div>
 <div id="team-global-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
+<div id="team-referee-status" class="team-referee-status hidden" role="status" aria-live="polite"></div>
 <div id="gaga-team-matchups" class="flex flex-col gap-4"></div>
 </div>
 </section>
@@ -307,6 +308,12 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <button id="floating-roulette-btn" class="draw-roulette-button" type="button" style="display:none;" onclick="window.startRouletteFromFloating(event)" title="미션 룰렛" aria-label="미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>
 </div>
 <div id="gaga-draw-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
+<div id="wanted-reveal-overlay" class="wanted-reveal-overlay hidden" role="status" aria-live="polite">
+    <div class="wanted-reveal-panel">
+        <span id="wanted-reveal-label">⚠️ 현상수배 대상 선정 중…</span>
+        <strong id="wanted-reveal-name">?</strong>
+    </div>
+</div>
 <div id="gagaDrawResultGrid" class=""></div>
 <button class="bg-slate-800 text-white w-full max-w-4xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-3xl sm:text-5xl shadow-[0_10px_20px_rgba(0,0,0,0.5)] hover:bg-slate-700 transition shrink-0 mt-4" onclick="window.closeGagaDrawModal()">확인 및 닫기</button>
 </div>
@@ -362,7 +369,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
         <canvas id="rouletteCanvas" width="800" height="800"></canvas>
     </div>
     <div id="roulette-result-summary" class="roulette-result-summary" role="status" aria-live="polite">룰렛이 자동으로 돌아갑니다…</div>
-    <div class="roulette-timer-actions">
+    <div id="roulette-timer-actions" class="roulette-timer-actions">
         <button type="button" class="roulette-timer-button" onclick="window.openTimerFromRoulette(100)" disabled>⏱️ 100초 타이머</button>
         <button type="button" class="roulette-timer-button" onclick="window.openTimerFromRoulette(60)" disabled>⏱️ 60초 타이머</button>
     </div>

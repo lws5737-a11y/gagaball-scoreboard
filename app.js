@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getRankingGridLayout, getRefereeEligibleTeams, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -376,6 +376,8 @@ if (auth && db) {
             currentClass = ""; 
             window.selectedParticipants = [];
             currentGagaTeams = [];
+            currentGagaStandbyReferees = [];
+            currentGagaRefereeWarning = false;
             individualMissionResult = null;
             teamMissionResults = {};
         }
@@ -552,6 +554,8 @@ window.selectClass = function(className) {
     currentDrawIsChampions = false;
     window.selectedParticipants = [];
     currentGagaTeams = [];
+    currentGagaStandbyReferees = [];
+    currentGagaRefereeWarning = false;
     individualMissionResult = null;
     teamMissionResults = {};
     window.stopMP3('anthem');
@@ -670,6 +674,8 @@ window.renderGagaball = function() {
 
     let availableTotal = 0, availableBoys = 0, availableGirls = 0;
     const students = sortParticipants(classData[currentClass], participantSortMode);
+    const refereeLimit = getIndividualRefereeLimit(students);
+    const activeRefereeCount = students.filter(student => student.attendance && student.isReferee).length;
 
     let activeHTML = ''; let inactiveHTML = '';
 
@@ -681,7 +687,7 @@ window.renderGagaball = function() {
         let borderStyle = s.gender === '남' ? '#3498db' : (s.gender === '여' ? '#e74c3c' : '#2ecc71');
         if(!s.attendance || isDrawn) borderStyle = '#95a5a6';
 
-        if(s.attendance && !isDrawn) {
+        if(s.attendance && !isDrawn && (!s.isReferee || refereeLimit > 0)) {
             availableTotal++; if(s.gender === '남') availableBoys++; if(s.gender === '여') availableGirls++;
         }
         let bgColor = s.attendance && !isDrawn ? (s.gender === '남' ? '#e3f2fd' : '#ffebee') : '#fff';
@@ -719,7 +725,7 @@ window.renderGagaball = function() {
     activeGrid.innerHTML = activeHTML;
     inactiveGrid.innerHTML = inactiveHTML;
     document.getElementById('gaga-participant-sort').value = participantSortMode;
-    document.getElementById('gaga-draw-stats').innerText = `대기: 총 ${availableTotal}명 (남 ${availableBoys} / 여 ${availableGirls})`;
+    document.getElementById('gaga-draw-stats').innerText = `대기: 총 ${availableTotal}명 (남 ${availableBoys} / 여 ${availableGirls})${activeRefereeCount === 1 ? ' · 심판 1명은 경기 심판으로 대기' : ''}`;
     window.updateParticipantActions();
 };
 
@@ -974,12 +980,63 @@ const generateGridCards = (students) => {
                 
                 <div class="text-xl sm:text-2xl lg:text-3xl font-black text-slate-600 flex items-center justify-center gap-3 w-full shrink-0 pb-1">
                     <button class="premium-score-btn minus" onclick="event.stopPropagation(); window.changeGagaScore(${s.no}, -1)" aria-label="${escapeHTML(s.name)} 점수 1점 빼기">−</button>
-                    <span id="modal-score-${s.no}" class="w-12 lg:w-16 text-center tracking-tighter drop-shadow-sm">${s.score || 0}점</span>
+                    <span id="modal-score-${s.no}" class="w-12 lg:w-16 text-center tracking-tighter drop-shadow-sm">${s.score || 0}</span>
                     <button class="premium-score-btn plus" onclick="event.stopPropagation(); window.changeGagaScore(${s.no}, 1)" aria-label="${escapeHTML(s.name)} 점수 1점 더하기">+</button>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+let wantedRevealInterval = null;
+let wantedRevealTimer = null;
+let wantedFinishTimer = null;
+
+function clearWantedReveal() {
+    clearInterval(wantedRevealInterval);
+    clearTimeout(wantedRevealTimer);
+    clearTimeout(wantedFinishTimer);
+    wantedRevealInterval = wantedRevealTimer = wantedFinishTimer = null;
+    const overlay = document.getElementById('wanted-reveal-overlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('wanted-reveal-final');
+}
+
+function revealWantedStudent() {
+    const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
+    if (!cards.length || document.getElementById('gagaDrawModal').style.display !== 'flex') return;
+    clearWantedReveal();
+    cards.forEach(card => {
+        card.classList.remove('wanted-active');
+        card.setAttribute('aria-pressed', 'false');
+        const studentName = card.querySelector('.draw-result-name')?.textContent || '학생';
+        card.setAttribute('aria-label', `${studentName} 학생 현상수배 효과 켜기`);
+    });
+    const selected = cards[Math.floor(Math.random() * cards.length)];
+    const selectedName = selected.querySelector('.draw-result-name')?.textContent || '학생';
+    const overlay = document.getElementById('wanted-reveal-overlay');
+    const label = document.getElementById('wanted-reveal-label');
+    const name = document.getElementById('wanted-reveal-name');
+    label.textContent = '⚠️ 현상수배 대상 선정 중…';
+    overlay.classList.remove('hidden');
+    let index = 0;
+    wantedRevealInterval = setInterval(() => {
+        name.textContent = cards[index++ % cards.length].querySelector('.draw-result-name')?.textContent || '학생';
+    }, 140);
+    wantedRevealTimer = setTimeout(() => {
+        clearInterval(wantedRevealInterval);
+        wantedRevealInterval = null;
+        label.textContent = '⚠️ 현상수배 대상 확정!';
+        name.textContent = selectedName;
+        overlay.classList.add('wanted-reveal-final');
+        wantedFinishTimer = setTimeout(() => {
+            clearWantedReveal();
+            selected.classList.add('wanted-active');
+            selected.setAttribute('aria-pressed', 'true');
+            selected.setAttribute('aria-label', `${selectedName} 학생 현상수배 효과 끄기`);
+            window.playStampSound();
+        }, 650);
+    }, 1800);
 }
 
 window.toggleWantedEffect = function(event) {
@@ -1012,6 +1069,7 @@ window.startChampionsTournament = function() {
     document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-purple-600 mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
     
     const n = selectedStudents.length;
+    clearWantedReveal();
     let gridClasses = "grid gap-2 sm:gap-4 w-full flex-1 h-full min-h-0 overflow-hidden px-2 pb-2 ";
     if(n <= 2) gridClasses += "grid-cols-2 grid-rows-1";
     else if(n <= 4) gridClasses += "grid-cols-2 grid-rows-2";
@@ -1069,6 +1127,9 @@ let currentMissionsType = 'individual';
 let editMissionsTemp = [];
 
 let currentRouletteRotation = 0; let isSpinning = false;
+let rouletteStartTimer = null;
+let rouletteAutoCloseTimer = null;
+let pendingWantedReveal = false;
 
 window.openSmartRouletteModal = function() {
     const teamView = document.getElementById('gaga-view-team');
@@ -1080,7 +1141,11 @@ window.openSmartRouletteModal = function() {
 }
 
 window.openRouletteModal = function(type, teamMatchupId = null) {
-    if (isSpinning) return false;
+    if (isSpinning || rouletteAutoCloseTimer) return false;
+    clearTimeout(rouletteStartTimer);
+    clearTimeout(rouletteAutoCloseTimer);
+    rouletteAutoCloseTimer = null;
+    pendingWantedReveal = false;
     const missions = type === 'team' ? teamMissions : individualMissions;
     const validation = validateMissions(missions);
     if (!validation.valid) { alert(validation.message); return false; }
@@ -1088,28 +1153,45 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     window.currentTeamRouletteBtnId = type === 'team' ? teamMatchupId : null;
     currentMissions = validation.missions;
     document.getElementById('rouletteModalTitle').innerText = type === 'team' ? "🎡 팀전 미션 룰렛" : "🎡 개인전 미션 룰렛";
-    document.getElementById('roulette-result-summary').textContent = '룰렛이 자동으로 돌아갑니다…';
+    const summary = document.getElementById('roulette-result-summary');
+    summary.textContent = '룰렛이 자동으로 돌아갑니다…';
+    summary.classList.remove('roulette-winning');
+    document.getElementById('roulette-timer-actions').classList.toggle('hidden', type !== 'team');
     document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = true; });
     document.getElementById('rouletteModal').style.display = 'flex';
     window.stopMP3('waiting');
-    setTimeout(() => { window.drawRoulette(); window.spinRoulette(); }, 100);
+    rouletteStartTimer = setTimeout(() => {
+        rouletteStartTimer = null;
+        if (document.getElementById('rouletteModal').style.display !== 'flex') return;
+        window.drawRoulette();
+        window.spinRoulette();
+    }, 100);
     return true;
 }
-window.closeRouletteModal = function() {
-    if (isSpinning) return;
+window.closeRouletteModal = function(force = false) {
+    if (isSpinning || (rouletteAutoCloseTimer && !force)) return;
+    clearTimeout(rouletteStartTimer);
+    rouletteStartTimer = null;
+    clearTimeout(rouletteAutoCloseTimer);
+    rouletteAutoCloseTimer = null;
     document.getElementById('rouletteModal').style.display = 'none';
+    document.getElementById('roulette-result-summary').classList.remove('roulette-winning');
     if (document.getElementById('gagaDrawModal').style.display === 'flex') {
         window.showFloatingRouletteBtn('individual');
     }
     syncBackgroundMusic();
+    if (pendingWantedReveal) {
+        pendingWantedReveal = false;
+        revealWantedStudent();
+    }
 };
 window.openTimerFromRoulette = function(duration) {
-    if (isSpinning) return;
+    if (isSpinning || currentMissionsType !== 'team') return;
     window.closeRouletteModal();
     window.openGagaTimer(duration);
 };
 window.openRouletteEditModal = function() {
-    if (isSpinning) return;
+    if (isSpinning || rouletteAutoCloseTimer) return;
     editMissionsTemp = JSON.parse(JSON.stringify(currentMissionsType === 'team' ? teamMissions : individualMissions));
     window.renderRouletteEditList(); document.getElementById('rouletteEditModal').style.display = 'flex';
 }
@@ -1206,15 +1288,20 @@ window.spinRoulette = function() {
         }
         if (!winner) winner = spinMissions.at(-1);
         const result = { text: winner.text, desc: winner.desc };
-        document.getElementById('roulette-result-summary').innerHTML = missionMarkup(result);
-        document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = false; });
+        const summary = document.getElementById('roulette-result-summary');
+        summary.innerHTML = missionMarkup(result);
         if (spinType === 'team') {
+            document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = false; });
             teamMissionResults[spinMatchupId || 'global'] = result;
             window.renderGagaTeamView();
             window.currentTeamRouletteBtnId = null;
         } else {
+            summary.classList.add('roulette-winning');
+            summary.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             individualMissionResult = result;
             window.renderIndividualMissionResult();
+            pendingWantedReveal = result.text.includes('현상수배');
+            rouletteAutoCloseTimer = setTimeout(() => window.closeRouletteModal(true), 3000);
         }
     }, 5000);
 }
@@ -1250,24 +1337,27 @@ function finishEventReveal() {
 window.triggerGagaDraw = function(targetGender) {
     if(!currentClass) return;
     const drawCount = parseInt(document.getElementById('gaga-draw-count').value, 10);
-    let available = classData[currentClass].filter(s => s.attendance && !s.gagaDrawn && (targetGender === 'all' || s.gender === targetGender));
+    const refereeLimit = getIndividualRefereeLimit(classData[currentClass]);
+    let available = classData[currentClass].filter(s => s.attendance && !s.gagaDrawn
+        && (targetGender === 'all' || s.gender === targetGender)
+        && (!s.isReferee || refereeLimit > 0));
     if(available.length === 0) return alert("현재 대기 중인 학생이 없습니다.");
 
     showEventReveal('draw');
 
     setTimeout(() => {
         finishEventReveal();
-        window.executeGagaDraw(targetGender, drawCount, available);
+        window.executeGagaDraw(targetGender, drawCount, available, refereeLimit);
     }, 2400);
 }
 
-window.executeGagaDraw = function(targetGender, drawCount, available) {
+window.executeGagaDraw = function(targetGender, drawCount, available, refereeLimit) {
     currentDrawIsChampions = false;
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
     let picked = available.slice(0, actualDrawCount);
     
-    picked = limitSelectedReferees(picked, available.slice(actualDrawCount), 1);
+    picked = limitSelectedReferees(picked, available.slice(actualDrawCount), refereeLimit);
 
     picked.forEach(s => s.gagaDrawn = true);
     
@@ -1275,6 +1365,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available) {
     document.getElementById('gagaDrawMainTitle').className = "text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center";
 
     const n = picked.length;
+    clearWantedReveal();
     let gridClasses = "grid gap-2 sm:gap-4 w-full flex-1 h-full min-h-0 overflow-hidden px-2 pb-2 ";
     if (n <= 2) gridClasses += "grid-cols-2 grid-rows-1";
     else if (n <= 4) gridClasses += "grid-cols-2 grid-rows-2";
@@ -1303,6 +1394,7 @@ window.resetGagaDraw = function() {
     }
 }
 window.closeGagaDrawModal = function() {
+    clearWantedReveal();
     document.getElementById('gagaDrawModal').style.display = 'none';
     currentDrawIsChampions = false;
     window.hideFloatingRouletteBtn();
@@ -1321,11 +1413,14 @@ const getStudentPower = (student, validRecords) => {
 };
 
 let currentGagaTeams = [];
+let currentGagaStandbyReferees = [];
+let currentGagaRefereeWarning = false;
 window.triggerGagaTeams = function() {
     if(!currentClass) return;
     const numTeams = parseInt(document.getElementById('gaga-team-count').value, 10);
     let available = classData[currentClass].filter(s => s.attendance);
-    if(available.length < numTeams) return alert("참가 학생이 너무 적습니다.");
+    const refereePlan = getTeamRefereePlan(available, numTeams);
+    if(refereePlan.participants.length < numTeams) return alert("심판 대기 학생을 제외하면 팀마다 한 명씩 배정할 수 없습니다. 참가 학생을 늘리거나 팀 수를 줄여주세요.");
 
     showEventReveal('team');
 
@@ -1336,19 +1431,22 @@ window.triggerGagaTeams = function() {
 }
 
 window.executeGagaTeams = function(numTeams, available) {
-    const totalParticipants = available.length; const baseSize = Math.floor(totalParticipants / numTeams); const remainder = totalParticipants % numTeams;
+    const refereePlan = getTeamRefereePlan(available, numTeams);
+    if(refereePlan.participants.length < numTeams) return alert("심판 대기 학생을 제외하면 팀마다 한 명씩 배정할 수 없습니다.");
+    const participants = refereePlan.participants;
+    const totalParticipants = participants.length; const baseSize = Math.floor(totalParticipants / numTeams); const remainder = totalParticipants % numTeams;
     let targetSizes = new Array(numTeams).fill(baseSize); for(let i = 0; i < remainder; i++) targetSizes[i]++;
 
     const teams = Array.from({length: numTeams}, (_, i) => ({ id: i + 1, members: [], score: 0, targetSize: targetSizes[i] }));
-    let validRecords = available.filter(s => s.recordMs > 0).map(s => s.recordMs).sort((a,b) => a - b);
+    let validRecords = participants.filter(s => s.recordMs > 0).map(s => s.recordMs).sort((a,b) => a - b);
     const sortByPower = (a, b) => {
         let pA = getStudentPower(a, validRecords) + (a.score||0)*150;
         let pB = getStudentPower(b, validRecords) + (b.score||0)*150;
         return pB - pA;
     };
 
-    let referees = available.filter(s => s.isReferee).sort(sortByPower);
-    let nonReferees = available.filter(s => !s.isReferee);
+    let referees = participants.filter(s => s.isReferee).sort(sortByPower);
+    let nonReferees = participants.filter(s => !s.isReferee);
     
     let boys = nonReferees.filter(s => s.gender === '남').sort(sortByPower); 
     let girls = nonReferees.filter(s => s.gender === '여').sort(sortByPower);
@@ -1377,7 +1475,9 @@ window.executeGagaTeams = function(numTeams, available) {
 
     teams.forEach(t => t.members.forEach(m => m.isKing = false));
 
-    currentGagaTeams = teams; 
+    currentGagaTeams = teams;
+    currentGagaStandbyReferees = refereePlan.standbyReferees;
+    currentGagaRefereeWarning = refereePlan.warnAllRefereesPlaying;
     teamMissionResults = {};
     window.renderGagaTeamView(); 
     syncBackgroundMusic();
@@ -1404,6 +1504,15 @@ window.toggleTeamKing = function(teamId, memberNo) {
 
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
+    const refereeStatus = document.getElementById('team-referee-status');
+    refereeStatus.classList.toggle('hidden', !currentGagaRefereeWarning && currentGagaStandbyReferees.length === 0);
+    refereeStatus.classList.toggle('team-referee-warning', currentGagaRefereeWarning);
+    refereeStatus.classList.toggle('team-referee-standby', !currentGagaRefereeWarning);
+    refereeStatus.innerHTML = currentGagaRefereeWarning
+        ? '⚠️ 2팀전 예외: 모든 심판이 출전하여 경기 밖에 남는 심판이 없습니다.'
+        : currentGagaStandbyReferees.length
+            ? `⚖️ 경기 심판 대기: ${currentGagaStandbyReferees.map(student => escapeHTML(student.name)).join(', ')} — 이번 팀 편성에서는 출전하지 않습니다.`
+            : '';
     const now = Date.now();
     const showAnim = (window.lastTeamScoreChange && (now - window.lastTeamScoreChange.time < 100));
 
@@ -1438,7 +1547,7 @@ window.renderGagaTeamView = function() {
                     <img src="${escapeHTML(window.generateCuteAvatar(m))}" alt="${escapeHTML(m.name)} 아바타" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
                 <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${escapeHTML(m.name)}</b>
-                <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}점${animHTML}</span>
+                <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}${animHTML}</span>
             </div>`;
         }).join('');
         
