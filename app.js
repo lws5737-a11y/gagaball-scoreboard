@@ -1,7 +1,7 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -1004,7 +1004,7 @@ function clearWantedReveal() {
 
 function revealWantedStudent() {
     const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
-    if (!cards.length || document.getElementById('gagaDrawModal').style.display !== 'flex') return;
+    if (!cards.length || getComputedStyle(document.getElementById('gagaDrawModal')).display === 'none') return;
     clearWantedReveal();
     cards.forEach(card => {
         card.classList.remove('wanted-active');
@@ -1170,6 +1170,8 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
 }
 window.closeRouletteModal = function(force = false) {
     if (isSpinning || (rouletteAutoCloseTimer && !force)) return;
+    const shouldRevealWanted = pendingWantedReveal;
+    pendingWantedReveal = false;
     clearTimeout(rouletteStartTimer);
     rouletteStartTimer = null;
     clearTimeout(rouletteAutoCloseTimer);
@@ -1179,11 +1181,8 @@ window.closeRouletteModal = function(force = false) {
     if (document.getElementById('gagaDrawModal').style.display === 'flex') {
         window.showFloatingRouletteBtn('individual');
     }
+    if (shouldRevealWanted) revealWantedStudent();
     syncBackgroundMusic();
-    if (pendingWantedReveal) {
-        pendingWantedReveal = false;
-        revealWantedStudent();
-    }
 };
 window.openTimerFromRoulette = function(duration) {
     if (isSpinning || currentMissionsType !== 'team') return;
@@ -1297,11 +1296,11 @@ window.spinRoulette = function() {
             window.currentTeamRouletteBtnId = null;
         } else {
             summary.classList.add('roulette-winning');
-            summary.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
             individualMissionResult = result;
             window.renderIndividualMissionResult();
-            pendingWantedReveal = result.text.includes('현상수배');
+            pendingWantedReveal = isWantedMission(result);
             rouletteAutoCloseTimer = setTimeout(() => window.closeRouletteModal(true), 3000);
+            summary.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
         }
     }, 5000);
 }

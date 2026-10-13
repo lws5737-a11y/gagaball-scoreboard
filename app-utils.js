@@ -170,6 +170,11 @@ export function limitSelectedReferees(picked, remaining, maximumReferees = 2) {
     return result;
 }
 
+export function isWantedMission(mission) {
+    const label = `${mission?.text || ''} ${mission?.desc || ''}`.normalize('NFKC');
+    return /현상[\s\u200b-\u200d\ufeff·:!_-]*수배|\bwanted\b/i.test(label);
+}
+
 // A match may use every appointed referee except one who stays available to officiate.
 // Previously drawn referees still count: they can referee a later match.
 export function getIndividualRefereeLimit(students) {

@@ -28,7 +28,7 @@ test('class picker, participant actions, and roulette timer controls are wired i
     assert.match(html, /id="roulette-timer-actions"/);
     assert.match(script, /classList\.toggle\('hidden', type !== 'team'\)/);
     assert.match(script, /rouletteAutoCloseTimer = setTimeout\(\(\) => window\.closeRouletteModal\(true\), 3000\)/);
-    assert.match(script, /pendingWantedReveal = result\.text\.includes\('현상수배'\)/);
+    assert.match(script, /pendingWantedReveal = isWantedMission\(result\)/);
     assert.match(script, /revealWantedStudent\(\)/);
     assert.match(html, /id="wanted-reveal-overlay"/);
     assert.match(css, /\.roulette-result-summary\.roulette-winning/);

@@ -10,6 +10,7 @@ import {
     escapeHTML,
     getRefereeEligibleTeams,
     getTeamRefereePlan,
+    isWantedMission,
     limitSelectedReferees,
     mergeStudent,
     normalizeGender,
@@ -133,6 +134,14 @@ test('validateMissions normalizes valid missions', () => {
     const result = validateMissions([{ text: ' 미션 ', desc: ' 설명 ', color: 'invalid', weight: '10' }]);
     assert.equal(result.valid, true);
     assert.deepEqual(result.missions[0], { text: '미션', desc: '설명', color: '#74b9ff', weight: 10 });
+});
+
+test('wanted mission detection accepts saved title variants and descriptions', () => {
+    assert.equal(isWantedMission({ text: '현상수배' }), true);
+    assert.equal(isWantedMission({ text: '현상 수배!' }), true);
+    assert.equal(isWantedMission({ text: 'ＷＡＮＴＥＤ' }), true);
+    assert.equal(isWantedMission({ text: '특별 미션', desc: '현상수배 대상을 뽑습니다.' }), true);
+    assert.equal(isWantedMission({ text: '그냥 가가볼', desc: '평소처럼 진행합니다.' }), false);
 });
 
 test('limitSelectedReferees replaces enough referees to satisfy the limit', () => {
