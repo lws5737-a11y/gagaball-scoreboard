@@ -170,6 +170,25 @@ export function limitSelectedReferees(picked, remaining, maximumReferees = 2) {
     return result;
 }
 
+// A match may use every appointed referee except one who stays available to officiate.
+// Previously drawn referees still count: they can referee a later match.
+export function getIndividualRefereeLimit(students) {
+    const activeReferees = students.filter(student => student.attendance && student.isReferee).length;
+    return Math.max(0, activeReferees - 1);
+}
+
+export function getTeamRefereePlan(students, numTeams) {
+    const referees = students.filter(student => student.isReferee);
+    // With multiple matchups, one sole referee must stay off the teams to officiate.
+    // A two-team match is the user-selected exception: everyone plays, with a warning.
+    const standbyReferees = numTeams > 2 && referees.length === 1 ? referees : [];
+    return {
+        participants: standbyReferees.length ? students.filter(student => student !== referees[0]) : [...students],
+        standbyReferees,
+        warnAllRefereesPlaying: numTeams === 2 && referees.length > 0
+    };
+}
+
 export function getRefereeEligibleTeams(teams) {
     const eligibleTeams = teams.filter((team) => team.members.length < team.targetSize);
     if (!eligibleTeams.length) return [];

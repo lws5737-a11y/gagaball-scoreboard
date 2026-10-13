@@ -5,9 +5,11 @@ import {
     avatarPaths,
     buildRankingPages,
     getCountdownState,
+    getIndividualRefereeLimit,
     getRankingGridLayout,
     escapeHTML,
     getRefereeEligibleTeams,
+    getTeamRefereePlan,
     limitSelectedReferees,
     mergeStudent,
     normalizeGender,
@@ -141,11 +143,25 @@ test('limitSelectedReferees replaces enough referees to satisfy the limit', () =
     assert.deepEqual(result.map((student) => student.no).sort(), [1, 2, 5, 6]);
 });
 
-test('limitSelectedReferees keeps at most one referee in an individual match', () => {
-    const picked = [1, 2, 3].map((no) => ({ no, isReferee: true }));
-    const remaining = [{ no: 4, isReferee: false }, { no: 5, isReferee: false }];
-    const result = limitSelectedReferees(picked, remaining, 1);
-    assert.equal(result.filter((student) => student.isReferee).length, 1);
+test('individual draw leaves at least one of three appointed referees outside the match', () => {
+    const referees = [1, 2, 3].map((no) => ({ no, isReferee: true, attendance: true }));
+    const limit = getIndividualRefereeLimit(referees);
+    assert.equal(limit, 2);
+    const result = limitSelectedReferees(referees, [], limit);
+    assert.deepEqual(result.map(student => student.no), [1, 2]);
+    assert.equal(referees[2].isReferee, true);
+});
+
+test('a sole appointed referee remains available to officiate, even after other draws', () => {
+    assert.equal(getIndividualRefereeLimit([{ isReferee: true, attendance: true }]), 0);
+    assert.equal(getIndividualRefereeLimit([
+        { isReferee: true, attendance: true, gagaDrawn: true },
+        { isReferee: true, attendance: true, gagaDrawn: false }
+    ]), 1);
+    assert.equal(getIndividualRefereeLimit([
+        { isReferee: true, attendance: false },
+        { isReferee: false, attendance: true }
+    ]), 0);
 });
 
 test('limitSelectedReferees removes excess referees when no replacement exists', () => {
@@ -176,7 +192,52 @@ test('getRefereeEligibleTeams spreads appointed referees across matchups before 
     for (let index = 0; index < 8; index += 2) {
         const refereeCount = [...teams[index].members, ...teams[index + 1].members].filter(member => member.isReferee).length;
         assert.equal(refereeCount, 1);
+        assert.ok(4 - refereeCount >= 1, 'each matchup has a referee outside its two playing teams');
     }
+});
+
+test('two referees assigned to four teams officiate each other’s matchup', () => {
+    const teams = Array.from({ length: 4 }, (_, index) => ({ id: index + 1, members: [], targetSize: 2 }));
+    for (let no = 1; no <= 2; no++) {
+        getRefereeEligibleTeams(teams)[0].members.push({ no, isReferee: true });
+    }
+    assert.equal(teams[0].members.length + teams[1].members.length, 1);
+    assert.equal(teams[2].members.length + teams[3].members.length, 1);
+});
+
+test('two-team mode keeps all referees playing and requests an exception warning', () => {
+    const students = [
+        { no: 1, isReferee: true },
+        { no: 2, isReferee: true },
+        { no: 3, isReferee: false }
+    ];
+    const plan = getTeamRefereePlan(students, 2);
+    assert.deepEqual(plan.participants, students);
+    assert.deepEqual(plan.standbyReferees, []);
+    assert.equal(plan.warnAllRefereesPlaying, true);
+});
+
+test('one referee waits outside a four-team match without dropping other students', () => {
+    const students = [
+        { no: 1, isReferee: true },
+        { no: 2, isReferee: false },
+        { no: 3, isReferee: false },
+        { no: 4, isReferee: false },
+        { no: 5, isReferee: false }
+    ];
+    const plan = getTeamRefereePlan(students, 4);
+    assert.deepEqual(plan.participants.map(student => student.no), [2, 3, 4, 5]);
+    assert.deepEqual(plan.standbyReferees.map(student => student.no), [1]);
+    assert.equal(plan.warnAllRefereesPlaying, false);
+    assert.equal(getTeamRefereePlan(students, 6).participants.length < 6, true);
+});
+
+test('two or more referees all join separate matchups when enough teams exist', () => {
+    const students = [{ no: 1, isReferee: true }, { no: 2, isReferee: true }];
+    const plan = getTeamRefereePlan(students, 4);
+    assert.deepEqual(plan.participants, students);
+    assert.deepEqual(plan.standbyReferees, []);
+    assert.equal(plan.warnAllRefereesPlaying, false);
 });
 
 test('when no separate matchup remains, referees are spread across teams', () => {
