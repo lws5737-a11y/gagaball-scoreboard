@@ -17,7 +17,9 @@
 #console-root button:disabled { opacity:.45;cursor:default; }
 #console-settings button { margin:4px 4px 4px 0; }
 #console-code { width:150px;text-transform:uppercase; }
-#console-code-display { display:block;font-size:24px;letter-spacing:2px;margin:12px 0; }
+#console-code-panel { background:#e9f4ff;border:2px solid #83b5df;border-radius:14px;padding:14px;margin:12px 0;color:#17324f;text-align:center; }
+#console-code-panel span { display:block;font-size:14px; }
+#console-code-display { display:block;font-size:clamp(28px,5vw,38px);font-weight:900;letter-spacing:3px;margin:6px 0;font-variant-numeric:tabular-nums; }
 .console-backups { border-top:1px solid #ddd;margin-top:16px;padding-top:12px; }
 .console-file { flex-wrap:wrap; }
 .console-file input { max-width:100%;font-size:12px !important; }

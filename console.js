@@ -8,16 +8,17 @@ export function mountConsole(api) {
     let page = 'players', selected = new Set(), roomCode = '', role = '', unsubscribe = null, room = null;
     let sending = false, queuedState = null, publishTimer, lastApplied = -1, message = '', focusedMatch = -1;
     let pendingRestore = null, restoringConnection = false;
+    let connectionVersion = 0, creatingRoom = false;
     let client = sessionStorage.getItem('gaga-device');
     if (!client) { client = crypto.randomUUID(); sessionStorage.setItem('gaga-device', client); }
     const button = (label, action, args = [], extra = '') => `<button type="button" data-action="${action}" data-args="${h(JSON.stringify(args))}" ${extra}>${label}</button>`;
     root.innerHTML = `<div class="console-tools"><button id="console-toggle" type="button" aria-expanded="false">진행 도구</button><span id="console-link-state" role="status"></span></div>
       <section id="console-settings" hidden aria-label="화면과 연결 설정">
-        <h2>가가볼 진행 도구</h2><p id="console-settings-status" role="status"></p>
+        <h2>가가볼 진행 도구</h2><div id="console-code-panel" hidden><span>스마트폰에 입력할 TV 연결 코드</span><strong id="console-code-display"></strong></div><p id="console-settings-status" role="status"></p>
         <label>화면 <select id="console-mode"><option value="classic">기존 화면</option><option value="phone">스마트폰 단독</option><option value="remote">스마트폰 리모컨</option><option value="tv">TV 표시</option></select></label>
         <div id="console-connection"><p>같은 교사 계정으로 로그인한 기기를 연결합니다.</p>
           ${button('TV 연결 코드 만들기', 'host')}<label>연결 코드 <input id="console-code" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="8자리 코드"></label>
-          ${button('리모컨 연결', 'join')}${button('연결 해제', 'disconnect')}${button('미사용 TV 연결 정리', 'cleanupRooms')}<strong id="console-code-display"></strong></div>
+          ${button('리모컨 연결', 'join')}${button('연결 해제', 'disconnect')}${button('미사용 TV 연결 정리', 'cleanupRooms')}</div>
         <label>TV 글자 <select id="console-text"><option value="normal">기본</option><option value="large">크게</option></select></label>
         <label>순위 배치 <select id="console-columns"><option value="auto">자동</option><option value="5">TV 5열 고정</option></select></label>
         <label>순위 전환 <select id="console-interval"><option value="6000">6초</option><option value="10000">10초</option><option value="0">수동</option></select></label>
@@ -52,7 +53,9 @@ export function mountConsole(api) {
         $('console-settings-status').textContent = message || state.syncError || '';
         const { connected, acknowledged } = roomConnectionStatus(room, role);
         $('console-link-state').textContent = roomCode ? `${roomCode} · ${connected ? '연결됨' : '상대 기기 연결 대기'}${acknowledged ? ' · TV 적용 완료' : ''}` : '';
-        $('console-code-display').textContent = role === 'tv' ? `연결 코드: ${roomCode}` : '';
+        $('console-code-panel').hidden = role !== 'tv' || !roomCode;
+        $('console-code-display').textContent = role === 'tv' ? roomCode : '';
+        root.querySelectorAll('[data-action="host"],[data-action="join"],[data-action="disconnect"],#console-mode').forEach(el => el.disabled = creatingRoom);
         const classOptions = '<option value="">학급 선택</option>' + state.classes.map(name => `<option value="${h(name)}">${h(name)}</option>`).join('');
         if ($('console-class').innerHTML !== classOptions) $('console-class').innerHTML = classOptions;
         $('console-class').value = state.currentClass;
@@ -134,15 +137,19 @@ export function mountConsole(api) {
     }
     function listen() {
         unsubscribe?.(); lastApplied=-1;
-        unsubscribe=onSnapshot(api.schoolRef(),snapshot=>{
-            if(snapshot.metadata.hasPendingWrites) return;
-            room=snapshot.data()?.gagaRooms?.[roomCode];
-            if(!room || room.owner!==api.get().userId || room.expiresAt<Date.now()) { disconnect(false); message='연결이 종료되었습니다. 다시 연결해주세요.'; render(); return; }
+        const version = ++connectionVersion, code = roomCode;
+        unsubscribe=onSnapshot(api.schoolRef(),{includeMetadataChanges:true},snapshot=>{
+            if(version !== connectionVersion || code !== roomCode) return;
+            // The first SDK event may be an old cached document without the new room.
+            // Only a server-confirmed snapshot can end or transfer a connection.
+            if(snapshot.metadata.hasPendingWrites || snapshot.metadata.fromCache) return;
+            room=snapshot.data()?.gagaRooms?.[code];
+            if(!room || room.owner!==api.get().userId || room.expiresAt<Date.now()) { disconnect(false); message='서버에서 유효한 연결을 찾지 못했습니다. 다른 가가볼 창도 새로고침한 뒤 연결 코드를 다시 만들어주세요.'; render(); return; }
             if(role==='controller' && room.controller!==client) { disconnect(false); message='다른 기기로 제어권이 변경되었습니다.'; render(); return; }
             window.gagaReadOnly = role === 'tv' && !!room.controller;
             applyReceivedState();
             render();
-        },error=>{message=`연결 실패: ${error.message}`;render();});
+        },error=>{if(version !== connectionVersion) return;message=`연결 실패: ${error.message}`;render();});
     }
     function applyReceivedState() {
         const state = role === 'tv' && room?.seq > lastApplied ? room.state : pendingRestore;
@@ -155,13 +162,17 @@ export function mountConsole(api) {
         if (role === 'tv') editRoom(current=>({...current,tvAlive:Date.now(),tvSeenSeq:sequence})).catch(error=>{message=error.message;render();});
     }
     async function host() {
-        if(roomCode) await disconnect();
-        roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join('');
-        const now=Date.now();
+        if(creatingRoom)return;
+        creatingRoom=true;message='TV 연결 코드를 만들고 있습니다…';render();
         try {
-            await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
+            if(roomCode) await disconnect();
+            roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join('');
+            const now=Date.now();
+            room=await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
+            message='위의 8자리 코드를 스마트폰에서 입력해주세요.';
             role='tv';rememberConnection();setMode('tv');listen();api.unlock();
         } catch(error) {roomCode='';throw error;}
+        finally {creatingRoom=false;render();}
     }
     async function join() {
         const code=$('console-code').value.trim().toUpperCase();
@@ -179,6 +190,8 @@ export function mountConsole(api) {
         } catch(error){roomCode='';throw error;}
     }
     async function disconnect(update=true) {
+        ++connectionVersion;
+        unsubscribe?.();unsubscribe=null;
         if(update&&roomCode) await editRoom(existing=>{
             if(!existing)return {};
             return role==='tv'?{...existing,expiresAt:0}:{...existing,controller:'',controllerAlive:0};

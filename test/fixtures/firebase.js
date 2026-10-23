@@ -4,9 +4,11 @@ export const onAuthStateChanged = (_,fn)=>setTimeout(()=>fn({uid:'local-preview-
 export const doc = (...parts)=>parts;
 export const getDoc = async()=>{const {school}=await(await fetch('/__state')).json();return {exists:()=>true,data:()=>school};};
 export class FieldPath { constructor(...parts){this.parts=parts;} }
-export function onSnapshot(_,fn,error){
+export function onSnapshot(_,options,callback,error){
+    const fn=typeof options==='function'?options:callback;
+    if(typeof options==='object' && options.includeMetadataChanges) queueMicrotask(()=>fn({metadata:{hasPendingWrites:false,fromCache:true},exists:()=>true,data:()=>({})}));
     const events=new EventSource('/__events');
-    events.onmessage=event=>{const {school}=JSON.parse(event.data);fn({metadata:{hasPendingWrites:false},exists:()=>true,data:()=>structuredClone(school)});};
+    events.onmessage=event=>{const {school}=JSON.parse(event.data);fn({metadata:{hasPendingWrites:false,fromCache:false},exists:()=>true,data:()=>structuredClone(school)});};
     events.onerror=()=>{};return ()=>events.close();
 }
 export async function runTransaction(_,fn){
