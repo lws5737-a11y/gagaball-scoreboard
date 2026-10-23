@@ -56,6 +56,7 @@ test('closing a winning wanted roulette reveals exactly one participant after th
         setInterval(fn, delay) { const id = nextTimerId++; intervals.set(id, { fn, delay }); return id; },
         clearInterval(id) { intervals.delete(id); },
         syncBackgroundMusic() {},
+        persistMatch() {},
         window: {
             showFloatingRouletteBtn() {},
             playStampSound() { stampSounds++; }

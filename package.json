@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test",
-    "check": "node --check app.js && node --check app-utils.js && node --check firebase-config.js"
+    "test": "node --test test/*.test.js",
+    "check": "node --check app.js && node --check app-utils.js && node --check state-sync.js && node --check console.js && node --check firebase-config.js",
+    "preview:sample": "node scripts/preview-server.mjs"
   }
 }

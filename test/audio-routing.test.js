@@ -14,7 +14,7 @@ test('champions use their own timers while individual results continue waiting m
     const script = await readFile(new URL('../app.js', import.meta.url), 'utf8');
     assert.match(script, /currentDrawIsChampions = true;[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /window\.executeGagaDraw = function[\s\S]*?currentDrawIsChampions = false/);
-    assert.match(script, /new Audio\(`sound\/countdown-\$\{currentDrawIsChampions \? 'champions-' : ''\}\$\{duration\}s\.mp3`\)/);
+    assert.match(script, /const path = `sound\/countdown-\$\{currentDrawIsChampions \? 'champions-' : ''\}\$\{duration\}s\.mp3`/);
     assert.match(script, /window\.openGagaTimer = function[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /audioFiles\.waiting\.loop = true/);
     assert.match(script, /draw\.style\.display !== 'flex' \|\| !currentDrawIsChampions/);

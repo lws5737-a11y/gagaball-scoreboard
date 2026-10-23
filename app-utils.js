@@ -13,7 +13,7 @@ export function normalizeClassName(name) {
 }
 
 export function normalizeGender(gender) {
-    const normalized = String(gender ?? '').trim();
+    const normalized = String(gender ?? '').trim().replace(/학생$/, '');
     return normalized === '남' || normalized === '여' ? normalized : '-';
 }
 

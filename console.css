@@ -1,0 +1,68 @@
+/* The operator view deliberately has no bitmap backgrounds or avatar requests. */
+#console-root[hidden], #console-root [hidden] { display:none !important; }
+.console-tools { position:fixed;right:12px;bottom:12px;z-index:20005;display:flex;gap:8px;align-items:center;max-width:calc(100vw - 24px); }
+.console-tools button { background:#172b46;color:#fff;border:1px solid #9aacc5;border-radius:12px;min-height:44px;padding:8px 16px;font-weight:800; }
+#console-link-state { color:#fff;background:#172b46;border-radius:8px;font-size:12px;padding:4px; }
+#console-link-state:empty { display:none; }
+#console-settings { position:fixed;right:12px;bottom:66px;z-index:20006;background:#fff;color:#172b46;box-shadow:0 16px 70px #0005;border:1px solid #cbd5e1;border-radius:20px;padding:22px;width:min(440px,calc(100vw - 24px));max-height:80dvh;overflow:auto; }
+#console-root { font-family:system-ui,sans-serif; }
+#console-root h2 { font-size:22px;font-weight:850;margin:8px 0 16px; }
+#console-root label { display:flex;align-items:center;gap:10px; }
+#console-settings label { margin:12px 0;justify-content:space-between; }
+#console-root button,#console-root select,#console-root input:not([type=checkbox]):not([type=range]) { min-height:48px;border:1px solid #cbd5e1;border-radius:12px;padding:8px 12px;background:#fff;color:#17324f;font-size:16px;font-weight:700; }
+#console-root button { cursor:pointer;touch-action:manipulation; }
+#console-root button:hover { background:#edf5fc; }
+#console-root button:active { transform:translateY(1px); }
+#console-root button:focus-visible,#console-root input:focus-visible,#console-root select:focus-visible { outline:3px solid #f59e0b;outline-offset:2px; }
+#console-root button:disabled { opacity:.45;cursor:default; }
+#console-settings button { margin:4px 4px 4px 0; }
+#console-code { width:150px;text-transform:uppercase; }
+#console-code-display { display:block;font-size:24px;letter-spacing:2px;margin:12px 0; }
+.console-backups { border-top:1px solid #ddd;margin-top:16px;padding-top:12px; }
+.console-file { flex-wrap:wrap; }
+.console-file input { max-width:100%;font-size:12px !important; }
+#teacher-console { max-width:780px;margin:auto;min-height:100dvh;background:#f4f7fb;padding:20px 16px 154px; }
+#teacher-console header { padding:8px 0 16px; }
+.console-eyebrow { font-size:11px;font-weight:800;letter-spacing:2px;color:#64748b; }
+#teacher-console h1 { font-size:27px;font-weight:900;margin:4px 0 16px;letter-spacing:-1px; }
+.console-topline { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+#console-save { font-size:12px;color:#52667b; }
+#console-notice:not(:empty),#console-settings-status:not(:empty),.console-warning { background:#fff3d6;border-radius:12px;padding:12px;color:#92400e;margin-bottom:12px; }
+.console-quick { display:flex;gap:8px;margin-bottom:16px; }
+.console-quick button { font-size:13px !important;flex:1; }
+.console-section-heading { display:flex;justify-content:space-between;align-items:center; }
+.console-section-heading span { font-size:14px;color:#52667b; }
+.console-draw,.console-timer,.console-team,.console-mission { background:#fff;border:1px solid #dde5ee;border-radius:18px;padding:16px;margin:12px 0; }
+.console-draw>div,.console-row,.console-team-members,.console-timer>div { display:flex;gap:8px;flex-wrap:wrap;margin-top:12px; }
+.console-draw>div button { flex:1; }
+.console-selection { display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:16px 0; }
+.console-selection button { font-size:13px !important; }
+.console-selection span { font-size:13px; }
+.console-student { display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:#fff;border:1px solid #e0e7ef;border-radius:14px;padding:12px;margin:8px 0; }
+.console-student strong { font-size:20px;overflow-wrap:anywhere; }
+.console-student small { color:#64748b;grid-column:1;grid-row:2; }
+.console-student input[type=checkbox] { width:24px;height:24px;accent-color:#167366; }
+.console-score { display:flex;align-items:center;gap:6px;grid-column:2;grid-row:1 / span 2; }
+.console-score b { min-width:34px;text-align:center;font-size:25px;font-variant-numeric:tabular-nums; }
+.console-score button { width:48px;font-size:26px !important;padding:0 !important; }
+.console-student .attendance { grid-column:1;justify-self:start;min-height:36px !important;font-size:12px !important;background:#e5f4ef !important;color:#14614f !important; }
+.console-student .attendance.absent { background:#f1f1f1 !important;color:#666 !important; }
+.console-team h3 { display:flex;justify-content:space-between;font-size:23px;font-weight:850; }
+.console-team-members button[aria-pressed=true] { background:#fff0b0 !important;border-color:#c99b21 !important; }
+.console-timer { text-align:center;background:#132c48;color:#fff; }
+.console-timer>strong { display:block;font-size:88px;font-weight:900;line-height:1.2;font-variant-numeric:tabular-nums; }
+.console-timer>div { justify-content:center; }
+.console-volume { margin:18px 0; }
+.console-volume input { flex:1;accent-color:#167366;min-height:44px; }
+.console-empty { text-align:center;padding:50px 8px;line-height:1.8;color:#52667b; }
+#teacher-console nav { position:fixed;bottom:58px;left:50%;transform:translateX(-50%);width:min(100%,780px);display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px;background:#ffffffed;border-top:1px solid #d5dfe9;z-index:20001; }
+#teacher-console nav button[aria-current=page] { background:#17324f;color:#fff;border-color:#17324f; }
+html[data-console=compact] body { background:#f4f7fb;padding:0 !important; }
+html[data-console=compact] #app-container,html[data-console=compact] #class-selection-screen,html[data-console=compact] .gaga-modal-overlay,html[data-console=compact] #event-loading-overlay,html[data-console=compact] #timerScreen,html[data-console=compact] #confetti-canvas { display:none !important; }
+html[data-console=compact] .class-selection-backdrop,html[data-console=compact] .timer-screen { background-image:none !important; }
+html[data-console=tv] .student-delete-btn,html[data-console=tv] #header-tools,html[data-console=tv] .participant-select-button { display:none !important; }
+html[data-console=tv] .tv-match-hidden { display:none !important; }
+html[data-tv-text=large] .rank-page-name { font-size:clamp(1.6rem,2.3vw,3rem); }
+html[data-tv-text=large] .rank-page-score { font-size:clamp(1.5rem,2vw,2.7rem); }
+html[data-tv-text=large] .rank-page-card { min-height:108px; }
+@media(max-width:380px) { #teacher-console { padding-left:10px;padding-right:10px; }.console-score button {width:44px}.console-student strong{font-size:18px}.console-score{gap:3px} }

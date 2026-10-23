@@ -1,6 +1,8 @@
 import { auth, db, provider } from './firebase-config.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { doc, getDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { mergeSchoolState, validateBackup, timerPosition } from './state-sync.js';
+import { mountConsole } from './console.js';
 import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
 
 // ==========================================
@@ -22,6 +24,7 @@ const audioFiles = {
 };
 audioFiles.anthem.loop = true;
 audioFiles.waiting.loop = true;
+Object.values(audioFiles).forEach(audio => { audio.preload = 'none'; });
 const WAITING_BGM_GAIN = 0.3;
 
 function getAudioVolume(key) {
@@ -29,7 +32,7 @@ function getAudioVolume(key) {
 }
 
 window.playMP3 = function(key) {
-    if (window.isGlobalMuted) return;
+    if (window.isGlobalMuted || window.gagaRemoteMuted) return;
     if (audioFiles[key]) {
         if (audioFiles[key].loop && !audioFiles[key].paused) return;
         audioFiles[key].currentTime = 0;
@@ -70,7 +73,7 @@ function syncBackgroundMusic() {
 }
 
 function applyGlobalVolume() {
-    const muted = window.isGlobalMuted || window.globalVolume === 0;
+    const muted = window.isGlobalMuted || window.globalVolume === 0 || window.gagaRemoteMuted;
     Object.entries(audioFiles).forEach(([key, audio]) => {
         audio.volume = getAudioVolume(key);
         audio.muted = muted;
@@ -130,7 +133,7 @@ function initAudio() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = window.isGlobalMuted ? 0 : window.globalVolume;
+        masterGain.gain.value = window.isGlobalMuted || window.gagaRemoteMuted ? 0 : window.globalVolume;
         masterGain.connect(audioCtx.destination);
     }
     if (audioCtx.state === 'suspended') { audioCtx.resume(); }
@@ -168,6 +171,7 @@ window.playBumpSound = function() {
 let confettiAnimationFrame;
 let confettiParticles = [];
 window.fireConfetti = function() {
+    if (window.gagaCompact) return;
     const canvas = document.getElementById('confetti-canvas');
     canvas.classList.remove('hidden');
     canvas.width = window.innerWidth;
@@ -235,6 +239,7 @@ if (globalStampImage.startsWith("data:image/svg+xml")) globalStampImage = defaul
 const fallbackSVG = `data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2250%22%20fill%3D%22%23f1f2f6%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2268%22%20font-size%3D%2245%22%20text-anchor%3D%22middle%22%3E%F0%9F%91%A4%3C%2Ftext%3E%3C%2Fsvg%3E`;
 
 window.generateCuteAvatar = function(student) {
+    if (window.gagaCompact) return fallbackSVG;
     if (!student) return fallbackSVG;
     if (student.customAvatar) return student.customAvatar;
     return fallbackSVG;
@@ -329,8 +334,57 @@ let saveTimer = null;
 let saveInFlight = false;
 let saveRequested = false;
 let unsubscribeSnapshot = null;
+let savedSchool = null;
+let draftRecovered = false;
+let syncError = '';
+let pendingCommit = null;
+const writerId = sessionStorage.getItem('gaga-writer') || crypto.randomUUID();
+sessionStorage.setItem('gaga-writer', writerId);
+const schoolRef = () => doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
+const draftKey = () => `gaga-draft-v1:${userId}:${writerId}`;
+function schoolState() {
+    return structuredClone({ data: classData, scores: groupScores, records: groupRecords, stamps: classStamps,
+        stampImage: globalStampImage, hiddenClasses, rouletteMissions: { individual: individualMissions, team: teamMissions } });
+}
+function readSchool(data = {}) {
+    return { data: data.data || {}, scores: data.scores || {}, records: data.records || {}, stamps: data.stamps || {},
+        stampImage: data.stampImage || defaultStampImg, hiddenClasses: data.hiddenClasses || [],
+        rouletteMissions: { individual: data.rouletteMissions?.individual || defaultIndividualMissions,
+            team: data.rouletteMissions?.team || defaultTeamMissions } };
+}
+function applySchool(data) {
+    // Keep the last acknowledged cloud snapshot immutable for three-way merging.
+    data = structuredClone(data);
+    classData = data.data; groupScores = data.scores; groupRecords = data.records; classStamps = data.stamps;
+    hiddenClasses = data.hiddenClasses; globalStampImage = data.stampImage;
+    individualMissions = data.rouletteMissions.individual; teamMissions = data.rouletteMissions.team;
+    if (!isSpinning) currentMissions = currentMissionsType === 'team' ? teamMissions : individualMissions;
+    currentGagaTeams.forEach(team => { team.members = team.members.map(member => {
+        const student = classData[currentClass]?.find(s => s.no === member.no);
+        return student ? { ...student, isKing: member.isKing } : null;
+    }).filter(Boolean); });
+}
+function refreshSchoolViews() {
+    if (currentClass && !classData[currentClass]) { currentClass = ''; window.openClassSelection(); }
+    if (currentClass) {
+        window.renderGagaball(); window.renderGagaRanking(); window.renderGagaTeamView(); window.renderStampBoard();
+        document.querySelectorAll('[id^="modal-score-"]').forEach(node => {
+            const s = classData[currentClass].find(s => s.no === Number(node.id.replace('modal-score-', '')));
+            if (s) node.textContent = s.score;
+        });
+    }
+    window.renderClassSelect();
+    window.dispatchEvent(new Event('gaga-state'));
+}
+function keepDraft() {
+    if (!userId || !savedSchool) return;
+    try { localStorage.setItem(draftKey(), JSON.stringify({ base: savedSchool, local: schoolState(), pendingCommit })); }
+    catch { syncError = '기기 저장 공간이 부족합니다. 백업을 내려받아 주세요.'; }
+}
 
 function setSyncStatus(state, message = '') {
+    window.gagaSyncStatus = state === 'idle' ? '저장 완료' : message || (state === 'saving' ? '저장 중' : '저장 실패 · 재시도 필요');
+    window.dispatchEvent(new Event('gaga-sync'));
     const syncIcon = document.getElementById('sync-status');
     if (!syncIcon) return;
     syncIcon.classList.toggle('hidden', state === 'idle');
@@ -357,11 +411,18 @@ if (auth && db) {
     onAuthStateChanged(auth, (user) => {
         if (user) {
             userId = user.uid;
+            savedSchool = null; draftRecovered = false; pendingCommit = null;
+            window.dispatchEvent(new Event('gaga-auth'));
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('user-email').innerText = user.email.split('@')[0];
             setupFirestoreListener();
         } else {
+            clearTimeout(saveTimer);
+            if (saveRequested || saveInFlight) keepDraft();
             userId = null;
+            savedSchool = null; saveRequested = false;
+            window.closeGagaTimer();
+            window.dispatchEvent(new Event('gaga-auth'));
             if(unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
             window.stopMP3('anthem');
             window.stopMP3('waiting');
@@ -392,10 +453,27 @@ function setupFirestoreListener() {
 
     unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
         if (docSnap.metadata.hasPendingWrites) return;
+        if (saveRequested || saveInFlight) return;
+        if (draftRecovered && savedSchool && JSON.stringify(savedSchool) === JSON.stringify(readSchool(docSnap.data()))) return;
         setSyncStatus('idle');
         if (docSnap.exists()) {
             const data = docSnap.data();
-            classData = data.data || {}; groupScores = data.scores || {}; groupRecords = data.records || {}; classStamps = data.stamps || {};
+            savedSchool = readSchool(data);
+            if (!draftRecovered) {
+                draftRecovered = true;
+                try {
+                    const draft = JSON.parse(localStorage.getItem(draftKey()) || 'null');
+                    if (draft) {
+                        pendingCommit = draft.pendingCommit || null;
+                        if (pendingCommit) { savedSchool = draft.base; applySchool(draft.local); }
+                        else applySchool(mergeSchoolState(draft.base, draft.local, savedSchool));
+                        saveData(); refreshSchoolViews();
+                        if (!currentClass) window.openClassSelection();
+                        return;
+                    }
+                } catch (error) { syncError = `임시본 자동 복구 실패: ${error.message}`; setSyncStatus('error', '임시본 복구 확인 필요'); }
+            }
+            applySchool(savedSchool);
             let avatarsChanged = false;
             Object.values(classData).forEach(students => {
                 if (Array.isArray(students) && assignUniqueClassAvatars(students)) avatarsChanged = true;
@@ -404,24 +482,19 @@ function setupFirestoreListener() {
             hiddenClasses = data.hiddenClasses || [];
             if (data.stampImage) { globalStampImage = data.stampImage; localStorage.setItem('customStamp', globalStampImage); document.querySelectorAll('.stamp-img').forEach(img => { img.src = globalStampImage; }); }
             
-            // 💡 [추가된 부분] 파이어베이스에서 룰렛 미션 데이터도 가져옵니다!
-            if (data.rouletteMissions) {
-                individualMissions = data.rouletteMissions.individual || defaultIndividualMissions;
-                teamMissions = data.rouletteMissions.team || defaultTeamMissions;
-                
-                // 현재 띄워진 룰렛창이 있다면 데이터 새로고침
-                if (currentMissionsType === 'team') currentMissions = teamMissions;
-                else currentMissions = individualMissions;
-            }
         }
         
+        if (!savedSchool) savedSchool = readSchool();
         if (!currentClass) {
-            window.openClassSelection();
+            const lastClass = sessionStorage.getItem(`gaga-last-class:${userId}`);
+            if (lastClass && classData[lastClass]) window.selectClass(lastClass);
+            else window.openClassSelection();
         } else if (classData[currentClass]) {
             if(currentTab === 'gagaball') window.renderGagaball();
             if(currentTab === 'stamp') window.renderStampBoard();
         }
         window.renderClassSelect();
+        refreshSchoolViews();
     }, (error) => {
         console.error("데이터 동기화 오류:", error);
         setSyncStatus('error', '불러오기 실패');
@@ -434,6 +507,7 @@ function saveData() {
         if (Array.isArray(students)) assignUniqueClassAvatars(students);
     });
     saveRequested = true;
+    keepDraft();
     clearTimeout(saveTimer);
     setSyncStatus('saving');
     saveTimer = setTimeout(flushSaveData, 150);
@@ -444,34 +518,56 @@ async function flushSaveData() {
     saveInFlight = true;
     saveRequested = false;
 
-    const payload = {
-        data: structuredClone(classData),
-        scores: structuredClone(groupScores),
-        records: structuredClone(groupRecords),
-        stamps: structuredClone(classStamps),
-        stampImage: globalStampImage,
-        hiddenClasses: [...hiddenClasses],
-        rouletteMissions: {
-            individual: structuredClone(individualMissions),
-            team: structuredClone(teamMissions)
-        }
-    };
+    if (!pendingCommit) pendingCommit = { id: crypto.randomUUID(), writer: writerId, sent: schoolState(), base: structuredClone(savedSchool || readSchool()) };
+    const operation = pendingCommit;
+    const sent = operation.sent;
+    const base = operation.base;
+    keepDraft();
+    const savingUser = userId;
 
     try {
         const docRef = doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
-        await setDoc(docRef, payload, { merge: true });
-        setSyncStatus('idle');
+        const committed = await runTransaction(db, async transaction => {
+            const snapshot = await transaction.get(docRef);
+            if (snapshot.data()?.saveReceipts?.[operation.writer] === operation.id) return readSchool(snapshot.data());
+            const merged = mergeSchoolState(base, sent, readSchool(snapshot.data()));
+            // Top-level replacement deliberately removes deleted classes. Room fields are preserved.
+            const receipts = { ...snapshot.data()?.saveReceipts, [operation.writer]: operation.id };
+            // Keep a bounded recent receipt list; the current operation is always retained.
+            const saveReceipts = Object.fromEntries(Object.entries(receipts).slice(-100));
+            if (snapshot.exists()) transaction.update(docRef, { ...merged, saveReceipts });
+            else transaction.set(docRef, { ...merged, saveReceipts });
+            return merged;
+        });
+        if (userId !== savingUser) return;
+        const rebased = mergeSchoolState(sent, schoolState(), committed);
+        pendingCommit = null;
+        saveRequested = JSON.stringify(rebased) !== JSON.stringify(committed);
+        savedSchool = committed;
+        applySchool(rebased);
+        syncError = '';
+        if (saveRequested) keepDraft(); else localStorage.removeItem(draftKey());
+        refreshSchoolViews();
+        setSyncStatus(saveRequested ? 'saving' : 'idle');
     } catch (error) {
         console.error('데이터 저장 오류:', error);
+        if (userId !== savingUser) return;
+        syncError = error.message;
+        saveRequested = true;
+        keepDraft();
         setSyncStatus('error', '저장 실패');
     } finally {
         saveInFlight = false;
-        if (saveRequested) {
+        if (saveRequested && !syncError) {
             clearTimeout(saveTimer);
             saveTimer = setTimeout(flushSaveData, 500);
         }
     }
 }
+window.addEventListener('online', () => { if (saveRequested) { syncError = ''; flushSaveData(); } });
+window.addEventListener('beforeunload', event => {
+    if (saveRequested || saveInFlight) { keepDraft(); event.preventDefault(); event.returnValue = ''; }
+});
 
 // ==========================================
 // 4. 앱 UI 제어 및 학급 선택 로직
@@ -550,6 +646,11 @@ window.renderStartupClassList = function() {
 };
 
 window.selectClass = function(className) {
+    if (!classData[className]) return;
+    window.closeGagaTimer(false);
+    window.closeGagaDrawModal();
+    window.closeRouletteModal(true);
+    document.getElementById('gagaDrawResultGrid').replaceChildren();
     currentClass = className;
     currentDrawIsChampions = false;
     window.selectedParticipants = [];
@@ -575,6 +676,7 @@ window.selectClass = function(className) {
     }
     
     window.showTab(currentTab);
+    prepareTimerAudio();
 };
 
 const mainHeader = document.getElementById('main-header');
@@ -814,7 +916,7 @@ let rankTransitionTimer = null;
 let rankResizeTimer = null;
 
 function isRankingVisible() {
-    return !document.hidden
+    return !document.hidden && !window.gagaCompact
         && !document.getElementById('app-container').classList.contains('hidden')
         && !document.getElementById('gagaball-section').classList.contains('hidden')
         && !document.getElementById('gaga-view-rank').classList.contains('hidden');
@@ -854,11 +956,11 @@ function showRankingPage(animate = false) {
 window.syncRankingAutoplay = function() {
     clearInterval(rankPageTimer);
     rankPageTimer = null;
-    if (rankAutoplay && rankPages.length > 1 && isRankingVisible()) {
+    if (window.gagaRankInterval !== 0 && rankAutoplay && rankPages.length > 1 && isRankingVisible()) {
         rankPageTimer = setInterval(() => {
             if (!isRankingVisible()) { window.syncRankingAutoplay(); return; }
             window.changeRankingPage(1);
-        }, RANK_PAGE_INTERVAL);
+        }, window.gagaRankInterval || RANK_PAGE_INTERVAL);
     }
 };
 
@@ -889,6 +991,7 @@ window.addEventListener('resize', () => {
 document.addEventListener('visibilitychange', () => window.syncRankingAutoplay());
 
 window.renderGagaRanking = function() {
+    if (window.gagaCompact) return;
     const container = document.getElementById('gaga-hall-of-fame-grid');
     if(!container || !currentClass) return;
     clearTimeout(rankTransitionTimer);
@@ -944,7 +1047,7 @@ window.renderGagaRanking = function() {
     if (grid) {
         const navTop = document.getElementById('tab-navigation').getBoundingClientRect().top;
         const availableHeight = isRankingVisible() ? navTop - grid.getBoundingClientRect().top - 12 : 0;
-        const layout = getRankingGridLayout(window.innerWidth, availableHeight, individualPages.length);
+        const layout = getRankingGridLayout(window.gagaRankingColumns === '5' ? Math.max(1600, window.innerWidth) : window.innerWidth, availableHeight, individualPages.length);
         rankPageSize = layout.pageSize;
         grid.style.setProperty('--rank-columns', layout.columns);
         grid.style.setProperty('--rank-rows', layout.rows);
@@ -999,7 +1102,7 @@ function clearWantedReveal() {
 
 function revealWantedStudent() {
     const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
-    if (!cards.length || getComputedStyle(document.getElementById('gagaDrawModal')).display === 'none') return;
+    if (!cards.length || document.getElementById('gagaDrawModal').style.display !== 'flex') return;
     clearWantedReveal();
     cards.forEach(card => {
         card.classList.remove('wanted-active');
@@ -1030,6 +1133,7 @@ function revealWantedStudent() {
             selected.setAttribute('aria-pressed', 'true');
             selected.setAttribute('aria-label', `${selectedName} 학생 현상수배 효과 끄기`);
             window.playStampSound();
+            persistMatch();
         }, 650);
     }, 1800);
 }
@@ -1046,6 +1150,7 @@ window.toggleWantedEffect = function(event) {
 };
 
 window.handleWantedEffectKey = function(event) {
+    if (event.target !== event.currentTarget) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     window.toggleWantedEffect(event);
@@ -1115,8 +1220,11 @@ window.startRouletteFromFloating = function(e) {
 let defaultIndividualMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "체육쌤 레이드", weight: 10, color: "#ff7675", desc: "체육쌤이 경기장에 등장했습니다! 체육쌤을 아웃시키면 체육 도장 1장이 주어집니다!" }, { text: "포인트 X2", weight: 20, color: "#ffeaa7", desc: "최종 승자에게는 평소보다 2배의 포인트가 주어집니다." } ];
 let defaultTeamMissions = [ { text: "그냥 가가볼", weight: 70, color: "#81ecec", desc: "평소처럼 가가볼을 즐기세요." }, { text: "왕을 잡아라!", weight: 15, color: "#a29bfe", desc: "양팀은 우리팀 왕을 한명 정해주세요. 상대팀 왕을 먼저 아웃시키는 팀이 승리합니다." }, { text: "포인트 X2", weight: 15, color: "#ffeaa7", desc: "최종 승리팀 전원에게 평소보다 2배의 포인트가 주어집니다." } ];
 
-let individualMissions = JSON.parse(localStorage.getItem('gagaIndividualMissions')) || defaultIndividualMissions;
-let teamMissions = JSON.parse(localStorage.getItem('gagaTeamMissions')) || defaultTeamMissions;
+function readStoredMissions(key, fallback) {
+    try { const value = JSON.parse(localStorage.getItem(key)); return validateMissions(value || []).valid ? value : fallback; } catch { return fallback; }
+}
+let individualMissions = readStoredMissions('gagaIndividualMissions', defaultIndividualMissions);
+let teamMissions = readStoredMissions('gagaTeamMissions', defaultTeamMissions);
 let currentMissions = individualMissions; 
 let currentMissionsType = 'individual';
 let editMissionsTemp = [];
@@ -1178,6 +1286,7 @@ window.closeRouletteModal = function(force = false) {
     }
     if (shouldRevealWanted) revealWantedStudent();
     syncBackgroundMusic();
+    persistMatch();
 };
 window.openTimerFromRoulette = function(duration) {
     if (isSpinning || currentMissionsType !== 'team') return;
@@ -1266,6 +1375,7 @@ window.spinRoulette = function() {
     const spinAngle = Math.floor(Math.random() * 360) + (360 * 5); currentRouletteRotation += spinAngle;
     canvas.style.transition = "transform 5s cubic-bezier(0.25, 0.1, 0.25, 1)"; 
     canvas.style.transform = `rotate(${currentRouletteRotation}deg)`;
+    persistMatch();
 
     setTimeout(() => {
         isSpinning = false;
@@ -1297,6 +1407,7 @@ window.spinRoulette = function() {
             rouletteAutoCloseTimer = setTimeout(() => window.closeRouletteModal(true), 3000);
             summary.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
         }
+        persistMatch();
     }, 5000);
 }
 function missionMarkup(result) {
@@ -1346,6 +1457,11 @@ window.triggerGagaDraw = function(targetGender) {
 }
 
 window.executeGagaDraw = function(targetGender, drawCount, available, refereeLimit) {
+    // The reveal animation can outlive a cloud update; use the current roster objects.
+    available = available.map(s => classData[currentClass].find(student => student.no === s.no))
+        .filter(s => s && s.attendance && !s.gagaDrawn && (targetGender === 'all' || s.gender === targetGender));
+    refereeLimit = getIndividualRefereeLimit(classData[currentClass]);
+    window.closeGagaTimer(false);
     currentDrawIsChampions = false;
     const actualDrawCount = Math.min(drawCount, available.length);
     for (let i = available.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [available[i], available[j]] = [available[j], available[i]]; }
@@ -1427,6 +1543,8 @@ window.triggerGagaTeams = function() {
 window.executeGagaTeams = function(numTeams, available) {
     const refereePlan = getTeamRefereePlan(available, numTeams);
     if(refereePlan.participants.length < numTeams) return alert("심판 대기 학생을 제외하면 팀마다 한 명씩 배정할 수 없습니다.");
+    window.closeGagaTimer(false);
+    window.closeGagaDrawModal();
     const participants = refereePlan.participants;
     const totalParticipants = participants.length; const baseSize = Math.floor(totalParticipants / numTeams); const remainder = totalParticipants % numTeams;
     let targetSizes = new Array(numTeams).fill(baseSize); for(let i = 0; i < remainder; i++) targetSizes[i]++;
@@ -1444,6 +1562,7 @@ window.executeGagaTeams = function(numTeams, available) {
     
     let boys = nonReferees.filter(s => s.gender === '남').sort(sortByPower); 
     let girls = nonReferees.filter(s => s.gender === '여').sort(sortByPower);
+    let unspecified = nonReferees.filter(s => !['남', '여'].includes(s.gender)).sort(sortByPower);
 
     function distribute(group) {
         group.forEach(student => {
@@ -1466,8 +1585,9 @@ window.executeGagaTeams = function(numTeams, available) {
 
     distribute(boys); 
     distribute(girls);
+    distribute(unspecified);
 
-    teams.forEach(t => t.members.forEach(m => m.isKing = false));
+    teams.forEach(t => { t.members = t.members.map(m => ({ ...m, isKing: false })); t.score = 0; });
 
     currentGagaTeams = teams;
     currentGagaStandbyReferees = refereePlan.standbyReferees;
@@ -1584,7 +1704,10 @@ window.renderGagaTeamView = function() {
 window.addGagaTeamScore = function(teamId, val) {
     if (val > 0) window.playCoinSound(); else window.playBumpSound();
     const team = currentGagaTeams.find(t => t.id === teamId);
-    team.score += val; 
+    if (!team) return;
+    val = Math.max(0, team.score + val) - team.score;
+    if (!val) return;
+    team.score += val;
     team.members.forEach(m => {
         const student = classData[currentClass].find(s => s.no === m.no);
         if(student) { student.score = Math.max(0, (student.score || 0) + val); m.score = student.score; }
@@ -1601,11 +1724,19 @@ let activeTimerAudio = null;
 let activeTimerDuration = 0;
 let timerAnimationFrame = null;
 let lastTimerNumber = '';
+let timerModel = null;
+const timerAudioCache = new Map();
+function prepareTimerAudio() {
+    if (window.gagaRemoteMuted) return;
+    for (const duration of [60, 100]) {
+        const path = `sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`;
+        if (!timerAudioCache.has(path)) { const audio = new Audio(path); audio.preload = 'auto'; timerAudioCache.set(path, audio); }
+    }
+}
 const finalTimerWords = ['TIME UP!', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN'];
 
 function getTimerSeekMax() {
-    const audioDuration = activeTimerAudio?.duration;
-    return Number.isFinite(audioDuration) && audioDuration > 0 ? audioDuration : activeTimerDuration + 3;
+    return activeTimerDuration + 3;
 }
 
 function formatTimerPosition(seconds) {
@@ -1615,8 +1746,11 @@ function formatTimerPosition(seconds) {
 }
 
 function renderTimerScreen() {
-    if (!activeTimerAudio) return;
-    const elapsed = activeTimerAudio.currentTime;
+    if (!timerModel) return;
+    const elapsed = timerPosition(timerModel);
+    if (activeTimerAudio && timerModel.running && !activeTimerAudio.paused && Math.abs(activeTimerAudio.currentTime - elapsed) > .4) {
+        activeTimerAudio.currentTime = elapsed;
+    }
     const state = getCountdownState(elapsed, activeTimerDuration);
     const screen = document.getElementById('timerScreen');
     const number = document.getElementById('timer-main-number');
@@ -1655,67 +1789,77 @@ function renderTimerScreen() {
     seek.setAttribute('aria-valuetext', `${formatTimerPosition(seekValue)} / ${formatTimerPosition(seekMax)}`);
     document.getElementById('timer-seek-current').textContent = formatTimerPosition(seekValue);
     document.getElementById('timer-seek-total').textContent = formatTimerPosition(seekMax);
-    if (!activeTimerAudio.ended) timerAnimationFrame = requestAnimationFrame(renderTimerScreen);
+    if (elapsed >= activeTimerDuration + 3) {
+        const wasRunning = timerModel.running;
+        timerModel.position = activeTimerDuration + 3; timerModel.running = false;
+        document.getElementById('timer-pause-button').textContent = '경기 종료';
+        if (wasRunning) persistMatch();
+    }
+    else timerAnimationFrame = requestAnimationFrame(renderTimerScreen);
 }
 
 window.seekGagaTimer = function(value) {
-    if (!activeTimerAudio) return;
+    if (!timerModel) return;
     const requestedTime = Number(value);
     if (!Number.isFinite(requestedTime)) return;
-    activeTimerAudio.currentTime = Math.min(Math.max(requestedTime, 0), getTimerSeekMax());
+    timerModel.position = Math.min(Math.max(requestedTime, 0), activeTimerDuration + 3);
+    timerModel.startedAt = Date.now();
+    if (activeTimerAudio) activeTimerAudio.currentTime = timerModel.position;
     lastTimerNumber = '';
     if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
     renderTimerScreen();
 };
 
-window.openGagaTimer = function(duration) {
+window.openGagaTimer = function(duration, { autoplay = true } = {}) {
     if (duration !== 60 && duration !== 100) return;
     window.closeTimerSelectModal();
     window.closeGagaTimer(false);
     window.stopMP3('anthem');
     window.stopMP3('waiting');
     activeTimerDuration = duration;
-    activeTimerAudio = new Audio(`sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`);
+    timerModel = { id: crypto.randomUUID(), duration, position: 0, startedAt: Date.now(), running: autoplay, champions: currentDrawIsChampions };
+    const path = `sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`;
+    activeTimerAudio = window.gagaRemoteMuted ? new Audio() : timerAudioCache.get(path) || new Audio(path);
+    activeTimerAudio.currentTime = 0;
     activeTimerAudio.preload = 'auto';
-    activeTimerAudio.muted = window.isGlobalMuted;
+    activeTimerAudio.muted = window.isGlobalMuted || window.gagaRemoteMuted;
     activeTimerAudio.volume = window.globalVolume;
-    activeTimerAudio.onended = renderTimerScreen;
+    activeTimerAudio.onended = () => {};
     activeTimerAudio.onloadedmetadata = () => {
         if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
         renderTimerScreen();
     };
     lastTimerNumber = '';
     document.getElementById('timer-duration-label').textContent = `${duration}초 경기`;
+    document.getElementById('timer-audio-status').textContent = window.gagaRemoteMuted ? 'TV에서 소리 재생' : '';
     document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
     document.getElementById('timerScreen').style.display = 'block';
     renderTimerScreen();
-    activeTimerAudio.play().catch(error => {
+    if (autoplay && !window.gagaRemoteMuted) activeTimerAudio.play().catch(error => {
         console.error('타이머 음원 재생 실패:', error);
-        window.closeGagaTimer();
-        alert('타이머 음원을 재생할 수 없습니다. 브라우저의 소리 설정을 확인해주세요.');
+        document.getElementById('timer-audio-status').textContent = '소리 재생 불가 · 무음 타이머로 진행 중';
     });
 };
 
 window.toggleGagaTimerPause = function() {
-    if (!activeTimerAudio || activeTimerAudio.ended) return;
+    if (!timerModel || timerPosition(timerModel) >= timerModel.duration + 3) return;
     const button = document.getElementById('timer-pause-button');
-    if (activeTimerAudio.paused) {
-        activeTimerAudio.play().then(() => { button.textContent = '⏸️ 일시정지'; });
-    } else {
-        activeTimerAudio.pause();
-        button.textContent = '▶️ 계속';
-    }
+    timerModel.position = timerPosition(timerModel); timerModel.startedAt = Date.now(); timerModel.running = !timerModel.running;
+    button.textContent = timerModel.running ? '⏸️ 일시정지' : '▶️ 계속';
+    if (timerModel.running && !window.gagaRemoteMuted) activeTimerAudio?.play().catch(() => { document.getElementById('timer-audio-status').textContent = '무음 타이머로 진행 중'; });
+    else activeTimerAudio?.pause();
 };
 
 window.restartGagaTimer = function() {
     if (!activeTimerAudio) return;
+    timerModel = { ...timerModel, id: crypto.randomUUID(), position: 0, startedAt: Date.now(), running: true };
     activeTimerAudio.pause();
     activeTimerAudio.currentTime = 0;
     lastTimerNumber = '';
     document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
     if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
     renderTimerScreen();
-    activeTimerAudio.play().catch(error => console.error('타이머 재시작 실패:', error));
+    if (!window.gagaRemoteMuted) activeTimerAudio.play().catch(error => console.error('타이머 재시작 실패:', error));
 };
 
 window.toggleGagaTimerFullscreen = function() {
@@ -1725,6 +1869,7 @@ window.toggleGagaTimerFullscreen = function() {
 };
 
 window.closeGagaTimer = function(resumeMusic = true) {
+    timerModel = null;
     if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
     timerAnimationFrame = null;
     if (activeTimerAudio) {
@@ -1744,6 +1889,7 @@ window.closeGagaTimer = function(resumeMusic = true) {
 // 6. 도장판 모드
 // ==========================================
 window.renderStampBoard = () => {
+    if (window.gagaCompact) return;
     const board = document.getElementById('stampBoard'); if (!board) return;
     const titleEl = document.getElementById('stamp-class-title');
 
@@ -2058,6 +2204,16 @@ window.importFromExcel = function() {
     if (!currentClass) return alert("추가할 학급이 선택되지 않았습니다.");
     
     const lines = input.split('\n');
+    const errors = [];
+    const numbers = new Set();
+    lines.forEach((line, index) => {
+        const [number, name, gender] = line.trim().split(/\s+/);
+        const no = Number(number);
+        if (!Number.isInteger(no) || no < 1 || !name || !['남', '여'].includes(String(gender || '').replace(/학생$/, '')) || numbers.has(no)) errors.push(`${index + 1}행: 번호·이름·성별 또는 중복 번호를 확인해주세요.`);
+        numbers.add(no);
+    });
+    if (errors.length) return alert(errors.join('\n'));
+    if (!confirm(`${currentClass}에 ${lines.length}명을 등록/수정합니다. 같은 번호는 기존 점수를 유지합니다.\n\n${lines.slice(0, 8).join('\n')}${lines.length > 8 ? '\n…' : ''}`)) return;
     let addedCount = 0;
     let currentStudents = [...(classData[currentClass] || [])];
 
@@ -2116,5 +2272,188 @@ document.addEventListener('keydown', (event) => {
     if (manageModal && !manageModal.classList.contains('hidden')) {
         event.preventDefault();
         window.closeManageModal();
+    }
+});
+
+// One adapter for the existing presentation and the image-free teacher console.
+let applyingMatch = false;
+let undoEntries = [];
+let presentationEffect = null;
+let remoteEffectTimer = null;
+let lastRemoteEffect = '';
+let remoteRouletteSpinning = false;
+const matchKey = () => `gaga-match-v1:${userId}:${currentClass}`;
+function captureMatch() {
+    const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
+    const numbers = cards.map(card => Number(card.querySelector('[id^="modal-score-"]')?.id.replace('modal-score-', '')));
+    return structuredClone({ className: currentClass, teams: currentGagaTeams, standby: currentGagaStandbyReferees,
+        refereeWarning: currentGagaRefereeWarning, individualMission: individualMissionResult, teamMissions: teamMissionResults,
+        champions: currentDrawIsChampions, players: numbers,
+        wanted: numbers.filter((_, index) => cards[index].classList.contains('wanted-active')),
+        drawOpen: document.getElementById('gagaDrawModal').style.display === 'flex',
+        view: ['score', 'team', 'rank'].find(view => !document.getElementById(`gaga-view-${view}`).classList.contains('hidden')) || 'score',
+        timer: timerModel, volume: window.globalVolume, muted: window.isGlobalMuted, effect: presentationEffect,
+        roulette: { open: document.getElementById('rouletteModal').style.display === 'flex', spinning: isSpinning,
+            rotation: currentRouletteRotation, type: currentMissionsType, missions: currentMissions,
+            result: document.getElementById('roulette-result-summary').textContent } });
+}
+function persistMatch() {
+    if (applyingMatch || !userId || !currentClass) return;
+    try { localStorage.setItem(matchKey(), JSON.stringify(captureMatch())); } catch {}
+    sessionStorage.setItem(`gaga-last-class:${userId}`, currentClass);
+    window.dispatchEvent(new Event('gaga-match'));
+}
+function restoreMatch(state, pause = false) {
+    if (!state || !classData[state.className]) return;
+    applyingMatch = true;
+    try {
+        if (currentClass !== state.className) window.selectClass(state.className);
+        currentGagaTeams = structuredClone(state.teams || []);
+        currentGagaStandbyReferees = state.standby || [];
+        currentGagaRefereeWarning = !!state.refereeWarning;
+        individualMissionResult = state.individualMission || null; teamMissionResults = state.teamMissions || {};
+        currentDrawIsChampions = !!state.champions;
+        window.switchGagaTab(state.view || 'score');
+        const picked = (state.players || []).map(no => classData[currentClass].find(s => s.no === no)).filter(Boolean);
+        const grid = document.getElementById('gagaDrawResultGrid');
+        grid.className = `grid gap-2 sm:gap-4 w-full flex-1 min-h-0 overflow-hidden px-2 pb-2 grid-cols-${picked.length <= 4 ? 2 : picked.length <= 6 ? 3 : picked.length <= 8 ? 4 : 5} ${picked.length <= 2 ? 'grid-rows-1' : 'grid-rows-2'}`;
+        grid.innerHTML = generateGridCards(picked);
+        [...grid.children].forEach((card, index) => {
+            const wanted = state.wanted?.includes(picked[index].no);
+            card.classList.toggle('wanted-active', !!wanted); card.setAttribute('aria-pressed', String(!!wanted));
+        });
+        document.getElementById('gagaDrawMainTitle').textContent = state.champions ? '👑 왕중왕전 👑' : '🎉 참가 선수 🎉';
+        document.getElementById('gagaDrawModal').style.display = state.drawOpen ? 'flex' : 'none';
+        window.renderIndividualMissionResult();
+        if (state.drawOpen) window.showFloatingRouletteBtn('individual');
+        if (window.gagaReadOnly) {
+            const roulette = state.roulette;
+            document.getElementById('rouletteModal').style.display = roulette?.open ? 'flex' : 'none';
+            if (roulette?.open) {
+                currentMissions = roulette.missions; currentMissionsType = roulette.type;
+                document.getElementById('rouletteModalTitle').textContent = roulette.type === 'team' ? '🎡 팀전 미션 룰렛' : '🎡 개인전 미션 룰렛';
+                window.drawRoulette();
+                const canvas = document.getElementById('rouletteCanvas');
+                canvas.style.transition = roulette.spinning ? 'transform 5s cubic-bezier(.25,.1,.25,1)' : 'none';
+                canvas.style.transform = `rotate(${roulette.rotation}deg)`;
+                document.getElementById('roulette-result-summary').textContent = roulette.result;
+                document.getElementById('roulette-result-summary').classList.toggle('roulette-winning', !roulette.spinning);
+                document.getElementById('roulette-timer-actions').classList.add('hidden');
+                if (roulette.spinning) window.playMP3('spinner'); else window.stopMP3('spinner');
+                if (remoteRouletteSpinning && !roulette.spinning) window.playMP3('goodresult');
+            } else window.stopMP3('spinner');
+            remoteRouletteSpinning = !!roulette?.spinning;
+            if (state.effect && state.effect.id !== lastRemoteEffect && Date.now() - state.effect.at < 6000) {
+                lastRemoteEffect = state.effect.id;
+                showEventReveal(state.effect.kind); clearTimeout(remoteEffectTimer);
+                remoteEffectTimer = setTimeout(() => { finishEventReveal(); window.fireConfetti(); syncBackgroundMusic(); }, 1200);
+            }
+        }
+        if (state.timer) {
+            const wantedTimer = structuredClone(state.timer);
+            if (pause) { wantedTimer.position = timerPosition(wantedTimer); wantedTimer.running = false; }
+            if (!timerModel || timerModel.id !== wantedTimer.id) window.openGagaTimer(wantedTimer.duration, { autoplay: false });
+            timerModel = wantedTimer;
+            activeTimerAudio.currentTime = timerPosition(timerModel);
+            if (timerModel.running && !window.gagaRemoteMuted) activeTimerAudio.play().catch(() => { document.getElementById('timer-audio-status').textContent = '무음 진행 · 소리 켜기를 눌러주세요'; });
+            else activeTimerAudio.pause();
+            document.getElementById('timer-pause-button').textContent = timerModel.running ? '⏸️ 일시정지' : '▶️ 계속';
+            if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
+            renderTimerScreen();
+        } else if (timerModel) window.closeGagaTimer();
+        if (Number.isFinite(state.volume)) window.globalVolume = state.volume;
+        window.isGlobalMuted = !!state.muted; applyGlobalVolume();
+        refreshSchoolViews(); syncBackgroundMusic();
+    } finally { applyingMatch = false; }
+}
+const trackedActions = ['toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'assignSelectedReferees', 'resetAllScoresDB',
+    'resetGagaDraw', 'deleteStudent', 'importFromExcel', 'executeGagaDraw', 'executeGagaTeams', 'startChampionsTournament'];
+for (const name of trackedActions) {
+    const original = window[name];
+    window[name] = function(...args) {
+        if (window.gagaReadOnly && !applyingMatch) return;
+        const before = schoolState(), match = captureMatch();
+        const result = original(...args);
+        if (['executeGagaDraw', 'executeGagaTeams', 'startChampionsTournament'].includes(name)) presentationEffect = {
+            id: crypto.randomUUID(), at: Date.now(), kind: name === 'executeGagaTeams' ? 'team' : 'draw' };
+        if (!applyingMatch && JSON.stringify(before) !== JSON.stringify(schoolState())) {
+            undoEntries.push({ before, after: schoolState(), match }); undoEntries = undoEntries.slice(-15);
+            try { localStorage.setItem(`gaga-safety-backup:${userId}`, JSON.stringify({ version: 1, savedAt: Date.now(), school: before })); } catch {}
+        }
+        persistMatch(); return result;
+    };
+}
+for (const name of ['toggleTeamKing', 'toggleWantedEffect', 'switchGagaTab', 'closeGagaDrawModal', 'openGagaTimer', 'closeGagaTimer',
+    'toggleGagaTimerPause', 'restartGagaTimer', 'seekGagaTimer', 'setGlobalVolume', 'toggleGlobalMute']) {
+    const original = window[name];
+    window[name] = function(...args) { if (window.gagaReadOnly && !applyingMatch) return; const result = original(...args); persistMatch(); return result; };
+}
+const selectClassOriginal = window.selectClass;
+window.selectClass = function(name) {
+    if (window.gagaReadOnly && !applyingMatch) return;
+    const previous = localStorage.getItem(`gaga-match-v1:${userId}:${name}`);
+    selectClassOriginal(name);
+    undoEntries = [];
+    if (!applyingMatch && previous) { try { restoreMatch(JSON.parse(previous), true); } catch {} }
+    persistMatch();
+};
+mountConsole({
+    auth, db, schoolRef,
+    get: () => ({ userId, currentClass, classes: Object.keys(classData).filter(name => !hiddenClasses.includes(name)).sort(),
+        students: structuredClone(classData[currentClass] || []), selected: [...window.selectedParticipants], match: captureMatch(),
+        syncError, pending: saveRequested || saveInFlight, undo: undoEntries.length, busy: isSpinning || !!rouletteAutoCloseTimer }),
+    restoreMatch,
+    retry: () => { syncError = ''; flushSaveData(); },
+    reloadCloud: async () => {
+        if (saveInFlight) return alert('저장 처리가 끝난 뒤 다시 시도해주세요.');
+        if (!confirm('현재 기록을 안전 백업에 보관한 뒤 서버의 최신 기록으로 바꿉니다. 계속할까요?')) return;
+        const snapshot = await getDoc(schoolRef());
+        localStorage.setItem(`gaga-safety-backup:${userId}`, JSON.stringify({ version: 1, school: schoolState() }));
+        clearTimeout(saveTimer); pendingCommit = null; saveRequested = false; syncError = '';
+        localStorage.removeItem(draftKey()); savedSchool = readSchool(snapshot.data()); applySchool(savedSchool);
+        setSyncStatus('idle'); refreshSchoolViews();
+    },
+    unlock: () => { initAudio(); prepareTimerAudio(); applyGlobalVolume(); syncBackgroundMusic();
+        if (activeTimerAudio && timerModel?.running && !window.gagaRemoteMuted) activeTimerAudio.play().then(() => { document.getElementById('timer-audio-status').textContent = ''; }).catch(() => {}); },
+    setOutput: remote => {
+        const changed = !!window.gagaRemoteMuted !== remote;
+        const state = currentClass ? captureMatch() : null;
+        window.gagaRemoteMuted = remote;
+        if (changed && timerModel) {
+            applyingMatch = true;
+            try { window.closeGagaTimer(false); } finally { applyingMatch = false; }
+        }
+        if (state) restoreMatch(state);
+        applyGlobalVolume(); syncBackgroundMusic();
+    },
+    backup: () => ({ version: 1, savedAt: Date.now(), school: schoolState() }),
+    safetyBackup: () => JSON.parse(localStorage.getItem(`gaga-safety-backup:${userId}`) || 'null'),
+    draft: () => JSON.parse(localStorage.getItem(draftKey()) || 'null'),
+    importBackup: value => { const state = validateBackup(value); if (!confirm('백업의 학급 명단과 점수를 복원합니다. 현재 데이터의 백업을 먼저 내려받았나요?')) return;
+        localStorage.setItem(`gaga-safety-backup:${userId}`, JSON.stringify({ version: 1, school: schoolState() }));
+        applySchool(readSchool(state)); saveData(); refreshSchoolViews(); },
+    undo: () => {
+        const entry = undoEntries.at(-1); if (!entry) return;
+        try { const restored = mergeSchoolState(entry.after, entry.before, schoolState()); applySchool(restored); undoEntries.pop();
+            restoreMatch(entry.match, true); saveData(); refreshSchoolViews(); persistMatch(); }
+        catch { alert('다른 변경과 겹쳐 되돌릴 수 없습니다. 백업과 현재 기록을 확인해주세요.'); }
+    },
+    act: (name, ...args) => {
+        if (!currentClass && name !== 'selectClass') return;
+        if (name === 'openGagaTimer') window.closeRouletteModal(true);
+        if (name === 'switchGagaTab') { window.closeGagaTimer(); window.closeGagaDrawModal(); window.closeRouletteModal(true); }
+        if (name === 'draw') {
+            window.switchGagaTab('score');
+            document.getElementById('gaga-draw-count').value = args[1];
+            const roster = classData[currentClass] || []; const limit = getIndividualRefereeLimit(roster);
+            const available = roster.filter(s => s.attendance && !s.gagaDrawn && (args[0] === 'all' || s.gender === args[0]) && (!s.isReferee || limit > 0));
+            if (!available.length) return alert('추첨할 대기 학생이 없습니다. 추첨 기록을 초기화해주세요.');
+            window.executeGagaDraw(args[0], Number(args[1]), available, limit);
+        } else if (name === 'teams') { window.executeGagaTeams(Number(args[0]), (classData[currentClass] || []).filter(s => s.attendance)); window.switchGagaTab('team'); }
+        else if (name === 'referee') { window.selectedParticipants = args[0]; window.assignSelectedReferees(); }
+        else if (name === 'champions') { window.closeGagaTimer(false); window.switchGagaTab('score'); window.selectedParticipants = args[0]; window.startChampionsTournament(); }
+        else if (['selectClass', 'toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'toggleTeamKing', 'openRouletteModal', 'openGagaTimer',
+            'toggleGagaTimerPause', 'restartGagaTimer', 'closeGagaTimer', 'closeGagaDrawModal', 'switchGagaTab', 'setGlobalVolume', 'toggleGlobalMute', 'resetGagaDraw'].includes(name)) window[name](...args);
+        persistMatch();
     }
 });
