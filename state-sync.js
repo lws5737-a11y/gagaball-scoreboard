@@ -70,3 +70,15 @@ export function roomConnectionStatus(room, role, now = Date.now()) {
     const connected = Number.isFinite(heartbeat) && heartbeat > 0 && now - heartbeat < 30000;
     return { connected, acknowledged: connected && role === 'controller' && room.seq > 0 && room.tvSeenSeq >= room.seq };
 }
+// A closed tab must not occupy a room slot for the full four-hour code lifetime.
+// Keep either endpoint's recent heartbeat, and always preserve the caller's room.
+export function pruneTVRooms(rooms = {}, { now = Date.now(), keepCode = '', owner = '', clearWaiting = false } = {}) {
+    return Object.fromEntries(Object.entries(rooms).filter(([code, room]) => {
+        if (code === keepCode) return true;
+        if (!room || !Number.isFinite(room.expiresAt) || room.expiresAt <= now) return false;
+        const tvAlive = Number(room.tvAlive) || 0, controllerAlive = Number(room.controllerAlive) || 0;
+        if (now - Math.max(tvAlive, controllerAlive) >= 120000) return false;
+        if (clearWaiting && owner && room.owner === owner && (!room.controller || now - controllerAlive >= 120000)) return false;
+        return true;
+    }));
+}

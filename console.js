@@ -1,6 +1,6 @@
 import { onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { escapeHTML as h, getCountdownState } from './app-utils.js';
-import { timerPosition, roomConnectionStatus } from './state-sync.js';
+import { timerPosition, roomConnectionStatus, pruneTVRooms } from './state-sync.js';
 
 export function mountConsole(api) {
     const root = document.getElementById('console-root');
@@ -17,7 +17,7 @@ export function mountConsole(api) {
         <label>화면 <select id="console-mode"><option value="classic">기존 화면</option><option value="phone">스마트폰 단독</option><option value="remote">스마트폰 리모컨</option><option value="tv">TV 표시</option></select></label>
         <div id="console-connection"><p>같은 교사 계정으로 로그인한 기기를 연결합니다.</p>
           ${button('TV 연결 코드 만들기', 'host')}<label>연결 코드 <input id="console-code" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="8자리 코드"></label>
-          ${button('리모컨 연결', 'join')}${button('연결 해제', 'disconnect')}<strong id="console-code-display"></strong></div>
+          ${button('리모컨 연결', 'join')}${button('연결 해제', 'disconnect')}${button('미사용 TV 연결 정리', 'cleanupRooms')}<strong id="console-code-display"></strong></div>
         <label>TV 글자 <select id="console-text"><option value="normal">기본</option><option value="large">크게</option></select></label>
         <label>순위 배치 <select id="console-columns"><option value="auto">자동</option><option value="5">TV 5열 고정</option></select></label>
         <label>순위 전환 <select id="console-interval"><option value="6000">6초</option><option value="10000">10초</option><option value="0">수동</option></select></label>
@@ -109,12 +109,28 @@ export function mountConsole(api) {
         return runTransaction(api.db,async tx=>{
             const ref=api.schoolRef(), snap=await tx.get(ref), existing=snap.data()?.gagaRooms?.[code];
             const next=fn(existing,uid);
-            const rooms = Object.fromEntries(Object.entries(snap.data()?.gagaRooms || {}).filter(([key,value]) => key === code || value.expiresAt > Date.now()));
-            if (!rooms[code] && Object.keys(rooms).length >= 10) throw new Error('사용 중인 TV 연결이 많습니다. 기존 연결을 종료해주세요.');
+            let rooms = pruneTVRooms(snap.data()?.gagaRooms, { keepCode: code });
+            if (!rooms[code] && Object.keys(rooms).length >= 10) {
+                rooms = pruneTVRooms(rooms, { keepCode: code, owner: uid, clearWaiting: true });
+            }
+            if (!rooms[code] && Object.keys(rooms).length >= 10) throw new Error('TV 연결 10개가 사용 중입니다. 다른 TV 창에서 연결을 해제한 뒤 다시 시도해주세요.');
             rooms[code] = next;
             tx.update(ref, { gagaRooms: rooms });
             return next;
         });
+    }
+    async function cleanupRooms() {
+        if (!navigator.onLine) throw new Error('인터넷 연결을 확인해주세요.');
+        const uid = api.get().userId, keepCode = roomCode;
+        const count = await runTransaction(api.db, async tx => {
+            const ref = api.schoolRef(), snapshot = await tx.get(ref);
+            const before = snapshot.data()?.gagaRooms || {};
+            const after = pruneTVRooms(before, { keepCode, owner: uid, clearWaiting: true });
+            const removed = Object.keys(before).length - Object.keys(after).length;
+            if (removed) tx.update(ref, { gagaRooms: after });
+            return removed;
+        });
+        message = count ? `미사용 TV 연결 ${count}개를 정리했습니다. 연결 코드를 만들거나 다시 연결해주세요.` : '정리할 연결이 없습니다. 다른 TV 창에서 연결을 해제해주세요.';
     }
     function listen() {
         unsubscribe?.(); lastApplied=-1;
@@ -208,7 +224,7 @@ export function mountConsole(api) {
     }
     async function action(name,args) {
         message='';
-        if(['page','settings','backup','safety','draft','retry','reloadCloud','unlock','host','join','disconnect','fullscreen','clear'].includes(name)) {
+        if(['page','settings','backup','safety','draft','retry','reloadCloud','unlock','host','join','disconnect','cleanupRooms','fullscreen','clear'].includes(name)) {
             if(name==='page')page=args[0];
             if(name==='settings')settings($('console-settings').hidden);
             if(name==='clear')selected.clear();
@@ -219,6 +235,7 @@ export function mountConsole(api) {
             if(name==='reloadCloud')await api.reloadCloud();
             if(name==='unlock')api.unlock();
             if(name==='host')await host();if(name==='join')await join();if(name==='disconnect')await disconnect();
+            if(name==='cleanupRooms')await cleanupRooms();
             if(name==='fullscreen')await document.documentElement.requestFullscreen();
             render();return;
         }
