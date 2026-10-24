@@ -22,7 +22,7 @@ function setup() {
     const reads = [];
     let disconnected = 0, applied = 0;
     const ctx = vm.createContext({
-        unsubscribe: null, lastApplied: -1, connectionVersion: 0,
+        unsubscribe: null, lastApplied: -1, connectionVersion: 0, verifiedCreation: true,
         roomCode: 'NEWCODE2', room: null, role: 'tv', client: 'device', message: '', window: {},
         api: { schoolRef: () => 'school', get: () => ({ userId: 'teacher' }) },
         onSnapshot(ref, options, callback) { assert.equal(options.includeMetadataChanges, true); callbacks.push(callback); return () => {}; },
@@ -57,6 +57,7 @@ test('a fresh server read confirming a missing code ends the connection', async 
     env.reads[0].resolve(env.snapshot({}));
     await new Promise(setImmediate);
     assert.equal(env.disconnected(), 1);
+    assert.match(env.ctx.message, /ROOM_MISSING/);
 });
 
 test('an existing server watch can lag behind the successful create transaction', async () => {
@@ -97,4 +98,38 @@ test('a stale controller identity after joining is checked against the server', 
     await new Promise(setImmediate);
     assert.equal(env.disconnected(), 0);
     assert.equal(env.applied(), 1);
+});
+
+test('a confirmed controller replacement still disconnects the previous device', async () => {
+    const env = setup(); env.ctx.role = 'controller'; env.ctx.listen();
+    const changed = env.snapshot({ NEWCODE2: { owner: 'teacher', expiresAt: Date.now()+60000, controller: 'other-device' } });
+    env.callbacks[0](changed); env.reads[0].resolve(changed);
+    await new Promise(setImmediate);
+    assert.equal(env.disconnected(), 1);
+});
+
+for (const [reason, alter] of [
+    ['CREATE_MISSING', () => undefined],
+    ['CREATE_OWNER', room => ({ ...room, owner: 'other' })],
+    ['CREATE_DEVICE', room => ({ ...room, tv: 'other' })],
+    ['CREATE_EXPIRY', room => ({ ...room, expiresAt: 0 })],
+    ['', room => room]
+]) test(`host verifies actual persisted room before displaying success: ${reason || 'success'}`, async () => {
+    let stored, listened = 0;
+    const ctx = vm.createContext({
+        creatingRoom: false, verifiedCreation: false, message: '', roomCode: '', room: null, role: '', client: 'device',
+        crypto: { getRandomValues: array => array.fill(0) },
+        api: { schoolRef: () => 'school', get: () => ({ userId: 'teacher' }), unlock() {} },
+        editRoom: async fn => { stored = fn(undefined, 'teacher'); return stored; },
+        getDocFromServer: async () => ({ data: () => ({ gagaRooms: { [ctx.roomCode]: alter(stored) } }) }),
+        render() {}, rememberConnection() {}, setMode() {}, listen() { listened++; }
+    });
+    vm.runInContext(source.slice(source.indexOf('    async function host()'), source.indexOf('    async function join()')), ctx);
+    if(reason) {
+        await assert.rejects(ctx.host(), new RegExp(reason));
+        assert.equal(ctx.roomCode, ''); assert.equal(listened, 0);
+    } else {
+        await ctx.host(); assert.equal(ctx.verifiedCreation, true); assert.equal(listened, 1);
+    }
+    assert.equal(ctx.creatingRoom, false);
 });
