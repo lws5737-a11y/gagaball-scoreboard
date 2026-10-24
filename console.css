@@ -62,7 +62,6 @@
 html[data-console=compact] body { background:#f4f7fb;padding:0 !important; }
 html[data-console=compact] #app-container,html[data-console=compact] #class-selection-screen,html[data-console=compact] .gaga-modal-overlay,html[data-console=compact] #event-loading-overlay,html[data-console=compact] #timerScreen,html[data-console=compact] #confetti-canvas { display:none !important; }
 html[data-console=compact] .class-selection-backdrop,html[data-console=compact] .timer-screen { background-image:none !important; }
-html[data-console=tv] .student-delete-btn,html[data-console=tv] #header-tools,html[data-console=tv] .participant-select-button { display:none !important; }
 html[data-console=tv] .tv-match-hidden { display:none !important; }
 html[data-tv-text=large] .rank-page-name { font-size:clamp(1.6rem,2.3vw,3rem); }
 html[data-tv-text=large] .rank-page-score { font-size:clamp(1.5rem,2vw,2.7rem); }

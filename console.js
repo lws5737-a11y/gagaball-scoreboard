@@ -159,7 +159,8 @@ export function mountConsole(api) {
                 disconnect(false); message=`${stage} ${reason}`; render(); return;
             }
             if(role==='controller' && room.controller!==client) { disconnect(false); message='다른 기기로 제어권이 변경되었습니다.'; render(); return; }
-            window.gagaReadOnly = role === 'tv' && !!room.controller;
+            // Pairing is shared control: the authenticated TV remains interactive.
+            window.gagaReadOnly = false;
             applyReceivedState();
             render();
         }
@@ -181,12 +182,18 @@ export function mountConsole(api) {
         },error=>{if(version !== connectionVersion) return;message=`연결 실패: ${error.message}`;render();});
     }
     function applyReceivedState() {
-        const state = role === 'tv' && room?.seq > lastApplied ? room.state : pendingRestore;
+        if(window.gagaReceivingMatch || sending || queuedState) return;
+        const incoming = room?.seq > lastApplied;
+        // Do not replay our own update (it can restart an animation or timer).
+        if(incoming && room.writer === client && !restoringConnection && !pendingRestore) { lastApplied=room.seq; return; }
+        const state = incoming ? room.state : pendingRestore;
         if (!state || !api.get().classes.includes(state.className)) return;
         pendingRestore = null;
         const sequence = room?.seq;
-        if (role === 'tv') lastApplied = sequence;
-        api.restoreMatch(state); focusTV(room?.focus ?? -1);
+        lastApplied = sequence;
+        window.gagaReceivingMatch = true;
+        try { api.restoreMatch(state); focusTV(room?.focus ?? -1); }
+        finally { window.gagaReceivingMatch = false; }
         restoringConnection = false;
         if (role === 'tv') editRoom(current=>({...current,tvAlive:Date.now(),tvSeenSeq:sequence})).catch(error=>{message=error.message;render();});
     }
@@ -208,7 +215,7 @@ export function mountConsole(api) {
             if(!Number.isFinite(stored.expiresAt)||stored.expiresAt<=Date.now()) throw new Error('CREATE_EXPIRY: 생성 직후 연결이 만료됐습니다. 기기의 날짜와 시간을 확인해주세요.');
             room=stored;verifiedCreation=true;
             message='위의 8자리 코드를 스마트폰에서 입력해주세요.';
-            role='tv';rememberConnection();setMode('tv');listen();api.unlock();
+            role='tv';rememberConnection();setMode('tv');listen();queuePublish();api.unlock();
         } catch(error) {roomCode='';throw error;}
         finally {creatingRoom=false;render();}
     }
@@ -237,20 +244,21 @@ export function mountConsole(api) {
         unsubscribe?.();unsubscribe=null;roomCode='';room=null;role='';queuedState=null;pendingRestore=null;restoringConnection=false;clearTimeout(publishTimer);window.gagaReadOnly=false;sessionStorage.removeItem('gaga-connection');render();
     }
     function queuePublish() {
-        if(role!=='controller'||restoringConnection)return;
+        if(!['tv','controller'].includes(role)||restoringConnection||window.gagaReceivingMatch)return;
         const state=api.get().match;
         if(!state.className)return;
         queuedState=state; clearTimeout(publishTimer);publishTimer=setTimeout(publish,120);
     }
     async function publish() {
-        if(sending||!queuedState||role!=='controller')return;
-        sending=true; const state=queuedState, code=roomCode;queuedState=null;
+        if(sending||!queuedState||!['tv','controller'].includes(role))return;
+        sending=true; const state=queuedState, code=roomCode, publishingRole=role, focus=focusedMatch;queuedState=null;
         let failed=false;
-        try {await editRoom(current=>{
-            if(!current||current.controller!==client||current.expiresAt<Date.now())throw new Error('제어 연결이 해제되었습니다.');
-            return {...current,state,focus:focusedMatch,seq:current.seq+1,controllerAlive:Date.now()};
-        });message='';}catch(error){failed=true;if(roomCode===code)queuedState=queuedState||state;message=`TV 전송 대기 · 재시도 중: ${error.message}`;render();}
-        finally{sending=false;if(queuedState&&roomCode===code){clearTimeout(publishTimer);publishTimer=setTimeout(publish,failed?3000:120);}}
+        try {const committed=await editRoom(current=>{
+            if(!current||current.owner!==api.get().userId||current.expiresAt<Date.now()
+                || (publishingRole==='tv' ? current.tv!==client : current.controller!==client))throw new Error('제어 연결이 해제되었습니다.');
+            return {...current,state,focus,seq:current.seq+1,writer:client,[publishingRole==='tv'?'tvAlive':'controllerAlive']:Date.now()};
+        });if(roomCode===code)lastApplied=Math.max(lastApplied,committed.seq);message='';}catch(error){failed=true;if(roomCode===code)queuedState=queuedState||state;message=`화면 전송 대기 · 재시도 중: ${error.message}`;render();}
+        finally{sending=false;if(queuedState&&roomCode===code){clearTimeout(publishTimer);publishTimer=setTimeout(publish,failed?3000:120);}else if(roomCode===code)applyReceivedState();}
     }
     function focusTV(index) {
         focusedMatch=index;

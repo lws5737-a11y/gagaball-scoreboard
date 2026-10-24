@@ -2326,7 +2326,7 @@ function restoreMatch(state, pause = false) {
         document.getElementById('gagaDrawModal').style.display = state.drawOpen ? 'flex' : 'none';
         window.renderIndividualMissionResult();
         if (state.drawOpen) window.showFloatingRouletteBtn('individual');
-        if (window.gagaReadOnly) {
+        if (window.gagaReceivingMatch || window.gagaReadOnly) {
             const roulette = state.roulette;
             document.getElementById('rouletteModal').style.display = roulette?.open ? 'flex' : 'none';
             if (roulette?.open) {

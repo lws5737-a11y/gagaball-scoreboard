@@ -132,7 +132,7 @@ for (const [reason, alter] of [
         api: { schoolRef: () => 'school', get: () => ({ userId: 'teacher' }), unlock() {} },
         editRoom: async fn => { stored = fn(undefined, 'teacher'); return stored; },
         readConnectionDocument: async () => ({ data: () => ({ gagaRooms: { [ctx.roomCode]: alter(stored) } }) }),
-        render() {}, rememberConnection() {}, setMode() {}, listen() { listened++; }
+        render() {}, rememberConnection() {}, setMode() {}, queuePublish() {}, listen() { listened++; }
     });
     vm.runInContext(source.slice(source.indexOf('    async function host()'), source.indexOf('    async function join()')), ctx);
     if(reason) {
