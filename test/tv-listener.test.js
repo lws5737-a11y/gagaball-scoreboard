@@ -4,6 +4,16 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const source = await readFile(new URL('../console.js', import.meta.url), 'utf8');
+test('connection verification bypasses stale watch state with a transaction read', async () => {
+    const current = { data: () => ({ gagaRooms: { NEWCODE2: {} } }) };
+    const ctx = vm.createContext({
+        api: { db: 'database', schoolRef: () => 'school' },
+        runTransaction: async (db, fn) => { assert.equal(db, 'database'); return fn({ get: async ref => { assert.equal(ref, 'school'); return current; } }); },
+        getDocFromServer: () => { throw new Error('must not reuse the watch'); }
+    });
+    vm.runInContext(source.slice(source.indexOf('    function readConnectionDocument()'), source.indexOf('    async function cleanupRooms()')), ctx);
+    assert.equal(await ctx.readConnectionDocument(), current);
+});
 test('every random byte produces a character in an eight-character pairing code', () => {
     const begin = source.indexOf("            const alphabet=");
     const finish = source.indexOf('            const now=', begin);
@@ -26,7 +36,7 @@ function setup() {
         roomCode: 'NEWCODE2', room: null, role: 'tv', client: 'device', message: '', window: {},
         api: { schoolRef: () => 'school', get: () => ({ userId: 'teacher' }) },
         onSnapshot(ref, options, callback) { assert.equal(options.includeMetadataChanges, true); callbacks.push(callback); return () => {}; },
-        getDocFromServer() { return new Promise((resolve, reject) => reads.push({ resolve, reject })); },
+        readConnectionDocument() { return new Promise((resolve, reject) => reads.push({ resolve, reject })); },
         disconnect() { disconnected++; ctx.connectionVersion++; ctx.roomCode = ''; },
         applyReceivedState() { applied++; }, render() {}
     });
@@ -121,7 +131,7 @@ for (const [reason, alter] of [
         crypto: { getRandomValues: array => array.fill(0) },
         api: { schoolRef: () => 'school', get: () => ({ userId: 'teacher' }), unlock() {} },
         editRoom: async fn => { stored = fn(undefined, 'teacher'); return stored; },
-        getDocFromServer: async () => ({ data: () => ({ gagaRooms: { [ctx.roomCode]: alter(stored) } }) }),
+        readConnectionDocument: async () => ({ data: () => ({ gagaRooms: { [ctx.roomCode]: alter(stored) } }) }),
         render() {}, rememberConnection() {}, setMode() {}, listen() { listened++; }
     });
     vm.runInContext(source.slice(source.indexOf('    async function host()'), source.indexOf('    async function join()')), ctx);
