@@ -1,4 +1,4 @@
-import { onSnapshot, runTransaction, getDocFromServer } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+import { onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { escapeHTML as h, getCountdownState } from './app-utils.js';
 import { timerPosition, roomConnectionStatus, pruneTVRooms } from './state-sync.js';
 
@@ -123,6 +123,9 @@ export function mountConsole(api) {
             return next;
         });
     }
+    function readConnectionDocument() {
+        return runTransaction(api.db, tx => tx.get(api.schoolRef()));
+    }
     async function cleanupRooms() {
         if (!navigator.onLine) throw new Error('인터넷 연결을 확인해주세요.');
         const uid = api.get().userId, keepCode = roomCode;
@@ -166,7 +169,7 @@ export function mountConsole(api) {
             // A transaction acknowledgement can precede an existing watch stream.
             // Even fromCache:false may describe the document before creation/join.
             // Re-read the server before treating a watch event as a disconnection.
-            getDocFromServer(api.schoolRef()).then(latest=>{
+            readConnectionDocument().then(latest=>{
                 if(!active() || event !== eventVersion) return;
                 receive(latest.data()?.gagaRooms?.[code]);
             }).catch(error=>{
@@ -195,7 +198,7 @@ export function mountConsole(api) {
             roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>alphabet[n%alphabet.length]).join('');
             const now=Date.now();
             room=await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
-            const check = await getDocFromServer(api.schoolRef());
+            const check = await readConnectionDocument();
             const stored = check.data()?.gagaRooms?.[roomCode];
             if(!stored) throw new Error(`CREATE_MISSING: 키길이=${Object.keys(check.data()?.gagaRooms||{}).map(k=>k.length)}, 대소문자일치=${Object.keys(check.data()?.gagaRooms||{}).some(k=>k.toUpperCase()===roomCode)}, 본인기기=${Object.values(check.data()?.gagaRooms||{}).some(v=>v?.tv===client)}, 중첩연결=${Object.values(check.data()?.gagaRooms||{}).some(v=>!!v?.[roomCode])}, mapValue=${!!check.data()?.gagaRooms?.mapValue}, fields=${!!check.data()?.gagaRooms?.fields}`);
             if(stored.owner!==api.get().userId) throw new Error('CREATE_OWNER: 저장된 연결의 계정이 현재 계정과 다릅니다.');
