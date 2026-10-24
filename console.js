@@ -1,4 +1,4 @@
-import { onSnapshot, runTransaction } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+import { onSnapshot, runTransaction, getDocFromServer } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 import { escapeHTML as h, getCountdownState } from './app-utils.js';
 import { timerPosition, roomConnectionStatus, pruneTVRooms } from './state-sync.js';
 
@@ -138,17 +138,33 @@ export function mountConsole(api) {
     function listen() {
         unsubscribe?.(); lastApplied=-1;
         const version = ++connectionVersion, code = roomCode;
-        unsubscribe=onSnapshot(api.schoolRef(),{includeMetadataChanges:true},snapshot=>{
-            if(version !== connectionVersion || code !== roomCode) return;
-            // The first SDK event may be an old cached document without the new room.
-            // Only a server-confirmed snapshot can end or transfer a connection.
-            if(snapshot.metadata.hasPendingWrites || snapshot.metadata.fromCache) return;
-            room=snapshot.data()?.gagaRooms?.[code];
+        let eventVersion = 0;
+        const active = () => version === connectionVersion && code === roomCode;
+        const valid = value => value && value.owner === api.get().userId && value.expiresAt >= Date.now()
+            && (role !== 'controller' || value.controller === client);
+        function receive(value) {
+            room=value;
             if(!room || room.owner!==api.get().userId || room.expiresAt<Date.now()) { disconnect(false); message='서버에서 유효한 연결을 찾지 못했습니다. 다른 가가볼 창도 새로고침한 뒤 연결 코드를 다시 만들어주세요.'; render(); return; }
             if(role==='controller' && room.controller!==client) { disconnect(false); message='다른 기기로 제어권이 변경되었습니다.'; render(); return; }
             window.gagaReadOnly = role === 'tv' && !!room.controller;
             applyReceivedState();
             render();
+        }
+        unsubscribe=onSnapshot(api.schoolRef(),{includeMetadataChanges:true},snapshot=>{
+            if(!active()) return;
+            if(snapshot.metadata.hasPendingWrites || snapshot.metadata.fromCache) return;
+            const event = ++eventVersion, value = snapshot.data()?.gagaRooms?.[code];
+            if(valid(value)) { receive(value); return; }
+            // A transaction acknowledgement can precede an existing watch stream.
+            // Even fromCache:false may describe the document before creation/join.
+            // Re-read the server before treating a watch event as a disconnection.
+            getDocFromServer(api.schoolRef()).then(latest=>{
+                if(!active() || event !== eventVersion) return;
+                receive(latest.data()?.gagaRooms?.[code]);
+            }).catch(error=>{
+                if(!active() || event !== eventVersion) return;
+                message=`연결 확인 대기 · 인터넷 연결을 확인해주세요: ${error.message}`;render();
+            });
         },error=>{if(version !== connectionVersion) return;message=`연결 실패: ${error.message}`;render();});
     }
     function applyReceivedState() {
@@ -166,7 +182,8 @@ export function mountConsole(api) {
         creatingRoom=true;message='TV 연결 코드를 만들고 있습니다…';render();
         try {
             if(roomCode) await disconnect();
-            roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join('');
+            const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>alphabet[n%alphabet.length]).join('');
             const now=Date.now();
             room=await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
             message='위의 8자리 코드를 스마트폰에서 입력해주세요.';

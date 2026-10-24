@@ -3,6 +3,7 @@ export const signOut = async()=>{};
 export const onAuthStateChanged = (_,fn)=>setTimeout(()=>fn({uid:'local-preview-teacher',email:'preview@example.test'}),30);
 export const doc = (...parts)=>parts;
 export const getDoc = async()=>{const {school}=await(await fetch('/__state')).json();return {exists:()=>true,data:()=>school};};
+export const getDocFromServer = getDoc;
 export class FieldPath { constructor(...parts){this.parts=parts;} }
 export function onSnapshot(_,options,callback,error){
     const fn=typeof options==='function'?options:callback;
