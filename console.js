@@ -197,7 +197,7 @@ export function mountConsole(api) {
             room=await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
             const check = await getDocFromServer(api.schoolRef());
             const stored = check.data()?.gagaRooms?.[roomCode];
-            if(!stored) throw new Error(`CREATE_MISSING: 서버 문서=${check.exists()}, 연결목록=${typeof check.data()?.gagaRooms}, 연결수=${Object.keys(check.data()?.gagaRooms||{}).length}, 현재코드길이=${roomCode.length}, 저장응답=${!!room?.tv}, 목록형식=${Array.isArray(check.data()?.gagaRooms)?'array':'map'}`);
+            if(!stored) throw new Error(`CREATE_MISSING: 키길이=${Object.keys(check.data()?.gagaRooms||{}).map(k=>k.length)}, 대소문자일치=${Object.keys(check.data()?.gagaRooms||{}).some(k=>k.toUpperCase()===roomCode)}, 본인기기=${Object.values(check.data()?.gagaRooms||{}).some(v=>v?.tv===client)}, 중첩연결=${Object.values(check.data()?.gagaRooms||{}).some(v=>!!v?.[roomCode])}, mapValue=${!!check.data()?.gagaRooms?.mapValue}, fields=${!!check.data()?.gagaRooms?.fields}`);
             if(stored.owner!==api.get().userId) throw new Error('CREATE_OWNER: 저장된 연결의 계정이 현재 계정과 다릅니다.');
             if(stored.tv!==client) throw new Error('CREATE_DEVICE: 저장된 연결의 TV 기기가 현재 기기와 다릅니다.');
             if(!Number.isFinite(stored.expiresAt)||stored.expiresAt<=Date.now()) throw new Error('CREATE_EXPIRY: 생성 직후 연결이 만료됐습니다. 기기의 날짜와 시간을 확인해주세요.');
