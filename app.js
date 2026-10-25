@@ -26,14 +26,31 @@ audioFiles.anthem.loop = true;
 audioFiles.waiting.loop = true;
 Object.values(audioFiles).forEach(audio => { audio.preload = 'none'; });
 const WAITING_BGM_GAIN = 0.3;
+const WAITING_EFFECT_GAIN = 0.35;
+
+function updateWaitingVolume() {
+    audioFiles.waiting.volume = getAudioVolume('waiting');
+}
+
+for (const key of ['spinner', 'fanfare', 'goodresult']) {
+    for (const event of ['play', 'pause', 'ended', 'error']) {
+        audioFiles[key].addEventListener(event, updateWaitingVolume);
+    }
+}
 
 function getAudioVolume(key) {
-    return window.globalVolume * (key === 'waiting' ? WAITING_BGM_GAIN : 1);
+    if (key !== 'waiting') return window.globalVolume;
+    const revealing = document.getElementById('event-loading-overlay');
+    const ducked = document.getElementById('rouletteModal')?.style.display === 'flex'
+        || (revealing && !revealing.classList.contains('hidden'))
+        || ['spinner', 'fanfare', 'goodresult'].some(effect => !audioFiles[effect].paused && !audioFiles[effect].ended);
+    return window.globalVolume * WAITING_BGM_GAIN * (ducked ? WAITING_EFFECT_GAIN : 1);
 }
 
 window.playMP3 = function(key) {
     if (window.isGlobalMuted || window.gagaRemoteMuted) return;
     if (audioFiles[key]) {
+        audioFiles[key].volume = getAudioVolume(key);
         if (audioFiles[key].loop && !audioFiles[key].paused) return;
         audioFiles[key].currentTime = 0;
         audioFiles[key].volume = getAudioVolume(key);
@@ -55,15 +72,12 @@ function syncBackgroundMusic() {
     const app = document.getElementById('app-container');
     const timer = document.getElementById('timerScreen');
     const draw = document.getElementById('gagaDrawModal');
-    const roulette = document.getElementById('rouletteModal');
-    const reveal = document.getElementById('event-loading-overlay');
     let track = null;
     if (!titleScreen.classList.contains('hidden') && !titleToggle.classList.contains('hidden')) {
         track = 'anthem';
     } else if (!app.classList.contains('hidden') && currentTab === 'gagaball'
-        && timer.style.display !== 'block' && roulette.style.display !== 'flex'
-        && (draw.style.display !== 'flex' || !currentDrawIsChampions)
-        && reveal.classList.contains('hidden')) {
+        && timer.style.display !== 'block'
+        && (draw.style.display !== 'flex' || !currentDrawIsChampions)) {
         track = document.getElementById('gaga-view-rank').classList.contains('hidden') ? 'waiting' : 'anthem';
     }
     for (const key of ['anthem', 'waiting']) {
@@ -1268,7 +1282,7 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     summary.textContent = '룰렛이 자동으로 돌아갑니다…';
     summary.classList.remove('roulette-winning');
     document.getElementById('rouletteModal').style.display = 'flex';
-    window.stopMP3('waiting');
+    syncBackgroundMusic();
     rouletteStartTimer = setTimeout(() => {
         rouletteStartTimer = null;
         if (document.getElementById('rouletteModal').style.display !== 'flex') return;
@@ -1430,7 +1444,7 @@ function showEventReveal(mode) {
     document.getElementById('event-loading-subtitle').textContent = mode === 'team' ? '균형 잡힌 대결이 곧 시작됩니다' : '오늘의 경기 주인공이 곧 공개됩니다';
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
-    window.stopMP3('waiting');
+    syncBackgroundMusic();
     window.playMP3('spinner');
 }
 
