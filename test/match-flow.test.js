@@ -23,10 +23,7 @@ test('class picker, participant actions, and roulette timer controls are wired i
     assert.doesNotMatch(script, /toggleChampionSelection|window\.toggleReferee/);
     assert.match(html, /id="gaga-draw-mission-result"/);
     assert.match(html, /id="team-global-mission-result"/);
-    assert.match(html, /onclick="window\.openTimerFromRoulette\(100\)"/);
-    assert.match(html, /onclick="window\.openTimerFromRoulette\(60\)"/);
-    assert.match(html, /id="roulette-timer-actions"/);
-    assert.match(script, /classList\.toggle\('hidden', type !== 'team'\)/);
+    assert.doesNotMatch(html, /openTimerFromRoulette|roulette-timer-actions/);
     assert.match(script, /rouletteAutoCloseTimer = setTimeout\(\(\) => window\.closeRouletteModal\(true\), 3000\)/);
     assert.match(script, /pendingWantedReveal = isWantedMission\(result\)/);
     assert.match(script, /revealWantedStudent\(\)/);
@@ -42,7 +39,7 @@ test('class picker, participant actions, and roulette timer controls are wired i
     assert.doesNotMatch(html, /룰렛 돌리기!/);
     assert.match(script, /rouletteStartTimer = setTimeout\(\(\) => \{/);
     assert.match(script, /window\.drawRoulette\(\);\s*window\.spinRoulette\(\);/);
-    assert.match(script, /window\.openTimerFromRoulette = function\(duration\)/);
+    assert.doesNotMatch(script, /window\.openTimerFromRoulette/);
     assert.match(script, /teamMissionResults\[spinMatchupId \|\| 'global'\] = result/);
     assert.match(script, /class="premium-score-btn minus"/);
     assert.match(script, /class="premium-score-btn plus"/);

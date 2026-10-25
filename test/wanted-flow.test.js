@@ -17,7 +17,7 @@ test('closing a winning wanted roulette reveals exactly one participant after th
     const revealStart = source.indexOf('let wantedRevealInterval = null;');
     const revealEnd = source.indexOf('window.toggleWantedEffect = function', revealStart);
     const closeStart = source.indexOf('window.closeRouletteModal = function');
-    const closeEnd = source.indexOf('window.openTimerFromRoulette = function', closeStart);
+    const closeEnd = source.indexOf('window.openRouletteEditModal = function', closeStart);
     assert.ok(revealStart >= 0 && revealEnd > revealStart && closeStart >= 0 && closeEnd > closeStart);
 
     const cards = ['민수', '지아'].map((studentName) => ({

@@ -14,14 +14,14 @@ test('connection verification bypasses stale watch state with a transaction read
     vm.runInContext(source.slice(source.indexOf('    function readConnectionDocument()'), source.indexOf('    async function cleanupRooms()')), ctx);
     assert.equal(await ctx.readConnectionDocument(), current);
 });
-test('every random byte produces a character in an eight-character pairing code', () => {
+test('every random byte produces a character in a four-character pairing code', () => {
     const begin = source.indexOf("            const alphabet=");
     const finish = source.indexOf('            const now=', begin);
     assert.ok(begin >= 0 && finish > begin);
     for (let byte = 0; byte < 256; byte++) {
         const ctx = vm.createContext({ roomCode: '', crypto: { getRandomValues: array => array.fill(byte) } });
         vm.runInContext(source.slice(begin, finish), ctx);
-        assert.match(ctx.roomCode, /^[A-Z2-9]{8}$/);
+        assert.match(ctx.roomCode, /^[A-Z2-9]{4}$/);
     }
 });
 const start = source.indexOf('    function listen()');

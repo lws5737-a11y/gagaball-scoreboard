@@ -298,6 +298,9 @@ body.app-header-visible #manage-modal {
 
 /* 팀전 결과: 왕 선정 효과 */
 .team-player-card { isolation: isolate; }
+.team-members-grid { display: grid; min-width: 0; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr)); }
+.team-player-name { white-space: normal; overflow-wrap: anywhere; word-break: break-word; flex-shrink: 0; font-size: clamp(1.25rem, 2.2vw, 2.5rem); }
+.team-player-card > div:first-child { max-width: 100%; height: auto; aspect-ratio: 1; }
 .team-king-active {
     z-index: 5;
     border-color: #f59e0b !important;

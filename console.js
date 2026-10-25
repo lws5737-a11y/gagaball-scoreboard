@@ -18,7 +18,7 @@ export function mountConsole(api) {
         <h2>가가볼 진행 도구</h2><div id="console-code-panel" hidden><span>스마트폰에 입력할 TV 연결 코드</span><strong id="console-code-display"></strong></div><p id="console-settings-status" role="status"></p>
         <label>화면 <select id="console-mode"><option value="classic">기존 화면</option><option value="phone">스마트폰 단독</option><option value="remote">스마트폰 리모컨</option><option value="tv">TV 표시</option></select></label>
         <div id="console-connection"><p>같은 교사 계정으로 로그인한 기기를 연결합니다.</p>
-          ${button('TV 연결 코드 만들기', 'host')}<label>연결 코드 <input id="console-code" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="8자리 코드"></label>
+          ${button('TV 연결 코드 만들기', 'host')}<label>연결 코드 <input id="console-code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="4자리 코드"></label>
           ${button('리모컨 연결', 'join')}${button('연결 해제', 'disconnect')}${button('미사용 TV 연결 정리', 'cleanupRooms')}</div>
         <label>TV 글자 <select id="console-text"><option value="normal">기본</option><option value="large">크게</option></select></label>
         <label>순위 배치 <select id="console-columns"><option value="auto">자동</option><option value="5">TV 5열 고정</option></select></label>
@@ -204,7 +204,7 @@ export function mountConsole(api) {
         try {
             if(roomCode) await disconnect();
             const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            roomCode=Array.from(crypto.getRandomValues(new Uint8Array(8)),n=>alphabet[n%alphabet.length]).join('');
+            roomCode=Array.from(crypto.getRandomValues(new Uint8Array(4)),n=>alphabet[n%alphabet.length]).join('');
             const now=Date.now();
             room=await editRoom((existing,uid)=>{if(existing&&existing.expiresAt>now)throw new Error('코드 생성 충돌입니다. 다시 눌러주세요.');return {owner:uid,tv:client,tvAlive:now,controller:'',controllerAlive:0,expiresAt:now+4*3600000,seq:0,tvSeenSeq:0,state:null};});
             const check = await readConnectionDocument();
@@ -214,14 +214,14 @@ export function mountConsole(api) {
             if(stored.tv!==client) throw new Error('CREATE_DEVICE: 저장된 연결의 TV 기기가 현재 기기와 다릅니다.');
             if(!Number.isFinite(stored.expiresAt)||stored.expiresAt<=Date.now()) throw new Error('CREATE_EXPIRY: 생성 직후 연결이 만료됐습니다. 기기의 날짜와 시간을 확인해주세요.');
             room=stored;verifiedCreation=true;
-            message='위의 8자리 코드를 스마트폰에서 입력해주세요.';
+            message='위의 4자리 코드를 스마트폰에서 입력해주세요.';
             role='tv';rememberConnection();setMode('tv');listen();queuePublish();api.unlock();
         } catch(error) {roomCode='';throw error;}
         finally {creatingRoom=false;render();}
     }
     async function join() {
         const code=$('console-code').value.trim().toUpperCase();
-        if(!/^[A-Z2-9]{8}$/.test(code)) throw new Error('TV의 8자리 연결 코드를 입력해주세요.');
+        if(!/^[A-Z2-9]{4}$/.test(code)) throw new Error('TV의 4자리 연결 코드를 입력해주세요.');
         if(roomCode) await disconnect(); roomCode=code;
         try {
             room=await editRoom((existing,uid)=>{

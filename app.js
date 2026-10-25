@@ -1141,7 +1141,14 @@ function revealWantedStudent() {
 window.toggleWantedEffect = function(event) {
     const card = event.currentTarget;
     if (!card || event.target.closest('button, img')) return;
-    const isActive = card.classList.toggle('wanted-active');
+    const isActive = !card.classList.contains('wanted-active');
+    document.querySelectorAll('#gagaDrawResultGrid .draw-result-card').forEach(other => {
+        other.classList.remove('wanted-active');
+        other.setAttribute('aria-pressed', 'false');
+        const name = other.querySelector('.draw-result-name')?.innerText || '학생';
+        other.setAttribute('aria-label', `${name} 학생 현상수배 효과 켜기`);
+    });
+    card.classList.toggle('wanted-active', isActive);
     card.setAttribute('aria-pressed', String(isActive));
     const studentName = card.querySelector('.draw-result-name')?.innerText || '학생';
     card.setAttribute('aria-label', `${studentName} 학생 현상수배 효과 ${isActive ? '끄기' : '켜기'}`);
@@ -1228,6 +1235,7 @@ let teamMissions = readStoredMissions('gagaTeamMissions', defaultTeamMissions);
 let currentMissions = individualMissions; 
 let currentMissionsType = 'individual';
 let editMissionsTemp = [];
+let editingMissionsType = 'individual', rouletteEditRequested = false;
 
 let currentRouletteRotation = 0; let isSpinning = false;
 let rouletteStartTimer = null;
@@ -1259,8 +1267,6 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     const summary = document.getElementById('roulette-result-summary');
     summary.textContent = '룰렛이 자동으로 돌아갑니다…';
     summary.classList.remove('roulette-winning');
-    document.getElementById('roulette-timer-actions').classList.toggle('hidden', type !== 'team');
-    document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = true; });
     document.getElementById('rouletteModal').style.display = 'flex';
     window.stopMP3('waiting');
     rouletteStartTimer = setTimeout(() => {
@@ -1288,13 +1294,10 @@ window.closeRouletteModal = function(force = false) {
     syncBackgroundMusic();
     persistMatch();
 };
-window.openTimerFromRoulette = function(duration) {
-    if (isSpinning || currentMissionsType !== 'team') return;
-    window.closeRouletteModal();
-    window.openGagaTimer(duration);
-};
 window.openRouletteEditModal = function() {
-    if (isSpinning || rouletteAutoCloseTimer) return;
+    if (isSpinning) { rouletteEditRequested = true; document.getElementById('roulette-result-summary').textContent = '추첨이 끝나면 편집창이 열립니다.'; return; }
+    window.closeRouletteModal(true);
+    editingMissionsType = currentMissionsType;
     editMissionsTemp = JSON.parse(JSON.stringify(currentMissionsType === 'team' ? teamMissions : individualMissions));
     window.renderRouletteEditList(); document.getElementById('rouletteEditModal').style.display = 'flex';
 }
@@ -1330,7 +1333,7 @@ window.saveRouletteEdit = function() {
     if (!validation.valid) return alert(validation.message);
     editMissionsTemp = validation.missions;
 
-    if (currentMissionsType === 'team') { 
+    if (editingMissionsType === 'team') {
         teamMissions = editMissionsTemp; 
         currentMissions = teamMissions; 
     } else { 
@@ -1395,18 +1398,18 @@ window.spinRoulette = function() {
         const summary = document.getElementById('roulette-result-summary');
         summary.innerHTML = missionMarkup(result);
         if (spinType === 'team') {
-            document.querySelectorAll('.roulette-timer-button').forEach(button => { button.disabled = false; });
             teamMissionResults[spinMatchupId || 'global'] = result;
             window.renderGagaTeamView();
             window.currentTeamRouletteBtnId = null;
         } else {
-            summary.classList.add('roulette-winning');
             individualMissionResult = result;
             window.renderIndividualMissionResult();
             pendingWantedReveal = isWantedMission(result);
-            rouletteAutoCloseTimer = setTimeout(() => window.closeRouletteModal(true), 3000);
-            summary.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
         }
+        summary.classList.add('roulette-winning');
+        rouletteAutoCloseTimer = setTimeout(() => window.closeRouletteModal(true), 3000);
+        summary.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        if (rouletteEditRequested) { rouletteEditRequested = false; window.openRouletteEditModal(); }
         persistMatch();
     }, 5000);
 }
@@ -1658,7 +1661,7 @@ window.renderGagaTeamView = function() {
                     ${kingCrown}
                     <img src="${escapeHTML(window.generateCuteAvatar(m))}" alt="${escapeHTML(m.name)} 아바타" class="w-full h-full rounded-full bg-gray-50 object-cover border-2 sm:border-[4px] border-slate-100 shadow-sm" onclick="event.stopPropagation(); window.openAvatarSelectModal(${m.no})" onerror="this.onerror=null; this.src='${fallbackSVG}';" title="아바타 변경">
                 </div>
-                <b class="text-xl sm:text-3xl lg:text-4xl xl:text-5xl font-black text-slate-800 truncate w-full text-center leading-tight mb-1 sm:mb-2 tracking-tight">${escapeHTML(m.name)}</b>
+                <b class="team-player-name font-black text-slate-800 w-full min-w-0 text-center leading-tight mb-1 sm:mb-2 tracking-tight">${escapeHTML(m.name)}</b>
                 <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}${animHTML}</span>
             </div>`;
         }).join('');
@@ -1682,7 +1685,7 @@ window.renderGagaTeamView = function() {
             <div class="flex flex-col xl:flex-row gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-2xl border-2 sm:border-4 border-slate-100 shadow-md items-stretch mb-4 overflow-visible">
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgA} border-t-8 xl:border-t-0 xl:border-l-8">
                     ${createPanel(teamA, false)} 
-                    <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamA)}</div>
+                    <div class="team-members-grid flex-1 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamA)}</div>
                 </div>
                 ${teamB ? `
                 <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full ${matchupMission ? 'xl:w-48' : 'xl:w-20'} shrink-0 gap-1 sm:gap-2">
@@ -1691,7 +1694,7 @@ window.renderGagaTeamView = function() {
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
                     ${createPanel(teamB, true)} 
-                    <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamB)}</div>
+                    <div class="team-members-grid flex-1 gap-2 sm:gap-3 py-2 px-2 overflow-visible items-stretch">${createBadges(teamB)}</div>
                 </div>` : ''}
             </div>`;
     }
@@ -2319,7 +2322,7 @@ function restoreMatch(state, pause = false) {
         grid.className = `grid gap-2 sm:gap-4 w-full flex-1 min-h-0 overflow-hidden px-2 pb-2 grid-cols-${picked.length <= 4 ? 2 : picked.length <= 6 ? 3 : picked.length <= 8 ? 4 : 5} ${picked.length <= 2 ? 'grid-rows-1' : 'grid-rows-2'}`;
         grid.innerHTML = generateGridCards(picked);
         [...grid.children].forEach((card, index) => {
-            const wanted = state.wanted?.includes(picked[index].no);
+            const wanted = state.wanted?.[0] === picked[index].no;
             card.classList.toggle('wanted-active', !!wanted); card.setAttribute('aria-pressed', String(!!wanted));
         });
         document.getElementById('gagaDrawMainTitle').textContent = state.champions ? '👑 왕중왕전 👑' : '🎉 참가 선수 🎉';
@@ -2338,7 +2341,6 @@ function restoreMatch(state, pause = false) {
                 canvas.style.transform = `rotate(${roulette.rotation}deg)`;
                 document.getElementById('roulette-result-summary').textContent = roulette.result;
                 document.getElementById('roulette-result-summary').classList.toggle('roulette-winning', !roulette.spinning);
-                document.getElementById('roulette-timer-actions').classList.add('hidden');
                 if (roulette.spinning) window.playMP3('spinner'); else window.stopMP3('spinner');
                 if (remoteRouletteSpinning && !roulette.spinning) window.playMP3('goodresult');
             } else window.stopMP3('spinner');
