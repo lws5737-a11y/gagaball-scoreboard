@@ -1,0 +1,89 @@
+.game-action { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:44px; border:1px solid #ffffff55; border-radius:14px; padding:.65rem 1rem; font:inherit; font-weight:900; white-space:nowrap; cursor:pointer; box-shadow:0 4px 12px #0f172a25; }
+.game-action:disabled { opacity:.4; cursor:not-allowed; }
+#header-inner-container { display:grid; grid-template-columns:1fr auto; gap:.5rem; }
+#header-utilities { grid-column:2; grid-row:1; }
+#header-actions { grid-column:1 / -1; grid-row:2; flex-wrap:wrap; min-width:0; margin:0; gap:.5rem; }
+#header-tools { flex-wrap:wrap; gap:.5rem; }
+#header-tools button { font-size:1rem; padding:.5rem .8rem; }
+#gaga-header-tabs { margin-right:0; }
+#gaga-view-team > div:first-child { position:sticky; top:calc(var(--main-header-height) + 4px); z-index:30; }
+#gaga-view-team > div:first-child > div { flex-wrap:wrap; }
+.game-action:focus-visible,.picker-student:focus-visible,.king-select-button:focus-visible { outline:3px solid #a78bfa; outline-offset:3px; }
+.referee-action { background:linear-gradient(140deg,#0f766e,#115e59); color:white; }
+.champions-action { background:linear-gradient(140deg,#fbbf24,#d97706); color:#422006; }
+.secondary-action { background:#f1f5f9; color:#334155; border-color:#cbd5e1; }
+.timer-action { background:linear-gradient(140deg,#fb923c,#ea580c); color:white; }
+.draw-modal-heading { grid-template-columns:minmax(0,1fr) auto; gap:1rem; }
+.draw-modal-heading-spacer { display:none; }
+.draw-game-actions { display:flex; gap:.75rem; align-items:center; }
+.draw-game-actions .draw-roulette-button { width:60px; height:60px; }
+#gagaDrawMainTitle { font-size:clamp(26px,4vw,52px)!important; }
+#gagaDrawModal .gaga-modal-content > button { padding:.6rem!important; margin-top:.6rem; font-size:1.6rem!important; min-height:48px; }
+#gagaDrawResultGrid .draw-result-card { display:grid; grid-template-columns:minmax(55px,.8fr) minmax(0,1.2fr); grid-template-rows:1fr auto auto; gap:.2rem .5rem; padding:.6rem; overflow:hidden; }
+#gagaDrawResultGrid .draw-result-card > div:first-child { grid-column:1; grid-row:1 / 4; height:100%; padding:0; }
+#gagaDrawResultGrid .draw-result-avatar { width:min(100%,150px); height:auto; max-height:100%!important; aspect-ratio:1; object-fit:contain; }
+#gagaDrawResultGrid .draw-result-name { grid-column:2; grid-row:1; font-size:clamp(20px,2.8vw,44px)!important; white-space:normal; overflow-wrap:anywhere; margin:0!important; align-self:center; }
+#gagaDrawResultGrid .wanted-mark { grid-column:2; grid-row:2; }
+#gagaDrawResultGrid .draw-result-card > div:last-child { grid-column:2; grid-row:3; gap:.4rem; font-size:clamp(20px,2.5vw,36px); }
+#gagaDrawResultGrid .premium-score-btn { min-width:32px; min-height:32px; width:clamp(32px,3vw,48px)!important; height:clamp(32px,3vw,48px)!important; font-size:1.5rem; }
+#gagaDrawModal.champions-arena { background:linear-gradient(110deg,#1a103bd9,#46294a88,#120e29df),url('images/gagaball-colosseum-class-cheering-emblem.png') center/cover; }
+.champions-arena #gagaDrawMainTitle { color:#fde68a!important; text-shadow:0 3px 0 #78350f,0 0 30px #fbbf2490; }
+.champions-arena .draw-result-card { background:#fffbebf2!important; box-shadow:0 0 20px #fbbf2430; }
+#gaga-view-team { scroll-margin-top:calc(var(--main-header-height) + 12px); }
+.team-game-toolbar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:.75rem; margin:0 0 1rem; padding:.75rem; border-radius:18px; background:#172033; color:white; }
+.team-game-toolbar.hidden { display:none; }
+.team-game-toolbar strong { font-size:clamp(1.4rem,2.2vw,2.5rem); margin:0 .5rem; }
+.team-game-active > div:first-child { display:none; }
+.team-game-active #gaga-team-matchups > div { flex-direction:row; min-height:calc(100dvh - var(--main-header-height) - 220px); }
+.team-game-active #gaga-team-matchups > div > div:first-child,.team-game-active #gaga-team-matchups > div > div:last-child { flex-direction:column; min-width:0; }
+.team-game-active #gaga-team-matchups > div > div > div:first-child { width:100%; flex-direction:row; border-right:0; margin:0; padding:0 0 .5rem; }
+.team-game-active #gaga-team-matchups > div > div:nth-child(2) { width:clamp(90px,12vw,190px); }
+.team-game-active .team-members-grid { width:100%; grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr)); align-content:stretch; }
+.team-game-active .team-player-card { min-height:210px; padding:.75rem; }
+.team-game-active .team-player-name { font-size:clamp(1.5rem,2.5vw,3rem); }
+@media(min-width:900px) {
+ body:has(.team-game-active:not(.hidden)) #tab-navigation { display:none; }
+ body:has(.team-game-active:not(.hidden)) #gagaball-section { padding:.75rem; }
+ body:has(.team-game-active:not(.hidden)) #main-container { padding-top:.5rem; }
+ body:has(.team-game-active:not(.hidden)) #gaga-view-team { padding-top:0; }
+ .team-game-active #gaga-team-matchups > div > div > div:first-child { align-items:center; }
+ .team-game-active #gaga-team-matchups > div > div > div:first-child > div:last-child { margin-top:0; }
+ .team-game-active #gaga-team-matchups > div { height:calc(100dvh - var(--main-header-height) - 160px); min-height:380px; padding:.6rem; }
+ .team-game-active #gaga-team-matchups > div > div:first-child,.team-game-active #gaga-team-matchups > div > div:last-child { padding:.6rem; }
+ .team-game-active .team-members-grid { overflow-y:auto; min-height:0; grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(145px,1fr); gap:.5rem; padding:.3rem; }
+ .team-game-active .team-player-card { min-height:145px; padding:.4rem; }
+ .team-game-active .team-player-card > div:first-child { width:clamp(42px,7vh,100px); margin-bottom:.15rem; }
+ .team-game-active .team-player-name { font-size:clamp(20px,3vh,36px); margin-bottom:.2rem; }
+ .team-game-active .team-player-card > span { font-size:clamp(18px,2.5vh,28px); line-height:1.1; }
+ .team-game-active .king-select-button { margin-top:.15rem; padding:0 .6rem; font-size:.85rem; line-height:1.4; }
+ .team-game-active .premium-score-btn { width:40px; height:40px; min-height:40px; font-size:1.5rem; }
+}
+.king-select-button { margin-top:.6rem; border:1px solid #d6b45a; border-radius:999px; padding:.3rem .8rem; font-size:1rem; background:#fff8dc; color:#854d0e; font-weight:800; }
+.king-select-button[aria-pressed=true] { background:#fbbf24; }
+#player-picker { z-index:10020; }
+.player-picker-panel { background:#f8fafc; width:min(1100px,96vw); max-height:100%; border-radius:24px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; box-shadow:0 24px 80px #0008; }
+.player-picker-panel header,.player-picker-panel footer { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.player-picker-panel h2 { font-size:clamp(1.5rem,3vw,2.5rem); color:#172033; }
+.player-picker-panel p { color:#64748b; }
+.picker-filters { display:flex; gap:1rem; flex-wrap:wrap; }
+.picker-filters select { border:1px solid #cbd5e1; border-radius:10px; padding:.5rem; background:white; }
+.picker-list { overflow:auto; min-height:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.65rem; padding:.3rem; }
+.picker-student { display:flex; align-items:center; gap:.65rem; text-align:left; background:white; border:2px solid #e2e8f0; border-radius:16px; padding:.65rem; }
+.picker-student[aria-pressed=true] { background:#fffbeb; border-color:#d97706; box-shadow:0 0 0 2px #fbbf2444; }
+.picker-student img { width:56px; height:56px; border-radius:50%; }
+.picker-student span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.picker-student b { display:block; font-size:1.4rem; }
+.picker-student small { color:#64748b; }
+.picker-student strong { color:#dc2626; font-size:1.5rem; }
+.picker-student i { color:#b45309; font-style:normal; }
+@media(max-width:800px) {
+ #header-inner-container { display:flex; flex-wrap:wrap; }
+ .draw-modal-heading { display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem; }
+ .draw-modal-heading #gagaDrawMainTitle { font-size:1.7rem!important; }
+ .draw-game-actions .draw-roulette-button { width:44px; height:44px; }
+ .team-game-active #gaga-team-matchups > div { flex-direction:column; }
+ .team-game-active #gaga-team-matchups > div > div:nth-child(2) { width:100%; }
+ .player-picker-panel { padding:1rem; }
+}
+html[data-console=compact] #player-picker[style*="flex"] { display:flex!important; top:0; height:100dvh; }
+html[data-console=compact] .picker-student img { display:none; }

@@ -47,6 +47,7 @@ export function mountConsole(api) {
     const rememberConnection = () => sessionStorage.setItem('gaga-connection', JSON.stringify({ uid: api.get().userId, roomCode, role }));
     function render() {
         const state = api.get();
+        focusedMatch = state.match.teamIndex ?? -1;
         root.hidden = !state.userId;
         $('teacher-console').hidden = !window.gagaCompact || !state.userId;
         $('console-save').textContent = window.gagaSyncStatus || '불러오는 중';
@@ -64,18 +65,21 @@ export function mountConsole(api) {
         const students = state.students;
         selected = new Set([...selected].filter(no => students.some(s => s.no === no && s.attendance)));
         const score = s => `<div class="console-score">${button('−', 'changeGagaScore', [s.no, -1], `aria-label="${h(s.name)} 1점 빼기"`)}<b>${s.score || 0}</b>${button('+', 'changeGagaScore', [s.no, 1], `aria-label="${h(s.name)} 1점 더하기"`)}</div>`;
-        const rosterRow = s => `<article class="console-student"><label><input type="checkbox" data-select="${s.no}" ${selected.has(s.no) ? 'checked' : ''} ${!s.attendance ? 'disabled' : ''}><strong>${h(s.name)}</strong></label><small>${s.isReferee ? '심판 · ' : ''}${s.gagaDrawn ? '출전 완료' : '대기'}</small>${score(s)}${button(s.attendance ? '참석' : '불참', 'toggleAttendance', [s.no], `class="attendance ${s.attendance ? '' : 'absent'}"`)}</article>`;
+        const rosterRow = s => `<article class="console-student"><strong>${h(s.name)}</strong><small>${s.isReferee ? '심판 · ' : ''}${s.gagaDrawn ? '출전 완료' : '대기'}</small>${score(s)}${button(s.attendance ? '참석' : '불참', 'toggleAttendance', [s.no], `class="attendance ${s.attendance ? '' : 'absent'}"`)}</article>`;
         let html = '';
         if (!state.currentClass) html = '<div class="console-empty">위에서 학급을 선택해주세요.<br>명단 관리는 기존 화면의 학급 설정에서 할 수 있습니다.</div>';
         else if (page === 'players') html = `<div class="console-section-heading"><h2>참가 선수</h2><span>${students.filter(s => s.attendance).length}명 참석</span></div>
           <div class="console-draw"><label>추첨 인원 <select id="console-count">${Array.from({length:10},(_,i)=>`<option ${i===7?'selected':''}>${i+1}</option>`).join('')}</select></label><div>${button('전체 추첨','draw',['all'])}${button('남학생','draw',['남'])}${button('여학생','draw',['여'])}</div></div>
-          <div class="console-selection"><span>${selected.size}명 선택</span>${button('심판 지정 / 해제','referee')}${button('왕중왕전','champions')}${button('선택 해제','clear')}</div>
+          <div class="console-selection">${button('심판 임명','picker',['referee'])}${button('왕중왕전','picker',['champions'])}</div>
           ${students.map(rosterRow).join('')}${button('추첨 기록 초기화','resetGagaDraw')}`;
-        else if (page === 'teams') html = `<h2>팀 편성</h2><div class="console-draw"><label>팀 수 <select id="console-team-count">${[2,4,6,8].map(n=>`<option>${n}</option>`).join('')}</select></label>${button('밸런스 편성','teams')}</div>
+        else if (page === 'teams') html = `<h2>팀 편성</h2><div class="console-draw"><label>팀 수 <select id="console-team-count">${[2,4,6,8].map(n=>`<option>${n}</option>`).join('')}</select></label>${button('밸런스 편성','teams')}${button('팀전 시작','focus',[0],state.match.teams.length < 2 ? 'disabled' : '')}</div>
           ${state.match.refereeWarning ? '<p class="console-warning">2팀전 예외: 모든 심판이 출전합니다.</p>' : ''}
           ${state.match.standby.length ? `<p>대기 심판: ${state.match.standby.map(s=>h(s.name)).join(', ')}</p>` : ''}
-          ${state.match.teams.map(team => `<article class="console-team"><h3>${team.id}팀 <span>${team.score}점</span></h3><div class="console-team-members">${team.members.map(s=>button(`${s.isKing?'👑 ':''}${h(s.name)}${s.isReferee?' · 심판':''}`, 'toggleTeamKing',[team.id,s.no],`aria-pressed="${!!s.isKing}"`)).join('')}</div>
+          ${state.match.teams.map(team => `<article class="console-team"><h3>${team.id}팀 <span>${team.score}점</span></h3><div class="console-team-members">${team.members.map(s=>`<span>${h(s.name)}${s.isReferee?' · 심판':''}</span>`).join(' · ')}</div>
           <div class="console-row">${button('− 1점','addGagaTeamScore',[team.id,-1])}${button('+ 1점','addGagaTeamScore',[team.id,1])}${team.id%2 ? button('이 경기 보기','focus',[Math.floor((team.id-1)/2)]) : ''}</div></article>`).join('')}`;
+        else if (page === 'game' && state.match.view === 'team' && focusedMatch < 0) {
+          html = `<h2>팀전 준비</h2><p>팀 편성을 확인하고 경기를 시작해주세요.</p>${button('팀전 시작','focus',[0],state.match.teams.length < 2 ? 'disabled' : '')}`;
+        }
         else if (page === 'game') {
           const players = state.match.players.map(no=>students.find(s=>s.no===no)).filter(Boolean);
           const teamGame = state.match.view === 'team';
@@ -84,7 +88,7 @@ export function mountConsole(api) {
           html = `<h2>${state.match.champions?'왕중왕전':teamGame?playingTeams.map(t=>`${t.id}팀`).join(' vs '):'개인전 진행'}</h2><div class="console-timer"><span id="console-timer-state">준비</span><strong id="console-timer-number">—</strong><div>${button('60초','openGagaTimer',[60])}${button('100초','openGagaTimer',[100])}</div><div>${button('정지 / 계속','toggleGagaTimerPause')}${button('재시작','restartGagaTimer')}${button('종료','closeGagaTimer')}</div></div>
           <label class="console-volume">음량 <input id="console-volume" type="range" min="0" max="100" value="${Math.round(state.match.volume*100)}"></label>
           ${button('미션 추첨','mission',[],state.busy?'disabled':'')}${state.busy?'<p>미션 추첨 중…</p>':''}${mission?`<aside class="console-mission"><b>${h(mission.text)}</b><p>${h(mission.desc)}</p></aside>`:''}
-          ${teamGame ? playingTeams.map(t=>`<article class="console-team"><h3>${t.id}팀 <span>${t.score}점</span></h3><p>${t.members.map(s=>`${s.isKing?'👑 ':''}${h(s.name)}`).join(' · ')}</p><div class="console-row">${button('− 1점','addGagaTeamScore',[t.id,-1])}${button('+ 1점','addGagaTeamScore',[t.id,1])}</div></article>`).join('') : players.map(s=>`<article class="console-student"><strong>${h(s.name)}${state.match.wanted.includes(s.no)?' · WANTED ★':''}</strong>${score(s)}</article>`).join('')}
+          ${teamGame ? playingTeams.map(t=>`<article class="console-team"><h3>${t.id}팀 <span>${t.score}점</span></h3><div class="console-team-members">${t.members.map(s=>button(`${s.isKing?'👑 ':''}${h(s.name)} · ${s.score||0}`, 'toggleTeamKing',[t.id,s.no],`aria-label="${h(s.name)} 왕 선택" aria-pressed="${!!s.isKing}"`)).join('')}</div><div class="console-row">${button('− 1점','addGagaTeamScore',[t.id,-1])}${button('+ 1점','addGagaTeamScore',[t.id,1])}</div></article>`).join('') : players.map(s=>`<article class="console-student"><strong>${h(s.name)}${state.match.wanted.includes(s.no)?' · WANTED ★':''}</strong>${score(s)}</article>`).join('')}
           <div class="console-row">${!teamGame?button('선수 결과 보기','showDraw'):''}${button(teamGame?'다음 경기':'다음 추첨','next')}${button('명예의 전당','switchGagaTab',['rank'])}</div>`;
         } else html = `<h2>점수 기록</h2><p>현재 누적 개인 점수입니다.</p>${[...students].sort((a,b)=>b.score-a.score||a.no-b.no).map(s=>`<article class="console-student"><strong>${h(s.name)}</strong>${score(s)}</article>`).join('')}${button('TV에 순위 표시','switchGagaTab',['rank'])}${button('백업 내려받기','backup')}`;
         const values = Object.fromEntries(['console-count','console-team-count'].map(id=>[id,$(id)?.value]));
@@ -262,7 +266,6 @@ export function mountConsole(api) {
     }
     function focusTV(index) {
         focusedMatch=index;
-        document.querySelectorAll('#gaga-team-matchups > div').forEach((element,i)=>element.classList.toggle('tv-match-hidden',index>=0&&index!==i));
     }
     async function resumeConnection() {
         let saved;
@@ -301,17 +304,19 @@ export function mountConsole(api) {
         if(mode==='remote'&&(!room||role!=='controller'||Date.now()-room.tvAlive>30000))throw new Error('TV 연결을 확인해주세요. 단독 진행은 화면 모드를 변경해주세요.');
         if(api.get().busy)throw new Error('미션 결과가 나올 때까지 기다려주세요.');
         if(name==='undo')api.undo();
+        else if(name==='picker')window.openPlayerPicker(args[0]);
         else if(name==='draw'){api.act('draw',args[0],$('console-count').value);page='game';}
         else if(name==='teams'){focusTV(-1);api.act('teams',$('console-team-count').value);}
         else if(name==='referee'||name==='champions'){api.act(name,[...selected]);if(name==='champions')page='game';}
         else if(name==='mission') {const team=api.get().match.view==='team';api.act('openRouletteModal',team?'team':'individual',team&&focusedMatch>=0?`team-roulette-${focusedMatch*2}`:null);}
         else if(name==='next'&&api.get().match.view!=='team'){api.act('closeGagaTimer');api.act('closeGagaDrawModal');api.act('switchGagaTab','score');page='players';}
-        else if(name==='focus'||name==='next') {const count=Math.ceil(api.get().match.teams.length/2);if(!count)throw new Error('팀을 먼저 편성해주세요.');api.act('closeGagaTimer');api.act('closeGagaDrawModal');focusTV(name==='focus'?args[0]:(focusedMatch+1)%count);api.act('switchGagaTab','team');page='game';}
+        else if(name==='focus'||name==='next') {const count=Math.ceil(api.get().match.teams.length/2);if(!count)throw new Error('팀을 먼저 편성해주세요.');api.act('startTeamMatch',name==='focus'?args[0]:(focusedMatch+1)%count);page='game';}
         else if(name==='showDraw'){const state=api.get().match;api.restoreMatch({...state,drawOpen:true});}
         else api.act(name,...args);
         queuePublish();render();
     }
     root.addEventListener('click',event=>{const target=event.target.closest('[data-action]');if(!target)return;action(target.dataset.action,JSON.parse(target.dataset.args||'[]')).catch(error=>{message=error.message;render();});});
+    window.addEventListener('gaga-player-picked', event => { if(event.detail === 'champions')page='game'; queuePublish();render(); });
     root.addEventListener('change',async event=>{
         const el=event.target;
         if(el.dataset.select){const no=Number(el.dataset.select);el.checked?selected.add(no):selected.delete(no);render();}

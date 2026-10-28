@@ -10,7 +10,8 @@ test('class picker, participant actions, and roulette timer controls are wired i
     ]);
     assert.match(script, /rowDiv\.className = "startup-grade-row"/);
     assert.match(css, /\.startup-grade-row\s*\{[^}]*grid-template-columns:\s*repeat\(3/);
-    assert.match(html, /id="participant-actions-fab"/);
+    assert.doesNotMatch(html, /id="participant-actions-fab"/);
+    assert.match(html, /window\.openPlayerPicker\('champions'\)/);
     assert.match(script, /window\.assignSelectedReferees = function\(\)/);
     assert.match(script, /window\.startChampionsTournament = function\(\)/);
     assert.match(script, /getIndividualRefereeLimit\(classData\[currentClass\]\)/);

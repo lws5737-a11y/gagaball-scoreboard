@@ -3,6 +3,7 @@ import { signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstati
 import { doc, getDoc, runTransaction, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { mergeSchoolState, validateBackup, timerPosition } from './state-sync.js';
 import { mountConsole } from './console.js';
+import { mountGameScreens } from './game-screens.js';
 import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
 
 // ==========================================
@@ -451,6 +452,7 @@ if (auth && db) {
             currentClass = ""; 
             window.selectedParticipants = [];
             currentGagaTeams = [];
+            currentTeamMatchIndex = -1;
             currentGagaStandbyReferees = [];
             currentGagaRefereeWarning = false;
             individualMissionResult = null;
@@ -669,6 +671,7 @@ window.selectClass = function(className) {
     currentDrawIsChampions = false;
     window.selectedParticipants = [];
     currentGagaTeams = [];
+    currentTeamMatchIndex = -1;
     currentGagaStandbyReferees = [];
     currentGagaRefereeWarning = false;
     individualMissionResult = null;
@@ -797,7 +800,6 @@ window.renderGagaball = function() {
 
     students.forEach((s) => {
         const isDrawn = s.gagaDrawn; const drawnClass = isDrawn ? 'drawn' : '';
-        const isSelected = s.attendance && window.selectedParticipants.includes(Number(s.no));
         const btnText = s.attendance ? '참석' : '불참';
         const btnClass = s.attendance ? 'bg-green-500 text-white' : 'bg-slate-400 text-white opacity-80';
         let borderStyle = s.gender === '남' ? '#3498db' : (s.gender === '여' ? '#e74c3c' : '#2ecc71');
@@ -810,8 +812,7 @@ window.renderGagaball = function() {
         const cuteAvatar = window.generateCuteAvatar(s); 
 
         const cardHTML = `
-            <article class="score-item ${drawnClass} ${isSelected ? 'participant-selected' : ''}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점" ${s.attendance ? `onclick="window.handleParticipantCardClick(event, ${s.no})"` : ''}>
-                ${s.attendance ? `<button class="participant-select-button" type="button" onclick="event.stopPropagation(); window.toggleParticipantSelection(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${isSelected ? '선택 해제' : '선택'}" aria-pressed="${isSelected}">${isSelected ? '✓ 선택됨' : '○ 선택'}</button>` : ''}
+            <article class="score-item ${drawnClass}" style="border-color: ${borderStyle}; background-color: ${bgColor};" aria-label="${escapeHTML(s.name)} 학생, ${s.score || 0}점">
                 <button class="student-delete-btn absolute top-1.5 right-1.5 z-30" onclick="window.deleteStudent(${s.no})" aria-label="${escapeHTML(s.name)} 학생 삭제" title="학생 삭제"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></button>
                 <div class="attendance-row flex justify-center items-center mb-2 sm:mb-3 relative z-20">
                     <button class="attendance-btn ${btnClass} px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-bold transition hover:opacity-80" onclick="window.toggleAttendance(${s.no})" aria-label="${escapeHTML(s.name)} 학생 ${btnText} 상태 변경">${btnText}</button>
@@ -1220,6 +1221,8 @@ window.currentFloatingContext = 'individual';
 window.currentTeamRouletteBtnId = null;
 
 window.showFloatingRouletteBtn = function(context) {
+    document.getElementById('gagaDrawModal').classList.toggle('champions-arena', currentDrawIsChampions);
+    document.getElementById('draw-timer-button').textContent = currentDrawIsChampions ? '👑 왕중왕전 타이머' : '⏱️ 타이머';
     window.currentFloatingContext = context;
     const btn = document.getElementById('floating-roulette-btn');
     if (!btn) return;
@@ -1266,6 +1269,7 @@ window.openSmartRouletteModal = function() {
 }
 
 window.openRouletteModal = function(type, teamMatchupId = null) {
+    if (type === 'team' && currentTeamMatchIndex < 0) return false;
     if (isSpinning || rouletteAutoCloseTimer) return false;
     clearTimeout(rouletteStartTimer);
     clearTimeout(rouletteAutoCloseTimer);
@@ -1540,6 +1544,27 @@ const getStudentPower = (student, validRecords) => {
 };
 
 let currentGagaTeams = [];
+let currentTeamMatchIndex = -1;
+
+window.startTeamMatch = function(index = 0) {
+    const count = Math.ceil(currentGagaTeams.length / 2);
+    if (!count || isSpinning || rouletteAutoCloseTimer) return;
+    window.closeGagaTimer(false);
+    window.closeGagaDrawModal();
+    currentDrawIsChampions = false;
+    currentTeamMatchIndex = Math.max(0, Math.min(count - 1, Number(index) || 0));
+    window.switchGagaTab('team');
+    document.getElementById('gaga-view-team').scrollIntoView({ block: 'start' });
+    persistMatch();
+};
+window.showTeamOverview = function() {
+    if (isSpinning || rouletteAutoCloseTimer) return;
+    window.closeGagaTimer(false);
+    currentTeamMatchIndex = -1;
+    window.renderGagaTeamView();
+    syncBackgroundMusic();
+    persistMatch();
+};
 let currentGagaStandbyReferees = [];
 let currentGagaRefereeWarning = false;
 window.triggerGagaTeams = function() {
@@ -1607,6 +1632,8 @@ window.executeGagaTeams = function(numTeams, available) {
     teams.forEach(t => { t.members = t.members.map(m => ({ ...m, isKing: false })); t.score = 0; });
 
     currentGagaTeams = teams;
+    currentTeamMatchIndex = -1;
+    currentDrawIsChampions = false;
     currentGagaStandbyReferees = refereePlan.standbyReferees;
     currentGagaRefereeWarning = refereePlan.warnAllRefereesPlaying;
     teamMissionResults = {};
@@ -1616,6 +1643,7 @@ window.executeGagaTeams = function(numTeams, available) {
 }
 
 window.toggleTeamKing = function(teamId, memberNo) {
+    if (currentTeamMatchIndex < 0 || !currentGagaTeams.slice(currentTeamMatchIndex * 2, currentTeamMatchIndex * 2 + 2).some(team => team.id === teamId)) return;
     const team = currentGagaTeams.find(t => t.id === teamId);
     if(!team) return;
     const isKing = toggleTeamKingSelection(team.members, memberNo);
@@ -1633,6 +1661,17 @@ window.toggleTeamKing = function(teamId, memberNo) {
 
 window.renderGagaTeamView = function() {
     const container = document.getElementById('gaga-team-matchups'); let teamHTML = '';
+    if (currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2)) currentTeamMatchIndex = -1;
+    const playing = currentTeamMatchIndex >= 0;
+    document.getElementById('gaga-view-team').classList.toggle('team-game-active', playing);
+    document.getElementById('team-start-button').disabled = currentGagaTeams.length < 2;
+    const toolbar = document.getElementById('team-game-toolbar');
+    toolbar.classList.toggle('hidden', !playing);
+    toolbar.innerHTML = playing ? `<button class="game-action secondary-action" onclick="window.showTeamOverview()">전체 편성 보기</button>
+        <button class="game-action secondary-action" ${currentTeamMatchIndex === 0 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex - 1})">◀ 이전 경기</button>
+        <strong>${currentGagaTeams[currentTeamMatchIndex * 2].id}팀 vs ${currentGagaTeams[currentTeamMatchIndex * 2 + 1]?.id || '대기'}팀</strong>
+        <button class="game-action secondary-action" ${currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2) - 1 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex + 1})">다음 경기 ▶</button>
+        <button class="game-action timer-action" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>` : '';
     const refereeStatus = document.getElementById('team-referee-status');
     refereeStatus.classList.toggle('hidden', !currentGagaRefereeWarning && currentGagaStandbyReferees.length === 0);
     refereeStatus.classList.toggle('team-referee-warning', currentGagaRefereeWarning);
@@ -1646,6 +1685,7 @@ window.renderGagaTeamView = function() {
     const showAnim = (window.lastTeamScoreChange && (now - window.lastTeamScoreChange.time < 100));
 
     for(let i = 0; i < currentGagaTeams.length; i += 2) {
+        if (playing && i !== currentTeamMatchIndex * 2) continue;
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         const matchupId = `team-roulette-${i}`;
         const matchupMission = teamMissionResults[matchupId];
@@ -1659,7 +1699,7 @@ window.renderGagaTeamView = function() {
                 animHTML = `<span class="float-score-anim ${colorClass}">${sign}${val}</span>`;
             }
 
-            const isKing = m.isKing;
+            const isKing = playing && m.isKing;
             const kingCrown = isKing ? `
                 <div class="team-king-effect" aria-hidden="true">
                     <span class="king-crown">👑</span>
@@ -1669,7 +1709,7 @@ window.renderGagaTeamView = function() {
                 </div>` : '';
 
             return `
-            <div class="team-player-card ${isKing ? 'team-king-active' : ''} relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] cursor-pointer transition-transform hover:scale-[1.02] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">
+            <div class="team-player-card ${isKing ? 'team-king-active' : ''} relative flex flex-col items-center justify-center p-2 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-[4px] shadow-sm w-full h-full min-h-[140px] sm:min-h-[220px] lg:min-h-[260px] ${isKing ? 'border-yellow-400 ring-4 ring-yellow-300 bg-yellow-50' : 'bg-white'}" style="${!isKing ? `border-color:${m.gender==='남'?'#3498db':'#e74c3c'}` : ''}">
                 
                 <div class="${isKing ? 'team-king-avatar' : ''} relative w-16 h-16 sm:w-24 sm:h-24 lg:w-32 lg:h-32 xl:w-36 xl:h-36 mb-1 sm:mb-3 shrink-0">
                     ${kingCrown}
@@ -1677,6 +1717,7 @@ window.renderGagaTeamView = function() {
                 </div>
                 <b class="team-player-name font-black text-slate-800 w-full min-w-0 text-center leading-tight mb-1 sm:mb-2 tracking-tight">${escapeHTML(m.name)}</b>
                 <span class="text-sm sm:text-xl lg:text-2xl text-red-500 font-black relative whitespace-nowrap mt-auto">${m.score || 0}${animHTML}</span>
+                ${playing ? `<button class="king-select-button" aria-pressed="${!!isKing}" onclick="window.toggleTeamKing(${team.id}, ${m.no})">${isKing ? '👑 왕 해제' : '왕 선택'}</button>` : ''}
             </div>`;
         }).join('');
         
@@ -1703,7 +1744,7 @@ window.renderGagaTeamView = function() {
                 </div>
                 ${teamB ? `
                 <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full ${matchupMission ? 'xl:w-48' : 'xl:w-20'} shrink-0 gap-1 sm:gap-2">
-                    ${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : `<button id="${matchupId}" type="button" class="matchup-roulette-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>`}
+                    ${playing ? `<button id="${matchupId}" type="button" class="matchup-roulette-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : ''}` : ''}
                     <div class="text-xl sm:text-3xl lg:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm">VS</div>
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
@@ -1714,7 +1755,7 @@ window.renderGagaTeamView = function() {
     }
     container.innerHTML = teamHTML;
     const globalMission = document.getElementById('team-global-mission-result');
-    globalMission.classList.toggle('hidden', !teamMissionResults.global);
+    globalMission.classList.add('hidden');
     globalMission.innerHTML = teamMissionResults.global ? missionMarkup(teamMissionResults.global) : '';
 }
 
@@ -1734,7 +1775,10 @@ window.addGagaTeamScore = function(teamId, val) {
     saveData(); window.renderGagaTeamView(); window.renderGagaball(); window.renderGagaRanking();
 }
 
-window.openTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'flex'; }
+window.openTimerSelectModal = function() {
+    document.getElementById('timer-select-title').textContent = currentDrawIsChampions ? '👑 왕중왕전 타이머' : '⏱️ 가가볼 타이머';
+    document.getElementById('timerSelectModal').style.display = 'flex';
+}
 window.closeTimerSelectModal = function() { document.getElementById('timerSelectModal').style.display = 'none'; }
 
 let activeTimerAudio = null;
@@ -2305,7 +2349,7 @@ function captureMatch() {
     const numbers = cards.map(card => Number(card.querySelector('[id^="modal-score-"]')?.id.replace('modal-score-', '')));
     return structuredClone({ className: currentClass, teams: currentGagaTeams, standby: currentGagaStandbyReferees,
         refereeWarning: currentGagaRefereeWarning, individualMission: individualMissionResult, teamMissions: teamMissionResults,
-        champions: currentDrawIsChampions, players: numbers,
+        champions: currentDrawIsChampions, players: numbers, teamIndex: currentTeamMatchIndex,
         wanted: numbers.filter((_, index) => cards[index].classList.contains('wanted-active')),
         drawOpen: document.getElementById('gagaDrawModal').style.display === 'flex',
         view: ['score', 'team', 'rank'].find(view => !document.getElementById(`gaga-view-${view}`).classList.contains('hidden')) || 'score',
@@ -2326,6 +2370,7 @@ function restoreMatch(state, pause = false) {
     try {
         if (currentClass !== state.className) window.selectClass(state.className);
         currentGagaTeams = structuredClone(state.teams || []);
+        currentTeamMatchIndex = Number.isInteger(state.teamIndex) && state.teamIndex >= 0 && state.teamIndex < Math.ceil(currentGagaTeams.length / 2) ? state.teamIndex : -1;
         currentGagaStandbyReferees = state.standby || [];
         currentGagaRefereeWarning = !!state.refereeWarning;
         individualMissionResult = state.individualMission || null; teamMissionResults = state.teamMissions || {};
@@ -2468,8 +2513,25 @@ mountConsole({
         } else if (name === 'teams') { window.executeGagaTeams(Number(args[0]), (classData[currentClass] || []).filter(s => s.attendance)); window.switchGagaTab('team'); }
         else if (name === 'referee') { window.selectedParticipants = args[0]; window.assignSelectedReferees(); }
         else if (name === 'champions') { window.closeGagaTimer(false); window.switchGagaTab('score'); window.selectedParticipants = args[0]; window.startChampionsTournament(); }
-        else if (['selectClass', 'toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'toggleTeamKing', 'openRouletteModal', 'openGagaTimer',
+        else if (['startTeamMatch', 'showTeamOverview', 'selectClass', 'toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'toggleTeamKing', 'openRouletteModal', 'openGagaTimer',
             'toggleGagaTimerPause', 'restartGagaTimer', 'closeGagaTimer', 'closeGagaDrawModal', 'switchGagaTab', 'setGlobalVolume', 'toggleGlobalMute', 'resetGagaDraw'].includes(name)) window[name](...args);
         persistMatch();
+    }
+});
+
+mountGameScreens({
+    get: () => ({ className: currentClass, students: classData[currentClass] || [] }),
+    avatar: student => window.generateCuteAvatar(student),
+    canScroll: () => currentTab === 'gagaball' && currentTeamMatchIndex < 0 && currentGagaTeams.length > 0,
+    choose: (purpose, numbers) => {
+        if (purpose === 'champions') {
+            window.closeGagaTimer(false);
+            window.switchGagaTab('score');
+            window.selectedParticipants = numbers;
+            window.startChampionsTournament();
+        } else {
+            (classData[currentClass] || []).forEach(student => { student.isReferee = student.attendance && numbers.includes(student.no); });
+            saveData(); refreshSchoolViews(); persistMatch();
+        }
     }
 });

@@ -9,6 +9,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="game-screens.css">
 </head>
 <body class="bg-gray-50 min-h-screen pb-28 sm:pb-32 text-slate-800 overflow-x-hidden w-full max-w-[100vw] no-select">
 <div id="console-root"></div>
@@ -79,8 +80,8 @@ Google 계정으로 시작하기
         <button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">🥇 명예의전당</button>
     </div>
     <div id="header-tools" class="flex items-center justify-center gap-2 sm:gap-4">
-    <button onclick="window.openSmartRouletteModal()" class="header-tool-btn bg-purple-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-purple-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🎡 미션 룰렛</button>
-    <button onclick="window.openTimerSelectModal()" class="header-tool-btn bg-orange-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-orange-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">⏱️ 타이머</button>
+    <button onclick="window.openPlayerPicker('referee')" class="game-action referee-action">⚖️ 심판 임명</button>
+    <button onclick="window.openPlayerPicker('champions')" class="game-action champions-action">👑 왕중왕전</button>
     <button onclick="window.resetAllScoresDB()" class="header-tool-btn bg-slate-200 text-slate-700 px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-slate-300 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">🔄 점수 초기화</button>
     <button onclick="window.openAddStudentModal()" class="header-tool-btn bg-emerald-500 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-emerald-600 text-sm sm:text-xl transition transform hover:scale-105 whitespace-nowrap">➕ 학생 추가</button>
     </div>
@@ -150,11 +151,6 @@ Google 계정으로 시작하기
 </div>
 <div id="gaga-active-grid" class="scoreboard-grid"></div>
 
-<div id="participant-actions-fab" class="hidden" role="group" aria-label="선택한 참가 학생 작업">
-    <span id="participant-selection-count">0명 선택</span>
-    <button id="assign-referee-button" type="button" onclick="window.assignSelectedReferees()">⚖️ 심판 임명</button>
-    <button id="start-selected-champions-button" type="button" onclick="window.startChampionsTournament()">👑 왕중왕전</button>
-</div>
 
 <h3 class="text-2xl sm:text-4xl font-black text-slate-500 mt-12 mb-6 tracking-wide font-jua">🛑 불참 학생</h3>
 <div id="gaga-inactive-grid" class="scoreboard-grid inactive-grid"></div>
@@ -174,10 +170,13 @@ Google 계정으로 시작하기
 <option value="8" selected>8팀</option>
 </select>
 <button onclick="window.triggerGagaTeams()" class="flex-1 bg-purple-600 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black shadow-md hover:bg-purple-700 text-lg sm:text-2xl transition transform hover:scale-105 whitespace-nowrap">👥 밸런스 편성</button>
+<button id="team-start-button" class="game-action champions-action" disabled onclick="window.startTeamMatch(0)">⚔️ 팀전 시작</button>
+<button id="team-scroll-toggle" class="game-action secondary-action" aria-pressed="true" onclick="window.toggleTeamAutoScroll()">자동 스크롤 켜짐</button>
 </div>
 </div>
 <div id="team-global-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
 <div id="team-referee-status" class="team-referee-status hidden" role="status" aria-live="polite"></div>
+<div id="team-game-toolbar" class="team-game-toolbar hidden"></div>
 <div id="gaga-team-matchups" class="flex flex-col gap-4"></div>
 </div>
 </section>
@@ -308,7 +307,10 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div class="draw-modal-heading">
 <span class="draw-modal-heading-spacer" aria-hidden="true"></span>
 <h1 id="gagaDrawMainTitle" class="text-5xl sm:text-7xl font-black text-white mb-4 font-jua drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)] shrink-0 text-center">🎉 참가 선수 🎉</h1>
+<div class="draw-game-actions">
 <button id="floating-roulette-btn" class="draw-roulette-button" type="button" style="display:none;" onclick="window.startRouletteFromFloating(event)" title="미션 룰렛" aria-label="미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>
+<button id="draw-timer-button" class="game-action timer-action" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>
+</div>
 </div>
 <div id="gaga-draw-mission-result" class="match-mission-result hidden" role="status" aria-live="polite"></div>
 <div id="wanted-reveal-overlay" class="wanted-reveal-overlay hidden" role="status" aria-live="polite">
