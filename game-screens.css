@@ -60,7 +60,7 @@
 }
 .king-select-button { margin-top:.6rem; border:1px solid #d6b45a; border-radius:999px; padding:.3rem .8rem; font-size:1rem; background:#fff8dc; color:#854d0e; font-weight:800; }
 .king-select-button[aria-pressed=true] { background:#fbbf24; }
-#player-picker { z-index:10020; }
+#player-picker { z-index:20010; }
 .player-picker-panel { background:#f8fafc; width:min(1100px,96vw); max-height:100%; border-radius:24px; padding:1.5rem; display:flex; flex-direction:column; gap:1rem; box-shadow:0 24px 80px #0008; }
 .player-picker-panel header,.player-picker-panel footer { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
 .player-picker-panel h2 { font-size:clamp(1.5rem,3vw,2.5rem); color:#172033; }

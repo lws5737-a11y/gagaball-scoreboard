@@ -37,6 +37,7 @@ export function mountGameScreens(api) {
         confirm.disabled = purpose === 'champions' && (selection.size < 2 || selection.size > 10);
     };
     window.openPlayerPicker = mode => {
+        if (window.gagaCanControl && !window.gagaCanControl()) return;
         const state = api.get(); if (!state.className) return;
         purpose = mode; className = state.className; returnFocus = document.activeElement;
         selection = new Set(mode === 'referee' ? state.students.filter(s => s.attendance && s.isReferee).map(s => s.no) : []);
@@ -53,6 +54,7 @@ export function mountGameScreens(api) {
         if (student) { const no = Number(student.dataset.student); selection.has(no) ? selection.delete(no) : selection.add(no); render(); }
         if (event.target.closest('[data-picker="clear"]')) { selection.clear(); render(); }
         if (event.target.closest('[data-picker="confirm"]') && !document.getElementById('picker-confirm').disabled) {
+            if (window.gagaCanControl && !window.gagaCanControl()) return close();
             if (api.get().className !== className) return close();
             const numbers = [...selection]; close(); api.choose(purpose, numbers);
             window.dispatchEvent(new CustomEvent('gaga-player-picked', { detail: purpose }));

@@ -9,7 +9,7 @@ export function mountConsole(api) {
     let sending = false, queuedState = null, publishTimer, lastApplied = -1, message = '', focusedMatch = -1;
     let pendingRestore = null, restoringConnection = false;
     let connectionVersion = 0, creatingRoom = false;
-    let verifiedCreation = false;
+    let verifiedCreation = false, renderedPage = '', resuming = false;
     let client = sessionStorage.getItem('gaga-device');
     if (!client) { client = crypto.randomUUID(); sessionStorage.setItem('gaga-device', client); }
     const button = (label, action, args = [], extra = '') => `<button type="button" data-action="${action}" data-args="${h(JSON.stringify(args))}" ${extra}>${label}</button>`;
@@ -45,6 +45,17 @@ export function mountConsole(api) {
         api.setOutput(mode === 'remote'); $('console-mode').value = mode; render();
     }
     const rememberConnection = () => sessionStorage.setItem('gaga-connection', JSON.stringify({ uid: api.get().userId, roomCode, role }));
+    function controlError() {
+        if (mode !== 'remote') return '';
+        if (!navigator.onLine || restoringConnection || !room || role !== 'controller' || room.controller !== client || room.expiresAt <= Date.now() || !roomConnectionStatus(room, role).connected)
+            return 'TV 연결을 확인해주세요. 연결이 복원된 뒤 조작할 수 있습니다.';
+        return '';
+    }
+    window.gagaCanControl = () => {
+        const error = controlError() || (api.get().busy ? '미션 결과가 나올 때까지 기다려주세요.' : '');
+        if (error) { message = error; render(); return false; }
+        return true;
+    };
     function render() {
         const state = api.get();
         focusedMatch = state.match.teamIndex ?? -1;
@@ -92,11 +103,17 @@ export function mountConsole(api) {
           <div class="console-row">${!teamGame?button('선수 결과 보기','showDraw'):''}${button(teamGame?'다음 경기':'다음 추첨','next')}${button('명예의 전당','switchGagaTab',['rank'])}</div>`;
         } else html = `<h2>점수 기록</h2><p>현재 누적 개인 점수입니다.</p>${[...students].sort((a,b)=>b.score-a.score||a.no-b.no).map(s=>`<article class="console-student"><strong>${h(s.name)}</strong>${score(s)}</article>`).join('')}${button('TV에 순위 표시','switchGagaTab',['rank'])}${button('백업 내려받기','backup')}`;
         const values = Object.fromEntries(['console-count','console-team-count'].map(id=>[id,$(id)?.value]));
-        $('console-page').innerHTML = html;
+        // Heartbeats must not replace the slider/select currently under a finger.
+        const editing = $('console-page').contains(document.activeElement) && ['INPUT','SELECT'].includes(document.activeElement.tagName);
+        if (html !== renderedPage && !editing) { $('console-page').innerHTML = html; renderedPage = html; }
         for (const [id,value] of Object.entries(values)) if ($(id) && value) $(id).value=value;
         root.querySelectorAll('nav button').forEach(btn => btn.setAttribute('aria-current', JSON.parse(btn.dataset.args)[0] === page ? 'page' : 'false'));
         root.querySelector('[data-action="undo"]').disabled = !state.undo;
-        if (mode === 'remote' && (!room || role !== 'controller' || !connected)) $('console-page').querySelectorAll('button,input,select').forEach(el=>el.disabled=true);
+        $('console-class').disabled = !!controlError() || state.busy;
+        if (controlError() || state.busy) $('console-page').querySelectorAll('button,input,select').forEach(el=>el.disabled=true);
+        else $('console-page').querySelectorAll('button,input,select').forEach(el => { el.disabled = false; });
+        // Keep controls whose prerequisites are not met disabled after reconnecting.
+        $('console-page').querySelectorAll('[data-action="focus"]').forEach(el => el.disabled ||= state.match.teams.length < 2);
         tick();
     }
     function tick() {
@@ -192,6 +209,7 @@ export function mountConsole(api) {
         if(incoming && room.writer === client && !restoringConnection && !pendingRestore) { lastApplied=room.seq; return; }
         const state = incoming ? room.state : pendingRestore;
         if (!state || !api.get().classes.includes(state.className)) return;
+        const returning = restoringConnection || !!pendingRestore;
         pendingRestore = null;
         const sequence = room?.seq;
         lastApplied = sequence;
@@ -199,6 +217,7 @@ export function mountConsole(api) {
         try { api.restoreMatch(state); focusTV(room?.focus ?? -1); }
         finally { window.gagaReceivingMatch = false; }
         restoringConnection = false;
+        if (returning) page = state.timer || state.drawOpen || (state.view === 'team' && state.teamIndex >= 0) ? 'game' : state.view === 'team' ? 'teams' : 'players';
         if (role === 'tv') editRoom(current=>({...current,tvAlive:Date.now(),tvSeenSeq:sequence})).catch(error=>{message=error.message;render();});
     }
     async function host() {
@@ -233,13 +252,15 @@ export function mountConsole(api) {
                 if(existing.controller && existing.controller!==client && Date.now()-existing.controllerAlive<30000)throw new Error('다른 스마트폰이 제어 중입니다. 먼저 연결을 해제해주세요.');
                 return {...existing,controller:client,controllerAlive:Date.now()};
             });
-            role='controller';rememberConnection();setMode('remote');
+            role='controller';restoringConnection=true;rememberConnection();setMode('remote');
             if(room.state?.className){pendingRestore=room.state;restoringConnection=true;applyReceivedState();}
+            else restoringConnection=false;
             listen(); settings(false); queuePublish();
         } catch(error){roomCode='';throw error;}
     }
     async function disconnect(update=true) {
         ++connectionVersion;
+        api.releaseRemote?.();
         unsubscribe?.();unsubscribe=null;
         if(update&&roomCode) await editRoom(existing=>{
             if(!existing)return {};
@@ -268,21 +289,31 @@ export function mountConsole(api) {
         focusedMatch=index;
     }
     async function resumeConnection() {
+        if(resuming || !navigator.onLine)return;
         let saved;
         try { saved = JSON.parse(sessionStorage.getItem('gaga-connection') || 'null'); } catch { sessionStorage.removeItem('gaga-connection'); return; }
         if (!saved || saved.uid !== api.get().userId || !['tv','controller'].includes(saved.role)) return;
-        roomCode=saved.roomCode; role=saved.role; restoringConnection=true;
+        resuming=true;roomCode=saved.roomCode; role=saved.role; restoringConnection=true;
         try {
             room=await editRoom(current=>{
                 if(!current||current.owner!==saved.uid||current.expiresAt<Date.now()||current[role==='tv'?'tv':'controller']!==client)throw new Error('이전 연결이 만료되었습니다. 다시 연결해주세요.');
                 return {...current,[role==='tv'?'tvAlive':'controllerAlive']:Date.now()};
             });
+            // The device that started a roulette lost its completion timeout on reload.
+            // Close that interrupted animation so both devices can draw again.
+            const interrupted = room.writer === client && room.state?.roulette?.open;
+            if (interrupted) room = {...room,state:{...room.state,roulette:{...room.state.roulette,open:false,spinning:false}}};
             setMode(role==='tv'?'tv':'remote');
-            if(role==='controller'&&room.state?.className){pendingRestore=room.state;applyReceivedState();}
+            if(room.state?.className){pendingRestore=room.state;applyReceivedState();}
             else restoringConnection=false;
             listen();message='이전 TV 연결을 복원했습니다.';render();
-            if(role==='controller'&&!room.state?.className)queuePublish();
-        }catch(error){await disconnect(false);message=error.message;render();}
+            if(interrupted) { message='연결을 복원했습니다. 새로고침으로 중단된 룰렛은 다시 돌려주세요.';queuePublish();render(); }
+            else if(role==='controller'&&!room.state?.className)queuePublish();
+        }catch(error){
+            if(!navigator.onLine || ['unavailable','deadline-exceeded'].includes(error.code)) {
+                message='연결 복원 대기 · 인터넷이 연결되면 다시 시도합니다.';render();
+            } else {await disconnect(false);message=error.message;render();}
+        } finally {resuming=false;}
     }
     async function action(name,args) {
         message='';
@@ -301,7 +332,7 @@ export function mountConsole(api) {
             if(name==='fullscreen')await document.documentElement.requestFullscreen();
             render();return;
         }
-        if(mode==='remote'&&(!room||role!=='controller'||Date.now()-room.tvAlive>30000))throw new Error('TV 연결을 확인해주세요. 단독 진행은 화면 모드를 변경해주세요.');
+        if(controlError())throw new Error(controlError());
         if(api.get().busy)throw new Error('미션 결과가 나올 때까지 기다려주세요.');
         if(name==='undo')api.undo();
         else if(name==='picker')window.openPlayerPicker(args[0]);
@@ -327,19 +358,22 @@ export function mountConsole(api) {
         if(el.id==='console-interval'){window.gagaRankInterval=Number(el.value);window.syncRankingAutoplay();}
         if(el.id==='console-import'&&el.files[0]){try{api.importBackup(JSON.parse(await el.files[0].text()));}catch(error){message=error.message;}el.value='';render();}
     });
-    root.addEventListener('input',event=>{if(event.target.id==='console-volume'){api.act('setGlobalVolume',event.target.value);queuePublish();}});
+    root.addEventListener('input',event=>{if(event.target.id==='console-volume' && window.gagaCanControl()){api.act('setGlobalVolume',event.target.value);queuePublish();}});
+    root.addEventListener('focusout',()=>setTimeout(render,0));
     $('console-toggle').onclick=()=>settings($('console-settings').hidden);
     window.addEventListener('gaga-state',()=>{applyReceivedState();render();focusTV(focusedMatch);if(role==='controller'&&!room?.state?.className)queuePublish();});window.addEventListener('gaga-sync',()=>{$('console-save').textContent=window.gagaSyncStatus;});
     window.addEventListener('gaga-match',()=>{if(document.activeElement?.id!=='console-volume')render();queuePublish();});
     window.addEventListener('gaga-auth',()=>{if(!api.get().userId)disconnect(false);else resumeConnection();render();});
     window.addEventListener('offline',()=>{message='인터넷 연결 끊김 · 기기 임시 저장 중';render();});
-    window.addEventListener('online',()=>{message='';if(queuedState)publish();render();});
+    window.addEventListener('online',()=>{message='';if(!roomCode || restoringConnection)resumeConnection();else heartbeat();if(queuedState)publish();render();});
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(!roomCode || restoringConnection)resumeConnection();else heartbeat();}});
     setInterval(tick,250);
-    setInterval(()=>{if(!roomCode||!role)return;editRoom(current=>{
+    function heartbeat(){if(!navigator.onLine)return;if(restoringConnection){resumeConnection();return;}if(!roomCode||!role)return;editRoom(current=>{
         if(!current||current.expiresAt<Date.now())throw new Error('연결이 만료되었습니다.');
         if(role==='controller'&&current.controller!==client)throw new Error('제어권이 변경되었습니다.');
         return {...current,[role==='tv'?'tvAlive':'controllerAlive']:Date.now()};
-    }).catch(error=>{message=error.message;render();});render();},10000);
+    }).catch(error=>{message=error.message;render();});render();}
+    setInterval(heartbeat,10000);
     document.documentElement.dataset.tvText=localStorage.getItem('gaga-tv-text')||'normal';
     setMode(mode);
 }

@@ -1269,6 +1269,7 @@ window.openSmartRouletteModal = function() {
 }
 
 window.openRouletteModal = function(type, teamMatchupId = null) {
+    if (window.gagaRemoteRouletteBusy) return false;
     if (type === 'team' && currentTeamMatchIndex < 0) return false;
     if (isSpinning || rouletteAutoCloseTimer) return false;
     clearTimeout(rouletteStartTimer);
@@ -1296,6 +1297,7 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     return true;
 }
 window.closeRouletteModal = function(force = false) {
+    if (window.gagaRemoteRouletteBusy && !applyingMatch) return;
     if (isSpinning || (rouletteAutoCloseTimer && !force)) return;
     const shouldRevealWanted = pendingWantedReveal;
     pendingWantedReveal = false;
@@ -1547,6 +1549,7 @@ let currentGagaTeams = [];
 let currentTeamMatchIndex = -1;
 
 window.startTeamMatch = function(index = 0) {
+    if (window.gagaRemoteRouletteBusy) return;
     const count = Math.ceil(currentGagaTeams.length / 2);
     if (!count || isSpinning || rouletteAutoCloseTimer) return;
     window.closeGagaTimer(false);
@@ -1558,6 +1561,7 @@ window.startTeamMatch = function(index = 0) {
     persistMatch();
 };
 window.showTeamOverview = function() {
+    if (window.gagaRemoteRouletteBusy) return;
     if (isSpinning || rouletteAutoCloseTimer) return;
     window.closeGagaTimer(false);
     currentTeamMatchIndex = -1;
@@ -2343,6 +2347,7 @@ let presentationEffect = null;
 let remoteEffectTimer = null;
 let lastRemoteEffect = '';
 let remoteRouletteSpinning = false;
+let remoteRouletteOpen = false;
 const matchKey = () => `gaga-match-v1:${userId}:${currentClass}`;
 function captureMatch() {
     const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
@@ -2354,7 +2359,7 @@ function captureMatch() {
         drawOpen: document.getElementById('gagaDrawModal').style.display === 'flex',
         view: ['score', 'team', 'rank'].find(view => !document.getElementById(`gaga-view-${view}`).classList.contains('hidden')) || 'score',
         timer: timerModel, volume: window.globalVolume, muted: window.isGlobalMuted, effect: presentationEffect,
-        roulette: { open: document.getElementById('rouletteModal').style.display === 'flex', spinning: isSpinning,
+        roulette: { open: document.getElementById('rouletteModal').style.display === 'flex', spinning: isSpinning || remoteRouletteSpinning,
             rotation: currentRouletteRotation, type: currentMissionsType, missions: currentMissions,
             result: document.getElementById('roulette-result-summary').textContent } });
 }
@@ -2393,6 +2398,7 @@ function restoreMatch(state, pause = false) {
             document.getElementById('rouletteModal').style.display = roulette?.open ? 'flex' : 'none';
             if (roulette?.open) {
                 currentMissions = roulette.missions; currentMissionsType = roulette.type;
+                currentRouletteRotation = roulette.rotation;
                 document.getElementById('rouletteModalTitle').textContent = roulette.type === 'team' ? '🎡 팀전 미션 룰렛' : '🎡 개인전 미션 룰렛';
                 window.drawRoulette();
                 const canvas = document.getElementById('rouletteCanvas');
@@ -2404,6 +2410,8 @@ function restoreMatch(state, pause = false) {
                 if (remoteRouletteSpinning && !roulette.spinning) window.playMP3('goodresult');
             } else window.stopMP3('spinner');
             remoteRouletteSpinning = !!roulette?.spinning;
+            remoteRouletteOpen = !!roulette?.open;
+            window.gagaRemoteRouletteBusy = remoteRouletteOpen;
             if (state.effect && state.effect.id !== lastRemoteEffect && Date.now() - state.effect.at < 6000) {
                 lastRemoteEffect = state.effect.id;
                 showEventReveal(state.effect.kind); clearTimeout(remoteEffectTimer);
@@ -2432,7 +2440,7 @@ const trackedActions = ['toggleAttendance', 'changeGagaScore', 'addGagaTeamScore
 for (const name of trackedActions) {
     const original = window[name];
     window[name] = function(...args) {
-        if (window.gagaReadOnly && !applyingMatch) return;
+        if ((window.gagaReadOnly || window.gagaRemoteRouletteBusy) && !applyingMatch) return;
         const before = schoolState(), match = captureMatch();
         const result = original(...args);
         if (['executeGagaDraw', 'executeGagaTeams', 'startChampionsTournament'].includes(name)) presentationEffect = {
@@ -2447,11 +2455,11 @@ for (const name of trackedActions) {
 for (const name of ['toggleTeamKing', 'toggleWantedEffect', 'switchGagaTab', 'closeGagaDrawModal', 'openGagaTimer', 'closeGagaTimer',
     'toggleGagaTimerPause', 'restartGagaTimer', 'seekGagaTimer', 'setGlobalVolume', 'toggleGlobalMute']) {
     const original = window[name];
-    window[name] = function(...args) { if (window.gagaReadOnly && !applyingMatch) return; const result = original(...args); persistMatch(); return result; };
+    window[name] = function(...args) { if ((window.gagaReadOnly || window.gagaRemoteRouletteBusy) && !applyingMatch) return; const result = original(...args); persistMatch(); return result; };
 }
 const selectClassOriginal = window.selectClass;
 window.selectClass = function(name) {
-    if (window.gagaReadOnly && !applyingMatch) return;
+    if ((window.gagaReadOnly || window.gagaRemoteRouletteBusy) && !applyingMatch) return;
     const previous = localStorage.getItem(`gaga-match-v1:${userId}:${name}`);
     selectClassOriginal(name);
     undoEntries = [];
@@ -2462,7 +2470,11 @@ mountConsole({
     auth, db, schoolRef,
     get: () => ({ userId, currentClass, classes: Object.keys(classData).filter(name => !hiddenClasses.includes(name)).sort(),
         students: structuredClone(classData[currentClass] || []), selected: [...window.selectedParticipants], match: captureMatch(),
-        syncError, pending: saveRequested || saveInFlight, undo: undoEntries.length, busy: isSpinning || !!rouletteAutoCloseTimer }),
+        syncError, pending: saveRequested || saveInFlight, undo: undoEntries.length, busy: isSpinning || !!rouletteAutoCloseTimer || remoteRouletteOpen }),
+    releaseRemote: () => {
+        if (remoteRouletteOpen) { document.getElementById('rouletteModal').style.display = 'none'; window.stopMP3('spinner'); }
+        remoteRouletteSpinning = false; remoteRouletteOpen = false; window.gagaRemoteRouletteBusy = false;
+    },
     restoreMatch,
     retry: () => { syncError = ''; flushSaveData(); },
     reloadCloud: async () => {
