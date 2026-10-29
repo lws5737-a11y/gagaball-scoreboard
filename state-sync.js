@@ -20,6 +20,11 @@ function unkeyed(state) {
 function merge(base, local, remote, path) {
     if (same(base, local)) return clone(remote);
     if (same(base, remote)) return clone(local);
+    // An explicit student deletion wins over edits to that existing student.
+    // Apply symmetrically so a stale tab cannot resurrect a deleted student.
+    // Other students still merge normally; roster/class conflicts remain errors.
+    if (path.length === 3 && path[0] === 'data' && object(base)
+        && (local === undefined || remote === undefined)) return undefined;
     if (path.length === 4 && path[0] === 'data' && path[3] === 'score'
         && [base, local, remote].every(Number.isFinite)) return Math.max(0, remote + local - base);
     if (object(base) && object(local) && object(remote)) {
