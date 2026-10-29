@@ -87,3 +87,11 @@
 }
 html[data-console=compact] #player-picker[style*="flex"] { display:flex!important; top:0; height:100dvh; }
 html[data-console=compact] .picker-student img { display:none; }
+.match-referees { border:2px solid #fbbf24; border-radius:14px; background:#fffbeb; color:#78350f; padding:.6rem .8rem; font-weight:900; font-size:clamp(16px,1.4vw,24px); overflow-wrap:anywhere; text-align:center; }
+.draw-modal-heading { grid-template-columns:minmax(140px,1fr) minmax(0,2fr) auto; }
+#individual-match-referees { justify-self:start; max-width:320px; text-align:left; }
+.team-game-active .team-player-card > div:first-child { width:clamp(90px,11vh,160px); height:clamp(90px,11vh,160px); }
+.team-game-active .team-player-name { font-size:clamp(28px,4vh,48px); }
+.team-game-active .team-player-card > span { font-size:clamp(30px,4.5vh,54px); }
+.team-game-active .team-members-grid { grid-auto-rows:minmax(250px,1fr); }
+.team-game-active #gaga-team-matchups > div > div:nth-child(2) > .match-referees { flex-direction:column; width:100%; margin:.5rem 0; padding:.6rem; }

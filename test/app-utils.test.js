@@ -227,16 +227,16 @@ test('two referees assigned to four teams officiate each other’s matchup', () 
     assert.equal(teams[2].members.length + teams[3].members.length, 1);
 });
 
-test('two-team mode keeps all referees playing and requests an exception warning', () => {
+test('two-team mode reserves one referee outside both playing teams', () => {
     const students = [
         { no: 1, isReferee: true },
         { no: 2, isReferee: true },
         { no: 3, isReferee: false }
     ];
     const plan = getTeamRefereePlan(students, 2);
-    assert.deepEqual(plan.participants, students);
-    assert.deepEqual(plan.standbyReferees, []);
-    assert.equal(plan.warnAllRefereesPlaying, true);
+    assert.deepEqual(plan.participants, students.slice(1));
+    assert.deepEqual(plan.standbyReferees, [students[0]]);
+    assert.equal(plan.warnAllRefereesPlaying, false);
 });
 
 test('one referee waits outside a four-team match without dropping other students', () => {

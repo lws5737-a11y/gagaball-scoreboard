@@ -4,7 +4,7 @@ import { doc, getDoc, runTransaction, onSnapshot } from "https://www.gstatic.com
 import { mergeSchoolState, validateBackup, timerPosition } from './state-sync.js';
 import { mountConsole } from './console.js';
 import { mountGameScreens } from './game-screens.js';
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getMatchReferees, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -379,7 +379,18 @@ function applySchool(data) {
         return student ? { ...student, isKing: member.isKing } : null;
     }).filter(Boolean); });
 }
+function renderIndividualReferees() {
+    const label = document.getElementById('individual-match-referees');
+    if (!label) return;
+    const players = [...document.querySelectorAll('#gagaDrawResultGrid [id^="modal-score-"]')]
+        .map(node => ({ no: Number(node.id.replace('modal-score-', '')) }));
+    label.textContent = refereeLabel(getMatchReferees(classData[currentClass] || [], players));
+}
+function refereeLabel(referees) {
+    return '⚖️ 경기 심판: ' + (referees.length ? referees.map(s => s.name).join(', ') : '배정 가능한 심판 없음');
+}
 function refreshSchoolViews() {
+    renderIndividualReferees();
     if (currentClass && !classData[currentClass]) { currentClass = ''; window.openClassSelection(); }
     if (currentClass) {
         window.renderGagaball(); window.renderGagaRanking(); window.renderGagaTeamView(); window.renderStampBoard();
@@ -1203,6 +1214,7 @@ window.startChampionsTournament = function() {
     document.getElementById('gagaDrawResultGrid').innerHTML = generateGridCards(selectedStudents);
     document.getElementById('gagaDrawModal').style.display = 'flex';
     
+    renderIndividualReferees();
     window.showFloatingRouletteBtn('individual');
     
     window.playMP3('tadaa'); 
@@ -1221,6 +1233,7 @@ window.currentFloatingContext = 'individual';
 window.currentTeamRouletteBtnId = null;
 
 window.showFloatingRouletteBtn = function(context) {
+    renderIndividualReferees();
     document.getElementById('gagaDrawModal').classList.toggle('champions-arena', currentDrawIsChampions);
     document.getElementById('draw-timer-button').textContent = currentDrawIsChampions ? '👑 왕중왕전 타이머' : '⏱️ 타이머';
     window.currentFloatingContext = context;
@@ -1674,8 +1687,7 @@ window.renderGagaTeamView = function() {
     toolbar.innerHTML = playing ? `<button class="game-action secondary-action" onclick="window.showTeamOverview()">전체 편성 보기</button>
         <button class="game-action secondary-action" ${currentTeamMatchIndex === 0 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex - 1})">◀ 이전 경기</button>
         <strong>${currentGagaTeams[currentTeamMatchIndex * 2].id}팀 vs ${currentGagaTeams[currentTeamMatchIndex * 2 + 1]?.id || '대기'}팀</strong>
-        <button class="game-action secondary-action" ${currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2) - 1 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex + 1})">다음 경기 ▶</button>
-        <button class="game-action timer-action" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>` : '';
+        <button class="game-action secondary-action" ${currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2) - 1 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex + 1})">다음 경기 ▶</button>` : '';
     const refereeStatus = document.getElementById('team-referee-status');
     refereeStatus.classList.toggle('hidden', !currentGagaRefereeWarning && currentGagaStandbyReferees.length === 0);
     refereeStatus.classList.toggle('team-referee-warning', currentGagaRefereeWarning);
@@ -1693,6 +1705,7 @@ window.renderGagaTeamView = function() {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         const matchupId = `team-roulette-${i}`;
         const matchupMission = teamMissionResults[matchupId];
+        const matchReferees = getMatchReferees(classData[currentClass] || [], [...teamA.members, ...(teamB?.members || [])]);
         
         const createBadges = (team) => team.members.map((m) => {
             let animHTML = '';
@@ -1748,7 +1761,8 @@ window.renderGagaTeamView = function() {
                 </div>
                 ${teamB ? `
                 <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full ${matchupMission ? 'xl:w-48' : 'xl:w-20'} shrink-0 gap-1 sm:gap-2">
-                    ${playing ? `<button id="${matchupId}" type="button" class="matchup-roulette-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기"><img src="images/gaga-roulette-icon.png" alt="" aria-hidden="true"></button>${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : ''}` : ''}
+                    ${playing ? `<button id="${matchupId}" type="button" class="game-action referee-action matchup-mission-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기">미션 룰렛</button><button class="game-action timer-action" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : ''}` : ''}
+                    <div class="match-referees" role="status">${escapeHTML(refereeLabel(matchReferees))}</div>
                     <div class="text-xl sm:text-3xl lg:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm">VS</div>
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">

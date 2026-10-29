@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 import { nextTeamScroll } from '../game-screens.js';
-import { escapeHTML, toggleTeamKingSelection } from '../app-utils.js';
+import { escapeHTML, toggleTeamKingSelection, getMatchReferees } from '../app-utils.js';
 
 const source = await readFile(new URL('../app.js', import.meta.url), 'utf8');
 const section = (start, end) => source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start)));
@@ -12,9 +12,11 @@ function setup(index = -1) {
     const node = id => { if (!nodes.has(id)) nodes.set(id, { innerHTML:'', classList:{toggle(){},add(){}}, scrollIntoView(){} }); return nodes.get(id); };
     const ctx = vm.createContext({ currentTeamMatchIndex:index, currentGagaTeams:Array.from({length:4},(_,i)=>({id:i+1,members:[{no:i+1,name:`학생${i+1}`,gender:'남',score:3,isKing:true}]})),
         currentGagaStandbyReferees:[],currentGagaRefereeWarning:false,teamMissionResults:{'team-roulette-0':{text:'왕을 잡아라'}},
-        escapeHTML, fallbackSVG:'', missionMarkup:r=>r.text, toggleTeamKingSelection,
+        escapeHTML, fallbackSVG:'', missionMarkup:r=>r.text, toggleTeamKingSelection, getMatchReferees,
+        currentClass:'A', classData:{A:[{no:9,name:'심판9',attendance:true,isReferee:true}]},
         document:{getElementById:node}, window:{generateCuteAvatar:()=>'',playCoinSound(){},playBumpSound(){},fireConfetti(){}},
         isSpinning:false,rouletteAutoCloseTimer:null,currentDrawIsChampions:true,persistMatch(){},syncBackgroundMusic(){} });
+    vm.runInContext(section('function refereeLabel(', 'function refreshSchoolViews('),ctx);
     vm.runInContext(section('window.renderGagaTeamView = function', 'window.addGagaTeamScore = function'),ctx);
     vm.runInContext(section('window.toggleTeamKing = function', 'window.renderGagaTeamView = function'),ctx);
     return {ctx,node};
@@ -28,6 +30,8 @@ test('team overview contains all teams without roulette or king selection',()=>{
 test('active match shows only its two teams and their own mission and king controls',()=>{
     const {ctx,node}=setup(0);ctx.window.renderGagaTeamView();
     const html=node('gaga-team-matchups').innerHTML;
+    assert.ok(html.indexOf('미션 룰렛</button>') < html.indexOf('⏱️ 타이머</button>'));
+    assert.ok(html.indexOf('경기 심판: 심판9') < html.indexOf('>VS</div>'));
     assert.match(html,/학생1/);assert.match(html,/학생2/);assert.doesNotMatch(html,/학생3|학생4/);
     assert.match(html,/king-select-button/);assert.match(html,/team-roulette-0/);assert.match(html,/왕을 잡아라/);
     ctx.window.toggleTeamKing(3,3);assert.equal(ctx.currentGagaTeams[2].members[0].isKing,true);
