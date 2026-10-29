@@ -4,7 +4,7 @@ import { doc, getDoc, runTransaction, onSnapshot } from "https://www.gstatic.com
 import { mergeSchoolState, validateBackup, timerPosition } from './state-sync.js';
 import { mountConsole } from './console.js';
 import { mountGameScreens } from './game-screens.js';
-import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, getMatchReferees, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, buildRankingPages, escapeHTML, getCountdownState, rotateMatchReferee, getMatchReferees, getIndividualRefereeLimit, getRankingGridLayout, getRefereeEligibleTeams, getTeamRefereePlan, isWantedMission, limitSelectedReferees, mergeStudent, normalizeClassName, sortParticipants, toggleTeamKingSelection, validateMissions } from './app-utils.js';
 
 // ==========================================
 // 1. 오디오 통합 관리 (MP3 + Web Audio API)
@@ -234,6 +234,7 @@ window.fireConfetti = function() {
 // 2. 기본 상태 변수
 // ==========================================
 let currentClass = "";
+let refereeRotation = { lastNo: null, individual: null, teams: {} };
 let classData = {};
 let groupScores = {}; 
 let groupRecords = {}; 
@@ -384,10 +385,17 @@ function renderIndividualReferees() {
     if (!label) return;
     const players = [...document.querySelectorAll('#gagaDrawResultGrid [id^="modal-score-"]')]
         .map(node => ({ no: Number(node.id.replace('modal-score-', '')) }));
-    label.textContent = refereeLabel(getMatchReferees(classData[currentClass] || [], players));
+    label.innerHTML = matchRefereeMarkup(refereeRotation.individual, players);
 }
-function refereeLabel(referees) {
-    return '⚖️ 경기 심판: ' + (referees.length ? referees.map(s => s.name).join(', ') : '배정 가능한 심판 없음');
+function assignMatchReferee(players) {
+    const result = rotateMatchReferee(classData[currentClass] || [], players, refereeRotation.lastNo);
+    refereeRotation.lastNo = result.lastNo;
+    return result.refereeNo;
+}
+function matchRefereeMarkup(no, players) {
+    const referee = getMatchReferees(classData[currentClass] || [], players).find(s => Number(s.no) === no);
+    if (!referee) return '<span>⚖️ 경기 심판<br>배정 가능한 심판 없음</span>';
+    return '<span class="match-referee-title">⚖️ 경기 심판</span><img class="match-referee-avatar" src="' + escapeHTML(window.generateCuteAvatar(referee)) + '" alt="' + escapeHTML(referee.name) + ' 심판 아바타"><strong>' + escapeHTML(referee.name) + '</strong>';
 }
 function refreshSchoolViews() {
     renderIndividualReferees();
@@ -679,6 +687,7 @@ window.selectClass = function(className) {
     window.closeRouletteModal(true);
     document.getElementById('gagaDrawResultGrid').replaceChildren();
     currentClass = className;
+    refereeRotation = { lastNo: null, individual: null, teams: {} };
     currentDrawIsChampions = false;
     window.selectedParticipants = [];
     currentGagaTeams = [];
@@ -1194,6 +1203,7 @@ window.startChampionsTournament = function() {
     if(window.selectedParticipants.length > 10) return alert('왕중왕전은 최대 10명까지 진행할 수 있습니다.');
     let selectedStudents = window.selectedParticipants.map(no => classData[currentClass].find(s => Number(s.no) === no && s.attendance)).filter(Boolean);
     if (selectedStudents.length < 2) return alert('참가 중인 학생을 2명 이상 선택해주세요.');
+    refereeRotation.individual = assignMatchReferee(selectedStudents);
     currentDrawIsChampions = true;
     window.stopMP3('anthem');
     window.stopMP3('waiting');
@@ -1505,6 +1515,7 @@ window.executeGagaDraw = function(targetGender, drawCount, available, refereeLim
     
     picked = limitSelectedReferees(picked, available.slice(actualDrawCount), refereeLimit);
 
+    refereeRotation.individual = assignMatchReferee(picked);
     picked.forEach(s => s.gagaDrawn = true);
     
     document.getElementById('gagaDrawMainTitle').innerText = "🎉 참가 선수 🎉";
@@ -1648,6 +1659,10 @@ window.executeGagaTeams = function(numTeams, available) {
 
     teams.forEach(t => { t.members = t.members.map(m => ({ ...m, isKing: false })); t.score = 0; });
 
+    refereeRotation.teams = {};
+    for (let i = 0; i + 1 < teams.length; i += 2) {
+        refereeRotation.teams[i / 2] = assignMatchReferee([...teams[i].members, ...teams[i + 1].members]);
+    }
     currentGagaTeams = teams;
     currentTeamMatchIndex = -1;
     currentDrawIsChampions = false;
@@ -1705,7 +1720,7 @@ window.renderGagaTeamView = function() {
         const teamA = currentGagaTeams[i]; const teamB = currentGagaTeams[i+1];
         const matchupId = `team-roulette-${i}`;
         const matchupMission = teamMissionResults[matchupId];
-        const matchReferees = getMatchReferees(classData[currentClass] || [], [...teamA.members, ...(teamB?.members || [])]);
+        const matchPlayers = [...teamA.members, ...(teamB?.members || [])];
         
         const createBadges = (team) => team.members.map((m) => {
             let animHTML = '';
@@ -1762,7 +1777,7 @@ window.renderGagaTeamView = function() {
                 ${teamB ? `
                 <div class="relative flex flex-col items-center justify-center my-2 xl:my-0 z-10 w-full ${matchupMission ? 'xl:w-48' : 'xl:w-20'} shrink-0 gap-1 sm:gap-2">
                     ${playing ? `<button id="${matchupId}" type="button" class="game-action referee-action matchup-mission-button" onclick="window.openRouletteModal('team', '${matchupId}')" title="팀전 미션 룰렛" aria-label="${teamA.id}팀과 ${teamB.id}팀 미션 룰렛 열기">미션 룰렛</button><button class="game-action timer-action" onclick="window.openTimerSelectModal()">⏱️ 타이머</button>${matchupMission ? `<div class="match-mission-result matchup-mission-result">${missionMarkup(matchupMission)}</div>` : ''}` : ''}
-                    <div class="match-referees" role="status">${escapeHTML(refereeLabel(matchReferees))}</div>
+                    <div class="match-referees" role="status">${matchRefereeMarkup(refereeRotation.teams[i / 2], matchPlayers)}</div>
                     <div class="text-xl sm:text-3xl lg:text-4xl flex items-center justify-center font-black text-slate-400 drop-shadow-sm">VS</div>
                 </div>
                 <div class="flex-1 flex flex-col sm:flex-row p-3 sm:p-4 rounded-xl sm:rounded-2xl ${teamBgB} border-t-8 xl:border-t-0 xl:border-r-8">
@@ -2366,7 +2381,7 @@ const matchKey = () => `gaga-match-v1:${userId}:${currentClass}`;
 function captureMatch() {
     const cards = [...document.querySelectorAll('#gagaDrawResultGrid .draw-result-card')];
     const numbers = cards.map(card => Number(card.querySelector('[id^="modal-score-"]')?.id.replace('modal-score-', '')));
-    return structuredClone({ className: currentClass, teams: currentGagaTeams, standby: currentGagaStandbyReferees,
+    return structuredClone({ refereeRotation, className: currentClass, teams: currentGagaTeams, standby: currentGagaStandbyReferees,
         refereeWarning: currentGagaRefereeWarning, individualMission: individualMissionResult, teamMissions: teamMissionResults,
         champions: currentDrawIsChampions, players: numbers, teamIndex: currentTeamMatchIndex,
         wanted: numbers.filter((_, index) => cards[index].classList.contains('wanted-active')),
@@ -2388,7 +2403,14 @@ function restoreMatch(state, pause = false) {
     applyingMatch = true;
     try {
         if (currentClass !== state.className) window.selectClass(state.className);
+        refereeRotation = structuredClone(state.refereeRotation || { lastNo: null, individual: null, teams: {} });
         currentGagaTeams = structuredClone(state.teams || []);
+        if (!state.refereeRotation) {
+            refereeRotation.individual = assignMatchReferee((state.players || []).map(no => ({ no })));
+            for (let i = 0; i + 1 < currentGagaTeams.length; i += 2) {
+                refereeRotation.teams[i / 2] = assignMatchReferee([...currentGagaTeams[i].members, ...currentGagaTeams[i + 1].members]);
+            }
+        }
         currentTeamMatchIndex = Number.isInteger(state.teamIndex) && state.teamIndex >= 0 && state.teamIndex < Math.ceil(currentGagaTeams.length / 2) ? state.teamIndex : -1;
         currentGagaStandbyReferees = state.standby || [];
         currentGagaRefereeWarning = !!state.refereeWarning;

@@ -95,3 +95,9 @@ html[data-console=compact] .picker-student img { display:none; }
 .team-game-active .team-player-card > span { font-size:clamp(30px,4.5vh,54px); }
 .team-game-active .team-members-grid { grid-auto-rows:minmax(250px,1fr); }
 .team-game-active #gaga-team-matchups > div > div:nth-child(2) > .match-referees { flex-direction:column; width:100%; margin:.5rem 0; padding:.6rem; }
+.match-referees { display:flex; flex-direction:column; align-items:center; gap:.25rem; }
+.match-referee-avatar { width:clamp(56px,6vw,100px); height:clamp(56px,6vw,100px); border-radius:50%; object-fit:cover; background:white; }
+.match-referees strong { font-size:clamp(20px,1.8vw,30px); }
+#individual-match-referees { display:grid; grid-template-columns:auto 1fr; column-gap:.6rem; }
+#individual-match-referees .match-referee-avatar { grid-column:1; grid-row:1 / 3; }
+#individual-match-referees .match-referee-title, #individual-match-referees strong { grid-column:2; }
