@@ -45,3 +45,34 @@ test('manual cleanup preserves current room, active pairs and other teachers wai
     const rooms={current:{...base},waiting:{...base},paired:{...base,controller:'phone',controllerAlive:now-1000},other:{...base,owner:'other-teacher'}};
     assert.deepEqual(Object.keys(pruneTVRooms(rooms,{now,owner:'teacher',keepCode:'current',clearWaiting:true})),['current','paired','other']);
 });
+
+test('student deletion wins over concurrent edits in either merge direction',()=>{
+    for (const field of ['score','name','attendance','avatar']) {
+        const base=state(),deleted=state(),edited=state();
+        deleted.data.A=deleted.data.A.filter(s=>s.no!==2);
+        edited.data.A[1][field]=field==='score'?7:field==='attendance'?true:'changed';
+        edited.data.B[0].score=4;
+        for (const [local,remote] of [[deleted,edited],[edited,deleted]]) {
+            const merged=mergeSchoolState(base,local,remote);
+            assert.deepEqual(merged.data.A.map(s=>s.no),[1]);
+            assert.equal(merged.data.B[0].score,4);
+        }
+    }
+});
+test('failed deletion retry and subsequent clicks rebase without resurrecting student',()=>{
+    const base=state(),sent=state(),remote=state();
+    sent.data.A=sent.data.A.filter(s=>s.no!==2);
+    remote.data.A[1].score=3;
+    const live=structuredClone(sent);live.data.A[0].score=2;
+    const committed=mergeSchoolState(base,sent,remote);
+    const rebased=mergeSchoolState(sent,live,committed);
+    assert.deepEqual(rebased.data.A.map(s=>[s.no,s.score]),[[1,2]]);
+    assert.deepEqual(mergeSchoolState(committed,rebased,committed),rebased);
+});
+test('student deletion policy does not suppress conflicting additions or class deletion',()=>{
+    const base=state(),a=state(),b=state();
+    a.data.A.push({no:3,name:'new A',score:0});b.data.A.push({no:3,name:'new B',score:0});
+    assert.throws(()=>mergeSchoolState(base,a,b),SyncConflict);
+    const deleted=state(),edited=state();delete deleted.data.A;edited.data.A[0].name='changed';
+    assert.throws(()=>mergeSchoolState(base,deleted,edited),SyncConflict);
+});
