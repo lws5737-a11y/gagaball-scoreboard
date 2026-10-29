@@ -199,6 +199,13 @@ export function getMatchReferees(students, players) {
         .sort((a, b) => a.no - b.no);
 }
 
+// Start after the last assigned number; skip players without consuming extra turns.
+export function rotateMatchReferee(students, players, lastNo = null) {
+    const eligible = getMatchReferees(students, players);
+    const referee = eligible.find(s => lastNo === null || Number(s.no) > Number(lastNo)) || eligible[0];
+    return { refereeNo: referee ? Number(referee.no) : null, lastNo: referee ? Number(referee.no) : lastNo };
+}
+
 export function toggleTeamKingSelection(members, memberNo) {
     const selected = members.find(member => Number(member.no) === Number(memberNo));
     if (!selected) return null;

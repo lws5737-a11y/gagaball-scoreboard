@@ -13,10 +13,10 @@ function setup(index = -1) {
     const ctx = vm.createContext({ currentTeamMatchIndex:index, currentGagaTeams:Array.from({length:4},(_,i)=>({id:i+1,members:[{no:i+1,name:`학생${i+1}`,gender:'남',score:3,isKing:true}]})),
         currentGagaStandbyReferees:[],currentGagaRefereeWarning:false,teamMissionResults:{'team-roulette-0':{text:'왕을 잡아라'}},
         escapeHTML, fallbackSVG:'', missionMarkup:r=>r.text, toggleTeamKingSelection, getMatchReferees,
-        currentClass:'A', classData:{A:[{no:9,name:'심판9',attendance:true,isReferee:true}]},
+        currentClass:'A', classData:{A:[{no:9,name:'심판9',attendance:true,isReferee:true}]}, refereeRotation:{teams:{0:9,1:9}},
         document:{getElementById:node}, window:{generateCuteAvatar:()=>'',playCoinSound(){},playBumpSound(){},fireConfetti(){}},
         isSpinning:false,rouletteAutoCloseTimer:null,currentDrawIsChampions:true,persistMatch(){},syncBackgroundMusic(){} });
-    vm.runInContext(section('function refereeLabel(', 'function refreshSchoolViews('),ctx);
+    vm.runInContext(section('function matchRefereeMarkup(', 'function refreshSchoolViews('),ctx);
     vm.runInContext(section('window.renderGagaTeamView = function', 'window.addGagaTeamScore = function'),ctx);
     vm.runInContext(section('window.toggleTeamKing = function', 'window.renderGagaTeamView = function'),ctx);
     return {ctx,node};
@@ -31,7 +31,8 @@ test('active match shows only its two teams and their own mission and king contr
     const {ctx,node}=setup(0);ctx.window.renderGagaTeamView();
     const html=node('gaga-team-matchups').innerHTML;
     assert.ok(html.indexOf('미션 룰렛</button>') < html.indexOf('⏱️ 타이머</button>'));
-    assert.ok(html.indexOf('경기 심판: 심판9') < html.indexOf('>VS</div>'));
+    assert.ok(html.indexOf('심판9</strong>') < html.indexOf('>VS</div>'));
+    assert.match(html,/match-referee-avatar/);
     assert.match(html,/학생1/);assert.match(html,/학생2/);assert.doesNotMatch(html,/학생3|학생4/);
     assert.match(html,/king-select-button/);assert.match(html,/team-roulette-0/);assert.match(html,/왕을 잡아라/);
     ctx.window.toggleTeamKing(3,3);assert.equal(ctx.currentGagaTeams[2].members[0].isKing,true);
