@@ -184,14 +184,19 @@ export function getIndividualRefereeLimit(students) {
 
 export function getTeamRefereePlan(students, numTeams) {
     const referees = students.filter(student => student.isReferee);
-    // With multiple matchups, one sole referee must stay off the teams to officiate.
-    // A two-team match is the user-selected exception: everyone plays, with a warning.
-    const standbyReferees = numTeams > 2 && referees.length === 1 ? referees : [];
+    // A two-team match has no other matchup to supply a referee.
+    const standbyReferees = referees.length && (numTeams === 2 || referees.length === 1) ? [referees[0]] : [];
     return {
         participants: standbyReferees.length ? students.filter(student => student !== referees[0]) : [...students],
         standbyReferees,
-        warnAllRefereesPlaying: numTeams === 2 && referees.length > 0
+        warnAllRefereesPlaying: false
     };
+}
+
+export function getMatchReferees(students, players) {
+    const playing = new Set(players.map(student => Number(student.no)));
+    return students.filter(student => student.attendance && student.isReferee && !playing.has(Number(student.no)))
+        .sort((a, b) => a.no - b.no);
 }
 
 export function toggleTeamKingSelection(members, memberNo) {
