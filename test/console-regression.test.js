@@ -64,6 +64,7 @@ test('team scores start at zero and include students without a gender value', ()
         gender: ['남', '여', '-'][i % 3], isReferee: i < 3 }));
     const ctx = vm.createContext({ getTeamRefereePlan, getRefereeEligibleTeams,
         currentGagaTeams: [], currentGagaStandbyReferees: [], currentGagaRefereeWarning: false,
+        refereeRotation: { teams: {} }, assignMatchReferee: () => null,
         teamMissionResults: {}, syncBackgroundMusic() {}, alert: message => assert.fail(message),
         window: { closeGagaTimer() {}, closeGagaDrawModal() {}, renderGagaTeamView() {}, fireConfetti() {} } });
     vm.runInContext(section('const getStudentPower =', 'let currentGagaTeams ='), ctx);

@@ -1,7 +1,7 @@
 import { escapeHTML as h, sortParticipants } from './app-utils.js';
 
 export function nextTeamScroll(top, min, max, direction, elapsed) {
-    const next = Math.max(min, Math.min(max, top + direction * Math.min(elapsed, 100) * 0.035));
+    const next = Math.max(min, Math.min(max, top + direction * Math.min(elapsed, 100) * (direction > 0 ? 0.11 : 0.16)));
     return { top: next, direction: next >= max ? -1 : next <= min ? 1 : direction, edge: next >= max || next <= min };
 }
 
@@ -71,12 +71,12 @@ export function mountGameScreens(api) {
     });
 
     let enabled = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let idleUntil = performance.now() + 5000, previous = 0, direction = 1;
+    let idleUntil = performance.now() + 3000, previous = 0, direction = 1, scrollTarget = null;
     const toggle = document.getElementById('team-scroll-toggle');
     const label = () => { toggle.textContent = enabled ? '자동 스크롤 켜짐' : '자동 스크롤 꺼짐'; toggle.setAttribute('aria-pressed', String(enabled)); };
-    window.toggleTeamAutoScroll = () => { enabled = !enabled; idleUntil = performance.now() + 5000; label(); };
+    window.toggleTeamAutoScroll = () => { enabled = !enabled; idleUntil = performance.now() + 3000; scrollTarget = null; label(); };
     label();
-    for (const type of ['wheel', 'touchstart', 'pointerdown', 'pointermove', 'keydown', 'focusin']) document.addEventListener(type, () => { idleUntil = performance.now() + 5000; }, { passive: true });
+    for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'focusin']) document.addEventListener(type, () => { idleUntil = performance.now() + 3000; scrollTarget = null; }, { passive: true });
     function tick(now) {
         const elapsed = previous ? now - previous : 0; previous = now;
         const view = document.getElementById('gaga-view-team');
@@ -90,11 +90,12 @@ export function mountGameScreens(api) {
             const min = Math.max(0, view.getBoundingClientRect().top + scroller.scrollTop - header - 12);
             const max = Math.min(scroller.scrollHeight - innerHeight, rect.bottom + scroller.scrollTop - innerHeight + 100);
             if (max > min + 20) {
-                const next = nextTeamScroll(scroller.scrollTop, min, max, direction, elapsed);
-                scroller.scrollTop = next.top; direction = next.direction;
-                if (next.edge) idleUntil = now + 2500;
+                // Keep subpixel progress: scrollTop can round every frame to an integer.
+                if (scrollTarget === null || Math.abs(scroller.scrollTop - scrollTarget) > 2) scrollTarget = scroller.scrollTop;
+                const next = nextTeamScroll(scrollTarget, min, max, direction, elapsed);
+                scrollTarget = next.top; scroller.scrollTop = next.top; direction = next.direction;
             }
-        }
+        } else scrollTarget = null;
         requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);

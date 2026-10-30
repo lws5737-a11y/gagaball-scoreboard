@@ -34,7 +34,7 @@ test('inline volume controls cover title, game, and timer screens with a quieter
     assert.match(script, /masterGain\.gain\.setValueAtTime/);
 });
 
-test('draw and team roulette buttons use the transparent new wheel icon', async () => {
+test('draw roulette retains its transparent icon and team view exposes the mission button', async () => {
     const [html, script, icon] = await Promise.all([
         readFile(new URL('../index.html', import.meta.url), 'utf8'),
         readFile(new URL('../app.js', import.meta.url), 'utf8'),
@@ -43,5 +43,5 @@ test('draw and team roulette buttons use the transparent new wheel icon', async 
     assert.equal(icon.subarray(1, 4).toString(), 'PNG');
     assert.equal(icon[25], 6, 'wheel icon must retain alpha transparency');
     assert.match(html, /id="floating-roulette-btn"[^>]*draw-roulette-button[^>]*><img src="images\/gaga-roulette-icon\.png"/);
-    assert.match(script, /class="matchup-roulette-button"[^`]*images\/gaga-roulette-icon\.png/);
+    assert.match(script, /class="game-action referee-action matchup-mission-button"[^`]*팀전 미션 룰렛/);
 });

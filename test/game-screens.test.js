@@ -49,5 +49,16 @@ test('starting a match clamps the index and clears champions timer context',()=>
 test('automatic team scrolling reverses at both ends and limits background-tab jumps',()=>{
     assert.deepEqual(nextTeamScroll(99,0,100,1,100),{top:100,direction:-1,edge:true});
     assert.deepEqual(nextTeamScroll(1,0,100,-1,100),{top:0,direction:1,edge:true});
-    assert.equal(nextTeamScroll(50,0,100,1,60000).top,53.5);
+    assert.equal(nextTeamScroll(50,0,100,1,60000).top,61);
+    const bottom = nextTeamScroll(99,0,100,1,100);
+    assert.ok(nextTeamScroll(bottom.top,0,100,bottom.direction,16).top < 100);
+});
+
+test('cloud refresh keeps zero and absent score values visible in drawn cards',()=>{
+    const nodes=[1,2,3].map(no=>({id:`modal-score-${no}`,textContent:'0'}));
+    const start=source.indexOf("document.querySelectorAll('[id^=\"modal-score-\"]')");
+    const end=source.indexOf('});',start)+3;
+    const ctx=vm.createContext({document:{querySelectorAll:()=>nodes},currentClass:'A',classData:{A:[{no:1,score:0},{no:2},{no:3,score:null}]}});
+    vm.runInContext(source.slice(start,end),ctx);
+    assert.deepEqual(nodes.map(n=>n.textContent),['0','0','0']);
 });

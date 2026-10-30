@@ -404,7 +404,7 @@ function refreshSchoolViews() {
         window.renderGagaball(); window.renderGagaRanking(); window.renderGagaTeamView(); window.renderStampBoard();
         document.querySelectorAll('[id^="modal-score-"]').forEach(node => {
             const s = classData[currentClass].find(s => s.no === Number(node.id.replace('modal-score-', '')));
-            if (s) node.textContent = s.score;
+            if (s) node.textContent = String(s.score ?? 0);
         });
     }
     window.renderClassSelect();
