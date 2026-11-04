@@ -1834,9 +1834,11 @@ let activeTimerDuration = 0;
 let timerAnimationFrame = null;
 let lastTimerNumber = '';
 let timerModel = null;
+let pendingRemoteTimerStart = null;
 const timerAudioCache = new Map();
 function prepareTimerAudio() {
     if (window.gagaRemoteMuted) return;
+    for (const key of ['spinner', 'goodresult']) audioFiles[key].preload = 'auto';
     for (const duration of [60, 100]) {
         const path = `sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`;
         if (!timerAudioCache.has(path)) { const audio = new Audio(path); audio.preload = 'auto'; timerAudioCache.set(path, audio); }
@@ -1911,6 +1913,7 @@ window.seekGagaTimer = function(value) {
     if (!timerModel) return;
     const requestedTime = Number(value);
     if (!Number.isFinite(requestedTime)) return;
+    pendingRemoteTimerStart = null;
     timerModel.position = Math.min(Math.max(requestedTime, 0), activeTimerDuration + 3);
     timerModel.startedAt = Date.now();
     if (activeTimerAudio) activeTimerAudio.currentTime = timerModel.position;
@@ -1952,6 +1955,7 @@ window.openGagaTimer = function(duration, { autoplay = true } = {}) {
 
 window.toggleGagaTimerPause = function() {
     if (!timerModel || timerPosition(timerModel) >= timerModel.duration + 3) return;
+    pendingRemoteTimerStart = null;
     const button = document.getElementById('timer-pause-button');
     timerModel.position = timerPosition(timerModel); timerModel.startedAt = Date.now(); timerModel.running = !timerModel.running;
     button.textContent = timerModel.running ? '⏸️ 일시정지' : '▶️ 계속';
@@ -1961,6 +1965,7 @@ window.toggleGagaTimerPause = function() {
 
 window.restartGagaTimer = function() {
     if (!activeTimerAudio) return;
+    pendingRemoteTimerStart = null;
     timerModel = { ...timerModel, id: crypto.randomUUID(), position: 0, startedAt: Date.now(), running: true };
     activeTimerAudio.pause();
     activeTimerAudio.currentTime = 0;
@@ -1978,6 +1983,7 @@ window.toggleGagaTimerFullscreen = function() {
 };
 
 window.closeGagaTimer = function(resumeMusic = true) {
+    pendingRemoteTimerStart = null;
     timerModel = null;
     if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
     timerAnimationFrame = null;
@@ -2448,16 +2454,23 @@ function restoreMatch(state, pause = false) {
             const roulette = state.roulette;
             document.getElementById('rouletteModal').style.display = roulette?.open ? 'flex' : 'none';
             if (roulette?.open) {
+                const previousRotation = currentRouletteRotation;
                 currentMissions = roulette.missions; currentMissionsType = roulette.type;
                 currentRouletteRotation = roulette.rotation;
                 document.getElementById('rouletteModalTitle').textContent = roulette.type === 'team' ? '🎡 팀전 미션 룰렛' : '🎡 개인전 미션 룰렛';
                 window.drawRoulette();
                 const canvas = document.getElementById('rouletteCanvas');
+                if (roulette.spinning && !remoteRouletteSpinning) {
+                    canvas.style.transition = 'none';
+                    canvas.style.transform = `rotate(${previousRotation}deg)`;
+                    void canvas.offsetWidth;
+                }
                 canvas.style.transition = roulette.spinning ? 'transform 5s cubic-bezier(.25,.1,.25,1)' : 'none';
                 canvas.style.transform = `rotate(${roulette.rotation}deg)`;
                 document.getElementById('roulette-result-summary').textContent = roulette.result;
                 document.getElementById('roulette-result-summary').classList.toggle('roulette-winning', !roulette.spinning);
-                if (roulette.spinning) window.playMP3('spinner'); else window.stopMP3('spinner');
+                if (roulette.spinning && !remoteRouletteSpinning) window.playMP3('spinner');
+                else if (!roulette.spinning) window.stopMP3('spinner');
                 if (remoteRouletteSpinning && !roulette.spinning) window.playMP3('goodresult');
             } else window.stopMP3('spinner');
             remoteRouletteSpinning = !!roulette?.spinning;
@@ -2470,13 +2483,35 @@ function restoreMatch(state, pause = false) {
             }
         }
         if (state.timer) {
-            const wantedTimer = structuredClone(state.timer);
+            let wantedTimer = structuredClone(state.timer);
             if (pause) { wantedTimer.position = timerPosition(wantedTimer); wantedTimer.running = false; }
-            if (!timerModel || timerModel.id !== wantedTimer.id) window.openGagaTimer(wantedTimer.duration, { autoplay: false });
+            const newTimer = !timerModel || timerModel.id !== wantedTimer.id;
+            const startFromBeginning = newTimer && window.gagaFreshRemoteState && !window.gagaRemoteMuted && !pause && wantedTimer.running && wantedTimer.position === 0;
+            if (newTimer) window.openGagaTimer(wantedTimer.duration, { autoplay: false });
+            const pending = pendingRemoteTimerStart;
+            if (pending && pending.id === wantedTimer.id && pending.sourceStartedAt === wantedTimer.startedAt && wantedTimer.position === 0 && wantedTimer.running) wantedTimer = timerModel;
+            else pendingRemoteTimerStart = null;
             timerModel = wantedTimer;
-            activeTimerAudio.currentTime = timerPosition(timerModel);
-            if (timerModel.running && !window.gagaRemoteMuted) activeTimerAudio.play().catch(() => { document.getElementById('timer-audio-status').textContent = '무음 진행 · 소리 켜기를 눌러주세요'; });
-            else activeTimerAudio.pause();
+            if (startFromBeginning) {
+                pendingRemoteTimerStart = { id: timerModel.id, sourceStartedAt: timerModel.startedAt };
+                const request = pendingRemoteTimerStart, audio = activeTimerAudio;
+                timerModel.running = false;
+                audio.currentTime = 0;
+                document.getElementById('timer-audio-status').textContent = '시작 음원 준비 중';
+                const begin = failed => {
+                    if (pendingRemoteTimerStart !== request || activeTimerAudio !== audio || timerModel?.id !== request.id) return;
+                    pendingRemoteTimerStart = null;
+                    timerModel.position = 0; timerModel.startedAt = Date.now(); timerModel.running = true;
+                    document.getElementById('timer-audio-status').textContent = failed ? '무음 진행 · 소리 켜기를 눌러주세요' : '';
+                    document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
+                    persistMatch();
+                };
+                audio.play().then(() => begin(false), () => begin(true));
+            } else if (!pendingRemoteTimerStart) {
+                if (Math.abs(activeTimerAudio.currentTime - timerPosition(timerModel)) > .4) activeTimerAudio.currentTime = timerPosition(timerModel);
+                if (timerModel.running && !window.gagaRemoteMuted && activeTimerAudio.paused) activeTimerAudio.play().catch(() => { document.getElementById('timer-audio-status').textContent = '무음 진행 · 소리 켜기를 눌러주세요'; });
+                else if (!timerModel.running || window.gagaRemoteMuted) activeTimerAudio.pause();
+            }
             document.getElementById('timer-pause-button').textContent = timerModel.running ? '⏸️ 일시정지' : '▶️ 계속';
             if (timerAnimationFrame) cancelAnimationFrame(timerAnimationFrame);
             renderTimerScreen();

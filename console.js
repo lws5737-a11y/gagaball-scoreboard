@@ -216,8 +216,9 @@ export function mountConsole(api) {
         const sequence = room?.seq;
         lastApplied = sequence;
         window.gagaReceivingMatch = true;
+        window.gagaFreshRemoteState = role === 'tv' && !returning;
         try { api.restoreMatch(state); focusTV(room?.focus ?? -1); }
-        finally { window.gagaReceivingMatch = false; }
+        finally { window.gagaReceivingMatch = false; window.gagaFreshRemoteState = false; }
         restoringConnection = false;
         if (returning) page = state.timer || state.drawOpen || (state.view === 'team' && state.teamIndex >= 0) ? 'game' : state.view === 'team' ? 'teams' : 'players';
         if (role === 'tv') editRoom(current=>({...current,tvAlive:Date.now(),tvSeenSeq:sequence})).catch(error=>{message=error.message;render();});
