@@ -120,3 +120,26 @@ html[data-console=compact] .picker-student img { display:none; }
 .team-game-active .team-king-avatar { margin-bottom:0!important; }
 .team-game-active .king-crown { font-size:clamp(24px,10cqw,46px); top:-22%; }
 .team-game-active .king-sparkle { font-size:clamp(14px,6cqw,28px); }
+
+/* Wanted badge owns a full-width footer, clear of the avatar and score controls. */
+#gagaDrawResultGrid .wanted-mark { display:none; }
+#gagaDrawResultGrid .draw-result-card.wanted-active {
+    grid-template-rows:1fr auto 1fr auto;
+    border-color:#dc2626!important;
+    background:radial-gradient(ellipse at center,#fff7f7 25%,#fee2e2 70%,#fca5a5 100%);
+    animation:wantedCardGlow 2.4s ease-in-out infinite;
+}
+#gagaDrawResultGrid .wanted-active .wanted-mark {
+    display:flex; grid-column:1 / -1; grid-row:4; justify-self:center; align-self:end;
+    width:100%; min-height:0; padding:.3rem 0 .1rem; gap:.5em;
+}
+#gagaDrawResultGrid .wanted-active .wanted-heading { font-size:clamp(16px,6cqw,32px); }
+#gagaDrawResultGrid .wanted-active .wanted-stars { font-size:clamp(12px,4.5cqw,24px); }
+@keyframes wantedCardGlow {
+    0%,100% { box-shadow:inset 0 0 18px 5px #ef444455,0 0 10px #dc262655; }
+    50% { box-shadow:inset 0 0 38px 10px #ef444488,0 0 22px #dc262699; }
+}
+@media (prefers-reduced-motion:reduce) {
+    #gagaDrawResultGrid .draw-result-card.wanted-active { animation:none; box-shadow:inset 0 0 24px 6px #ef444466; }
+    #gagaDrawResultGrid .wanted-active .wanted-mark { animation:none; }
+}
