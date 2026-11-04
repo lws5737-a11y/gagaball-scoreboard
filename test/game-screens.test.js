@@ -54,6 +54,29 @@ test('automatic team scrolling reverses at both ends and limits background-tab j
     assert.ok(nextTeamScroll(bottom.top,0,100,bottom.direction,16).top < 100);
 });
 
+test('team reset clears match state without changing student scores or referee appointments',()=>{
+    const {ctx,node}=setup(0);
+    const roster=JSON.stringify(ctx.classData);
+    ctx.window.closeGagaTimer=()=>{};
+    vm.runInContext(section('window.resetGagaTeams = function','window.triggerGagaTeams = function'),ctx);
+    ctx.window.resetGagaTeams();
+    assert.equal(ctx.currentGagaTeams.length,0);
+    assert.equal(ctx.currentTeamMatchIndex,-1);
+    assert.equal(Object.keys(ctx.teamMissionResults).length,0);
+    assert.equal(Object.keys(ctx.refereeRotation.teams).length,0);
+    assert.equal(node('team-start-button').disabled,true);
+    assert.equal(node('gaga-team-matchups').innerHTML,'');
+    assert.equal(JSON.stringify(ctx.classData),roster);
+});
+
+test('unassigned match referee is displayed as X',()=>{
+    const {ctx,node}=setup(0);
+    ctx.refereeRotation.teams={};
+    ctx.window.renderGagaTeamView();
+    assert.match(node('gaga-team-matchups').innerHTML,/aria-label="배정 심판 없음">X<\/strong>/);
+    assert.doesNotMatch(node('gaga-team-matchups').innerHTML,/배정 가능한 심판 없음/);
+});
+
 test('cloud refresh keeps zero and absent score values visible in drawn cards',()=>{
     const nodes=[1,2,3].map(no=>({id:`modal-score-${no}`,textContent:'0'}));
     const start=source.indexOf("document.querySelectorAll('[id^=\"modal-score-\"]')");

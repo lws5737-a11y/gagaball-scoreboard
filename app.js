@@ -394,7 +394,7 @@ function assignMatchReferee(players) {
 }
 function matchRefereeMarkup(no, players) {
     const referee = getMatchReferees(classData[currentClass] || [], players).find(s => Number(s.no) === no);
-    if (!referee) return '<span>⚖️ 경기 심판<br>배정 가능한 심판 없음</span>';
+    if (!referee) return '<span>⚖️ 경기 심판<br><strong aria-label="배정 심판 없음">X</strong></span>';
     return '<span class="match-referee-title">⚖️ 경기 심판</span><img class="match-referee-avatar" src="' + escapeHTML(window.generateCuteAvatar(referee)) + '" alt="' + escapeHTML(referee.name) + ' 심판 아바타"><strong>' + escapeHTML(referee.name) + '</strong>';
 }
 function refreshSchoolViews() {
@@ -1595,6 +1595,20 @@ window.showTeamOverview = function() {
 };
 let currentGagaStandbyReferees = [];
 let currentGagaRefereeWarning = false;
+window.resetGagaTeams = function() {
+    if (!currentClass || isSpinning || rouletteAutoCloseTimer || window.gagaRemoteRouletteBusy) return;
+    if (window.gagaCanControl && !window.gagaCanControl()) return;
+    window.closeGagaTimer(false);
+    currentGagaTeams = [];
+    currentTeamMatchIndex = -1;
+    currentGagaStandbyReferees = [];
+    currentGagaRefereeWarning = false;
+    refereeRotation.teams = {};
+    teamMissionResults = {};
+    window.renderGagaTeamView();
+    syncBackgroundMusic();
+    persistMatch();
+};
 window.triggerGagaTeams = function() {
     if(!currentClass) return;
     const numTeams = parseInt(document.getElementById('gaga-team-count').value, 10);
@@ -1702,7 +1716,8 @@ window.renderGagaTeamView = function() {
     toolbar.innerHTML = playing ? `<button class="game-action secondary-action" onclick="window.showTeamOverview()">전체 편성 보기</button>
         <button class="game-action secondary-action" ${currentTeamMatchIndex === 0 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex - 1})">◀ 이전 경기</button>
         <strong>${currentGagaTeams[currentTeamMatchIndex * 2].id}팀 vs ${currentGagaTeams[currentTeamMatchIndex * 2 + 1]?.id || '대기'}팀</strong>
-        <button class="game-action secondary-action" ${currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2) - 1 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex + 1})">다음 경기 ▶</button>` : '';
+        <button class="game-action secondary-action" ${currentTeamMatchIndex >= Math.ceil(currentGagaTeams.length / 2) - 1 ? 'disabled' : ''} onclick="window.startTeamMatch(${currentTeamMatchIndex + 1})">다음 경기 ▶</button>
+        <button class="game-action secondary-action" onclick="window.resetGagaTeams()">↻ 팀 초기화</button>` : '';
     const refereeStatus = document.getElementById('team-referee-status');
     refereeStatus.classList.toggle('hidden', !currentGagaRefereeWarning && currentGagaStandbyReferees.length === 0);
     refereeStatus.classList.toggle('team-referee-warning', currentGagaRefereeWarning);
@@ -2489,7 +2504,7 @@ for (const name of trackedActions) {
     };
 }
 for (const name of ['toggleTeamKing', 'toggleWantedEffect', 'switchGagaTab', 'closeGagaDrawModal', 'openGagaTimer', 'closeGagaTimer',
-    'toggleGagaTimerPause', 'restartGagaTimer', 'seekGagaTimer', 'setGlobalVolume', 'toggleGlobalMute']) {
+    'toggleGagaTimerPause', 'restartGagaTimer', 'seekGagaTimer', 'setGlobalVolume', 'toggleGlobalMute', 'resetGagaTeams']) {
     const original = window[name];
     window[name] = function(...args) { if ((window.gagaReadOnly || window.gagaRemoteRouletteBusy) && !applyingMatch) return; const result = original(...args); persistMatch(); return result; };
 }
@@ -2561,7 +2576,7 @@ mountConsole({
         } else if (name === 'teams') { window.executeGagaTeams(Number(args[0]), (classData[currentClass] || []).filter(s => s.attendance)); window.switchGagaTab('team'); }
         else if (name === 'referee') { window.selectedParticipants = args[0]; window.assignSelectedReferees(); }
         else if (name === 'champions') { window.closeGagaTimer(false); window.switchGagaTab('score'); window.selectedParticipants = args[0]; window.startChampionsTournament(); }
-        else if (['startTeamMatch', 'showTeamOverview', 'selectClass', 'toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'toggleTeamKing', 'openRouletteModal', 'openGagaTimer',
+        else if (['resetGagaTeams', 'startTeamMatch', 'showTeamOverview', 'selectClass', 'toggleAttendance', 'changeGagaScore', 'addGagaTeamScore', 'toggleTeamKing', 'openRouletteModal', 'openGagaTimer',
             'toggleGagaTimerPause', 'restartGagaTimer', 'closeGagaTimer', 'closeGagaDrawModal', 'switchGagaTab', 'setGlobalVolume', 'toggleGlobalMute', 'resetGagaDraw'].includes(name)) window[name](...args);
         persistMatch();
     }

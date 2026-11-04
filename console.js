@@ -83,7 +83,7 @@ export function mountConsole(api) {
           <div class="console-draw"><label>추첨 인원 <select id="console-count">${Array.from({length:10},(_,i)=>`<option ${i===7?'selected':''}>${i+1}</option>`).join('')}</select></label><div>${button('전체 추첨','draw',['all'])}${button('남학생','draw',['남'])}${button('여학생','draw',['여'])}</div></div>
           <div class="console-selection">${button('심판 임명','picker',['referee'])}${button('왕중왕전','picker',['champions'])}</div>
           ${students.map(rosterRow).join('')}${button('추첨 기록 초기화','resetGagaDraw')}`;
-        else if (page === 'teams') html = `<h2>팀 편성</h2><div class="console-draw"><label>팀 수 <select id="console-team-count">${[2,4,6,8].map(n=>`<option>${n}</option>`).join('')}</select></label>${button('밸런스 편성','teams')}${button('팀전 시작','focus',[0],state.match.teams.length < 2 ? 'disabled' : '')}</div>
+        else if (page === 'teams') html = `<h2>팀 편성</h2><div class="console-draw"><label>팀 수 <select id="console-team-count">${[2,4,6,8].map(n=>`<option>${n}</option>`).join('')}</select></label>${button('밸런스 편성','teams')}${button('팀전 시작','focus',[0],state.match.teams.length < 2 ? 'disabled' : '')}${button('팀 초기화','resetGagaTeams')}</div>
           ${state.match.refereeWarning ? '<p class="console-warning">2팀전 예외: 모든 심판이 출전합니다.</p>' : ''}
           ${state.match.standby.length ? `<p>대기 심판: ${state.match.standby.map(s=>h(s.name)).join(', ')}</p>` : ''}
           ${state.match.teams.map(team => `<article class="console-team"><h3>${team.id}팀 <span>${team.score}점</span></h3><div class="console-team-members">${team.members.map(s=>`<span>${h(s.name)}${s.isReferee?' · 심판':''}</span>`).join(' · ')}</div>
