@@ -60,6 +60,7 @@ export function mountConsole(api) {
         const state = api.get();
         focusedMatch = state.match.teamIndex ?? -1;
         root.hidden = !state.userId;
+        root.querySelectorAll('[data-action="unlock"]').forEach(button => { button.hidden = mode === 'remote'; });
         $('teacher-console').hidden = !window.gagaCompact || !state.userId;
         $('console-save').textContent = window.gagaSyncStatus || '불러오는 중';
         $('console-notice').textContent = message || state.syncError || (mode === 'remote' && !roomCode ? '진행 도구에서 TV 연결 코드를 입력해주세요.' : '');
@@ -97,7 +98,8 @@ export function mountConsole(api) {
           const playingTeams = state.match.teams.slice(Math.max(0,focusedMatch)*2, Math.max(0,focusedMatch)*2+2);
           const mission = state.match.view === 'team' ? state.match.teamMissions[`team-roulette-${focusedMatch * 2}`] || state.match.teamMissions.global : state.match.individualMission;
           html = `<h2>${state.match.champions?'왕중왕전':teamGame?playingTeams.map(t=>`${t.id}팀`).join(' vs '):'개인전 진행'}</h2><div class="console-timer"><span id="console-timer-state">준비</span><strong id="console-timer-number">—</strong><div>${button('60초','openGagaTimer',[60])}${button('100초','openGagaTimer',[100])}</div><div>${button('정지 / 계속','toggleGagaTimerPause')}${button('재시작','restartGagaTimer')}${button('종료','closeGagaTimer')}</div></div>
-          <label class="console-volume">음량 <input id="console-volume" type="range" min="0" max="100" value="${Math.round(state.match.volume*100)}"></label>
+          <label class="console-volume">${mode === 'remote' ? 'TV 음량' : '음량'} <input id="console-volume" type="range" min="0" max="100" value="${Math.round(state.match.volume*100)}"></label>
+          ${button(`${mode === 'remote' ? 'TV ' : ''}${state.match.muted ? '음소거 해제' : '음소거'}`, 'toggleGlobalMute', [], `aria-pressed="${!!state.match.muted}"`)}
           ${button('미션 추첨','mission',[],state.busy?'disabled':'')}${state.busy?'<p>미션 추첨 중…</p>':''}${mission?`<aside class="console-mission"><b>${h(mission.text)}</b><p>${h(mission.desc)}</p></aside>`:''}
           ${teamGame ? playingTeams.map(t=>`<article class="console-team"><h3>${t.id}팀 <span>${t.score}점</span></h3><div class="console-team-members">${t.members.map(s=>button(`${s.isKing?'👑 ':''}${h(s.name)} · ${s.score||0}`, 'toggleTeamKing',[t.id,s.no],`aria-label="${h(s.name)} 왕 선택" aria-pressed="${!!s.isKing}"`)).join('')}</div><div class="console-row">${button('− 1점','addGagaTeamScore',[t.id,-1])}${button('+ 1점','addGagaTeamScore',[t.id,1])}</div></article>`).join('') : players.map(s=>`<article class="console-student"><strong>${h(s.name)}${state.match.wanted.includes(s.no)?' · WANTED ★':''}</strong>${score(s)}</article>`).join('')}
           <div class="console-row">${!teamGame?button('선수 결과 보기','showDraw'):''}${button(teamGame?'다음 경기':'다음 추첨','next')}${button('명예의 전당','switchGagaTab',['rank'])}</div>`;
@@ -326,7 +328,7 @@ export function mountConsole(api) {
             if(name==='draft')download(api.draft(),'gagaball-unsaved-draft.json');
             if(name==='retry')api.retry();
             if(name==='reloadCloud')await api.reloadCloud();
-            if(name==='unlock')api.unlock();
+            if(name==='unlock' && mode!=='remote')api.unlock();
             if(name==='host')await host();if(name==='join')await join();if(name==='disconnect')await disconnect();
             if(name==='cleanupRooms')await cleanupRooms();
             if(name==='fullscreen')await document.documentElement.requestFullscreen();
