@@ -23,7 +23,7 @@ export function mountConsole(api) {
         <label>TV 글자 <select id="console-text"><option value="normal">기본</option><option value="large">크게</option></select></label>
         <label>순위 배치 <select id="console-columns"><option value="auto">자동</option><option value="5">TV 5열 고정</option></select></label>
         <label>순위 전환 <select id="console-interval"><option value="6000">6초</option><option value="10000">10초</option><option value="0">수동</option></select></label>
-        ${button('소리 켜고 시작', 'unlock')}${button('전체 화면', 'fullscreen')}
+        <button type="button" id="phone-bgm"></button>${button('소리 켜고 시작', 'unlock')}${button('전체 화면', 'fullscreen')}
         <div class="console-backups">${button('학급 백업 내려받기', 'backup')}${button('직전 안전 백업', 'safety')}${button('미저장 임시본 내려받기', 'draft')}${button('서버 기록 다시 불러오기', 'reloadCloud')}
         <label class="console-file">백업 복원<input id="console-import" type="file" accept="application/json,.json"></label></div>
         ${button('닫기', 'settings')}</section>
@@ -41,6 +41,7 @@ export function mountConsole(api) {
     function setMode(next) {
         mode = next; localStorage.setItem('gaga-screen-mode', mode);
         document.documentElement.dataset.console = ['phone', 'remote'].includes(mode) ? 'compact' : mode;
+        window.gagaPhoneBgmOff = mode === 'phone' && localStorage.getItem('gaga-phone-bgm') !== 'on';
         window.gagaCompact = ['phone', 'remote'].includes(mode);
         api.setOutput(mode === 'remote'); $('console-mode').value = mode; render();
     }
@@ -59,6 +60,8 @@ export function mountConsole(api) {
     function render() {
         const state = api.get();
         focusedMatch = state.match.teamIndex ?? -1;
+        $('phone-bgm').hidden = mode !== 'phone';
+        $('phone-bgm').textContent = window.gagaPhoneBgmOff ? '배경음악 켜기' : '배경음악 끄기';
         root.hidden = !state.userId;
         root.querySelectorAll('[data-action="unlock"]').forEach(button => { button.hidden = mode === 'remote'; });
         $('teacher-console').hidden = !window.gagaCompact || !state.userId;
@@ -77,13 +80,18 @@ export function mountConsole(api) {
         const students = state.students;
         selected = new Set([...selected].filter(no => students.some(s => s.no === no && s.attendance)));
         const score = s => `<div class="console-score">${button('−', 'changeGagaScore', [s.no, -1], `aria-label="${h(s.name)} 1점 빼기"`)}<b>${s.score || 0}</b>${button('+', 'changeGagaScore', [s.no, 1], `aria-label="${h(s.name)} 1점 더하기"`)}</div>`;
-        const rosterRow = s => `<article class="console-student"><strong>${h(s.name)}</strong><small>${s.isReferee ? '심판 · ' : ''}${s.gagaDrawn ? '출전 완료' : '대기'}</small>${score(s)}${button(s.attendance ? '참석' : '불참', 'toggleAttendance', [s.no], `class="attendance ${s.attendance ? '' : 'absent'}"`)}</article>`;
+        const phone = mode === 'phone';
+        const group = s => !s.attendance ? 2 : s.gagaDrawn ? 1 : 0;
+        const roster = phone ? [...students].sort((a,b) => group(a) - group(b)) : students;
+        const waiting = students.filter(s => s.attendance && !s.gagaDrawn);
+        const remaining = phone ? `<span>출전 대기 · 남 ${waiting.filter(s => s.gender === '남').length}명 / 여 ${waiting.filter(s => s.gender === '여').length}명</span>` : '';
+        const rosterRow = s => `<article class="console-student ${phone && s.gagaDrawn ? 'draw-complete' : ''}"><strong>${h(s.name)}</strong><small>${s.isReferee ? '심판 · ' : ''}${s.gagaDrawn ? '출전 완료' : '대기'}</small>${score(s)}${button(s.attendance ? '참석' : '불참', 'toggleAttendance', [s.no], `class="attendance ${s.attendance ? '' : 'absent'}"`)}</article>`;
         let html = '';
         if (!state.currentClass) html = '<div class="console-empty">위에서 학급을 선택해주세요.<br>명단 관리는 기존 화면의 학급 설정에서 할 수 있습니다.</div>';
         else if (page === 'players') html = `<div class="console-section-heading"><h2>참가 선수</h2><span>${students.filter(s => s.attendance).length}명 참석</span></div>
-          <div class="console-draw"><label>추첨 인원 <select id="console-count">${Array.from({length:10},(_,i)=>`<option ${i===7?'selected':''}>${i+1}</option>`).join('')}</select></label><div>${button('전체 추첨','draw',['all'])}${button('남학생','draw',['남'])}${button('여학생','draw',['여'])}</div></div>
+          <div class="console-draw"><label>추첨 인원 <select id="console-count">${Array.from({length:10},(_,i)=>`<option ${i===7?'selected':''}>${i+1}</option>`).join('')}</select></label>${remaining}<div>${button('전체 추첨','draw',['all'])}${button('남학생','draw',['남'])}${button('여학생','draw',['여'])}</div></div>
           <div class="console-selection">${button('심판 임명','picker',['referee'])}${button('왕중왕전','picker',['champions'])}</div>
-          ${students.map(rosterRow).join('')}${button('추첨 기록 초기화','resetGagaDraw')}`;
+          ${roster.map(rosterRow).join('')}${button('추첨 기록 초기화','resetGagaDraw')}`;
         else if (page === 'teams') html = `<h2>팀 편성</h2><div class="console-draw"><label>팀 수 <select id="console-team-count">${[2,4,6,8].map(n=>`<option>${n}</option>`).join('')}</select></label>${button('밸런스 편성','teams')}${button('팀전 시작','focus',[0],state.match.teams.length < 2 ? 'disabled' : '')}${button('팀 초기화','resetGagaTeams')}</div>
           ${state.match.refereeWarning ? '<p class="console-warning">2팀전 예외: 모든 심판이 출전합니다.</p>' : ''}
           ${state.match.standby.length ? `<p>대기 심판: ${state.match.standby.map(s=>h(s.name)).join(', ')}</p>` : ''}
@@ -378,5 +386,11 @@ export function mountConsole(api) {
     }).catch(error=>{message=error.message;render();});render();}
     setInterval(heartbeat,10000);
     document.documentElement.dataset.tvText=localStorage.getItem('gaga-tv-text')||'normal';
+    $('phone-bgm').onclick = () => {
+        window.gagaPhoneBgmOff = !window.gagaPhoneBgmOff;
+        localStorage.setItem('gaga-phone-bgm', window.gagaPhoneBgmOff ? 'off' : 'on');
+        api.unlock();
+        render();
+    };
     setMode(mode);
 }

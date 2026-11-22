@@ -49,6 +49,7 @@ function getAudioVolume(key) {
 }
 
 window.playMP3 = function(key) {
+    if (window.gagaPhoneBgmOff && (key === 'anthem' || key === 'waiting')) return;
     if (window.isGlobalMuted || window.gagaRemoteMuted) return;
     if (audioFiles[key]) {
         audioFiles[key].volume = getAudioVolume(key);
@@ -82,7 +83,7 @@ function syncBackgroundMusic() {
         track = document.getElementById('gaga-view-rank').classList.contains('hidden') ? 'waiting' : 'anthem';
     }
     for (const key of ['anthem', 'waiting']) {
-        if (key !== track || window.isGlobalMuted) window.stopMP3(key);
+        if (key !== track || window.isGlobalMuted || window.gagaPhoneBgmOff) window.stopMP3(key);
         else window.playMP3(key);
     }
 }

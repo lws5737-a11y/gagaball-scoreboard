@@ -67,3 +67,4 @@ html[data-tv-text=large] .rank-page-name { font-size:clamp(1.6rem,2.3vw,3rem); }
 html[data-tv-text=large] .rank-page-score { font-size:clamp(1.5rem,2vw,2.7rem); }
 html[data-tv-text=large] .rank-page-card { min-height:108px; }
 @media(max-width:380px) { #teacher-console { padding-left:10px;padding-right:10px; }.console-score button {width:44px}.console-student strong{font-size:18px}.console-score{gap:3px} }
+.console-student.draw-complete { background:#fff3cc; box-shadow:inset 5px 0 #b45309; } .console-student.draw-complete small { color:#78350f; font-weight:900; }
