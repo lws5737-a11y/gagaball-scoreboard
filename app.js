@@ -359,12 +359,19 @@ const writerId = sessionStorage.getItem('gaga-writer') || crypto.randomUUID();
 sessionStorage.setItem('gaga-writer', writerId);
 const schoolRef = () => doc(db, 'artifacts', 'running-measurement-app', 'sharedRooms', 'dongsan-school-db');
 const draftKey = () => `gaga-draft-v1:${userId}:${writerId}`;
+let classInputDates = {};
+const classDateFormat = new Intl.DateTimeFormat('ko-KR', { timeZone:'Asia/Seoul', year:'numeric', month:'long', day:'numeric', weekday:'long' });
+function showClassInputDate() {
+    const timestamp = classInputDates[currentClass];
+    document.getElementById('class-input-date').textContent = Number.isFinite(timestamp)
+        ? '최근 입력 · ' + classDateFormat.format(timestamp) : '최근 입력 · 기록 없음';
+}
 function schoolState() {
-    return structuredClone({ data: classData, scores: groupScores, records: groupRecords, stamps: classStamps,
+    return structuredClone({ classInputDates, data: classData, scores: groupScores, records: groupRecords, stamps: classStamps,
         stampImage: globalStampImage, hiddenClasses, rouletteMissions: { individual: individualMissions, team: teamMissions } });
 }
 function readSchool(data = {}) {
-    return { data: data.data || {}, scores: data.scores || {}, records: data.records || {}, stamps: data.stamps || {},
+    return { classInputDates: data.classInputDates || {}, data: data.data || {}, scores: data.scores || {}, records: data.records || {}, stamps: data.stamps || {},
         stampImage: data.stampImage || defaultStampImg, hiddenClasses: data.hiddenClasses || [],
         rouletteMissions: { individual: data.rouletteMissions?.individual || defaultIndividualMissions,
             team: data.rouletteMissions?.team || defaultTeamMissions } };
@@ -372,6 +379,7 @@ function readSchool(data = {}) {
 function applySchool(data) {
     // Keep the last acknowledged cloud snapshot immutable for three-way merging.
     data = structuredClone(data);
+    classInputDates = data.classInputDates || {};
     classData = data.data; groupScores = data.scores; groupRecords = data.records; classStamps = data.stamps;
     hiddenClasses = data.hiddenClasses; globalStampImage = data.stampImage;
     individualMissions = data.rouletteMissions.individual; teamMissions = data.rouletteMissions.team;
@@ -399,6 +407,7 @@ function matchRefereeMarkup(no, players) {
     return '<span class="match-referee-title">⚖️ 경기 심판</span><img class="match-referee-avatar" src="' + escapeHTML(window.generateCuteAvatar(referee)) + '" alt="' + escapeHTML(referee.name) + ' 심판 아바타"><strong>' + escapeHTML(referee.name) + '</strong>';
 }
 function refreshSchoolViews() {
+    showClassInputDate();
     renderIndividualReferees();
     if (currentClass && !classData[currentClass]) { currentClass = ''; window.openClassSelection(); }
     if (currentClass) {
@@ -554,7 +563,7 @@ async function flushSaveData() {
     saveInFlight = true;
     saveRequested = false;
 
-    if (!pendingCommit) pendingCommit = { id: crypto.randomUUID(), writer: writerId, sent: schoolState(), base: structuredClone(savedSchool || readSchool()) };
+    if (!pendingCommit) pendingCommit = { inputAt: Date.now(), id: crypto.randomUUID(), writer: writerId, sent: schoolState(), base: structuredClone(savedSchool || readSchool()) };
     const operation = pendingCommit;
     const sent = operation.sent;
     const base = operation.base;
@@ -567,6 +576,17 @@ async function flushSaveData() {
             const snapshot = await transaction.get(docRef);
             if (snapshot.data()?.saveReceipts?.[operation.writer] === operation.id) return readSchool(snapshot.data());
             const merged = mergeSchoolState(base, sent, readSchool(snapshot.data()));
+            merged.classInputDates ??= {};
+            const inputAt = operation.inputAt || Date.now();
+            for (const name of Object.keys(merged.data)) {
+                if (['data', 'scores', 'records', 'stamps'].some(key =>
+                    JSON.stringify(base[key]?.[name]) !== JSON.stringify(sent[key]?.[name]))) {
+                    merged.classInputDates[name] = Math.max(inputAt, merged.classInputDates[name] || 0);
+                }
+            }
+            for (const name of Object.keys(merged.classInputDates)) {
+                if (!Object.hasOwn(merged.data, name)) delete merged.classInputDates[name];
+            }
             // Top-level replacement deliberately removes deleted classes. Room fields are preserved.
             const receipts = { ...snapshot.data()?.saveReceipts, [operation.writer]: operation.id };
             // Keep a bounded recent receipt list; the current operation is always retained.
@@ -688,6 +708,7 @@ window.selectClass = function(className) {
     window.closeRouletteModal(true);
     document.getElementById('gagaDrawResultGrid').replaceChildren();
     currentClass = className;
+    showClassInputDate();
     refereeRotation = { lastNo: null, individual: null, teams: {} };
     currentDrawIsChampions = false;
     window.selectedParticipants = [];
