@@ -97,9 +97,7 @@ Google 계정으로 시작하기
 <input id="header-volume-slider" class="volume-slider" type="range" min="0" max="100" value="80" oninput="window.setGlobalVolume(this.value)" aria-label="전체 소리 크기">
 <button onclick="window.toggleGlobalMute()" id="global-mute-btn" class="bg-slate-700 hover:bg-slate-600 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border border-slate-500 shadow-sm transition cursor-pointer text-sm sm:text-base" title="음소거/해제" aria-label="소리 끄기" aria-pressed="false">🔊</button>
 </div>
-<button onclick="window.openClassSelection()" id="current-class-display" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 sm:px-4 rounded-full text-xs sm:text-sm font-medium border border-slate-500 whitespace-nowrap shadow-sm transition cursor-pointer flex items-center gap-1.5">
-<span>🔄 학급 변경</span>
-</button>
+<select id="current-class-display" aria-label="학급 변경" title="학급 변경" onchange="window.changeHeaderClass(this)" class="bg-slate-700 text-white px-3 py-1.5 rounded-full border border-slate-500 font-bold cursor-pointer"></select>
 <span id="user-email" class="text-[10px] sm:text-xs text-slate-300 hidden sm:inline font-bold"></span>
 <button onclick="window.signOutApp()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-700 border border-red-800 shadow-sm transition whitespace-nowrap">로그아웃</button>
 </div>

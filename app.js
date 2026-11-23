@@ -734,12 +734,7 @@ window.selectClass = function(className) {
     document.body.classList.add('app-header-visible');
     requestAnimationFrame(window.syncHeaderOffset);
     
-    const displayBtn = document.getElementById('current-class-display');
-    if (displayBtn) {
-        const label = document.createElement('span');
-        label.innerText = `🔄 ${className}`;
-        displayBtn.replaceChildren(label);
-    }
+    renderHeaderClasses();
     
     window.showTab(currentTab);
     prepareTimerAudio();
@@ -2223,7 +2218,21 @@ window.closeManageModal = function() {
     document.getElementById('manage-modal').classList.remove('flex');
 }
 
+function renderHeaderClasses() {
+    const select = document.getElementById('current-class-display');
+    const names = Object.keys(classData).filter(name => name === currentClass || !hiddenClasses?.includes(name));
+    names.sort((a,b) => a.localeCompare(b, 'ko', { numeric:true }));
+    select.replaceChildren(...names.map(name => new Option(name, name)));
+    select.value = currentClass;
+}
+window.changeHeaderClass = function(select) {
+    const name = select.value;
+    select.value = currentClass;
+    if (!name || name === currentClass || isSpinning || rouletteAutoCloseTimer || window.gagaCanControl?.() === false) return;
+    window.selectClass(name);
+};
 window.renderClassSelect = function() {
+    renderHeaderClasses();
     const listEl = document.getElementById('modal-class-list');
     const hiddenListEl = document.getElementById('hidden-class-list');
     if(!listEl) return;
