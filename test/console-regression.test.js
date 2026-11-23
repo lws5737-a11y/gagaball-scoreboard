@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { mergeSchoolState } from '../state-sync.js';
-import { getTeamRefereePlan, getRefereeEligibleTeams } from '../app-utils.js';
+import { assignUniqueClassAvatars, avatarPaths, getTeamRefereePlan, getRefereeEligibleTeams } from '../app-utils.js';
 
 const source = await readFile(new URL('../app.js', import.meta.url), 'utf8');
 function section(start, end) {
@@ -37,7 +37,7 @@ test('ambiguous save failure can retry the same receipt without doubling the sco
         pendingCommit: null, writerId: 'one-tab', saveTimer: null, syncError: '',
         doc: () => 'school', schoolState: () => structuredClone(live), readSchool: value => {
             const { saveReceipts, ...data } = value || school(); return data;
-        }, mergeSchoolState, applySchool: value => { live = structuredClone(value); },
+        }, mergeSchoolState, assignUniqueClassAvatars, applySchool: value => { live = structuredClone(value); },
         keepDraft() {}, refreshSchoolViews() {}, setSyncStatus() {}, draftKey: () => 'draft',
         localStorage: { removeItem() {} }, clearTimeout() {}, setTimeout() {},
         runTransaction: async (_, fn) => {
@@ -59,6 +59,35 @@ test('ambiguous save failure can retry the same receipt without doubling the sco
     assert.equal(ctx.saveRequested, false);
 });
 
+test('roster saves preserve concurrent additions, avatar uniqueness, attendance changes and deletion', async () => {
+    let cloud = school(), live = school();
+    const ctx = vm.createContext({ structuredClone, crypto:{randomUUID}, console, userId:'teacher', db:{},
+        savedSchool:school(), saveRequested:true, saveInFlight:false, pendingCommit:null, writerId:'roster',
+        saveTimer:null, syncError:'', doc:()=> 'school', schoolState:()=>structuredClone(live),
+        readSchool: value => { const {saveReceipts,...data}=value; return data; },
+        mergeSchoolState, assignUniqueClassAvatars, applySchool:value=>{live=structuredClone(value);},
+        keepDraft(){}, refreshSchoolViews(){}, setSyncStatus(){}, draftKey:()=> 'draft',
+        localStorage:{removeItem(){}}, clearTimeout(){}, setTimeout(){},
+        runTransaction:async (_,fn)=>fn({get:async()=>({exists:()=>true,data:()=>structuredClone(cloud)}),
+            update:(_,data)=>{cloud=structuredClone(data);}}) });
+    vm.runInContext(section('async function flushSaveData()', "window.addEventListener('online'"),ctx);
+    const save=async()=>{ ctx.saveRequested=true; await ctx.flushSaveData(); assert.equal(ctx.syncError,''); };
+    const paths=avatarPaths('남');
+    live.data.A.push({...live.data.A[0],no:2,customAvatar:paths[2]});
+    cloud.data.A.push({...cloud.data.A[0],no:3,customAvatar:paths[2]});
+    await save();
+    assert.equal(cloud.data.A.length,3);
+    assert.equal(new Set(cloud.data.A.map(s=>s.customAvatar)).size,3);
+    for (const attendance of [false,true]) {
+        live.data.A[0].attendance=attendance; await save();
+        assert.equal(cloud.data.A[0].attendance,attendance);
+    }
+    const choice=paths.find(path=>!live.data.A.some(s=>s.customAvatar===path));
+    live.data.A[0].customAvatar=choice; await save();
+    assert.equal(cloud.data.A[0].customAvatar,choice);
+    live.data.A=live.data.A.filter(s=>s.no!==2); await save();
+    assert.deepEqual(cloud.data.A.map(s=>s.no),[1,3]);
+});
 test('team scores start at zero and include students without a gender value', () => {
     const students = Array.from({ length: 9 }, (_, i) => ({ no: i + 1, score: i + 1,
         gender: ['남', '여', '-'][i % 3], isReferee: i < 3 }));

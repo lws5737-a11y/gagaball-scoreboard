@@ -581,6 +581,13 @@ async function flushSaveData() {
             for (const name of Object.keys(merged.data)) {
                 if (['data', 'scores', 'records', 'stamps'].some(key =>
                     JSON.stringify(base[key]?.[name]) !== JSON.stringify(sent[key]?.[name]))) {
+                    const roster = merged.data[name];
+                    for (const gender of ['남', '여']) {
+                        if (roster.filter(student => student.gender === gender).length > 50) {
+                            throw new Error(name + ' 학급의 ' + gender + '학생은 최대 50명까지 저장할 수 있습니다.');
+                        }
+                    }
+                    assignUniqueClassAvatars(roster);
                     merged.classInputDates[name] = Math.max(inputAt, merged.classInputDates[name] || 0);
                 }
             }
