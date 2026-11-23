@@ -78,6 +78,7 @@ Google 계정으로 시작하기
         <button onclick="window.switchGagaTab('score')" id="gaga-btn-score" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg bg-slate-100 text-slate-800 shadow-sm transition whitespace-nowrap font-black">🏆 개인전</button>
         <button onclick="window.switchGagaTab('team')" id="gaga-btn-team" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">⚔️ 팀전</button>
         <button onclick="window.switchGagaTab('rank')" id="gaga-btn-rank" class="px-3 sm:px-5 py-1.5 sm:py-2 text-sm sm:text-lg rounded-lg text-slate-400 hover:text-white transition whitespace-nowrap font-black">🥇 명예의전당</button>
+        <button type="button" onclick="window.openRouletteEditModal('individual')" class="px-3 py-2 rounded-lg text-white font-black whitespace-nowrap">🎡 미션 룰렛</button>
     </div>
     <div id="header-tools" class="flex items-center justify-center gap-2 sm:gap-4">
     <button onclick="window.openPlayerPicker('referee')" class="game-action referee-action">⚖️ 심판 임명</button>
@@ -381,7 +382,7 @@ placeholder="엑셀에서 번호, 이름, 성별을 복사해 붙여넣으세요
 <div id="rouletteEditModal" class="gaga-modal-overlay" onclick="window.closeRouletteEditModal()">
     <div class="gaga-modal-content font-sans" style="max-width: 600px; padding: 20px sm:padding-30px; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 font-jua">룰렛 내용 편집</h2>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-800 font-jua">룰렛 내용 편집</h2><select id="mission-kind" aria-label="편집할 룰렛" class="p-2 border rounded" onchange="window.openRouletteEditModal(this.value)"><option value="individual">개인전 룰렛</option><option value="team">팀전 룰렛</option><option value="champions">왕중왕전 룰렛</option></select>
             <button class="text-3xl text-slate-400 hover:text-red-500 font-black leading-none" onclick="window.closeRouletteEditModal()">&times;</button>
         </div>
         <div id="roulette-edit-list" class="flex flex-col gap-3 mb-6 text-sm sm:text-base"></div>

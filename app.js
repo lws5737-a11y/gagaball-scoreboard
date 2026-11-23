@@ -368,13 +368,13 @@ function showClassInputDate() {
 }
 function schoolState() {
     return structuredClone({ classInputDates, data: classData, scores: groupScores, records: groupRecords, stamps: classStamps,
-        stampImage: globalStampImage, hiddenClasses, rouletteMissions: { individual: individualMissions, team: teamMissions } });
+        stampImage: globalStampImage, hiddenClasses, rouletteMissions: { individual: individualMissions, team: teamMissions, champions: championsMissions } });
 }
 function readSchool(data = {}) {
     return { classInputDates: data.classInputDates || {}, data: data.data || {}, scores: data.scores || {}, records: data.records || {}, stamps: data.stamps || {},
         stampImage: data.stampImage || defaultStampImg, hiddenClasses: data.hiddenClasses || [],
         rouletteMissions: { individual: data.rouletteMissions?.individual || defaultIndividualMissions,
-            team: data.rouletteMissions?.team || defaultTeamMissions } };
+            champions: data.rouletteMissions?.champions || data.rouletteMissions?.individual || defaultIndividualMissions, team: data.rouletteMissions?.team || defaultTeamMissions } };
 }
 function applySchool(data) {
     // Keep the last acknowledged cloud snapshot immutable for three-way merging.
@@ -382,8 +382,8 @@ function applySchool(data) {
     classInputDates = data.classInputDates || {};
     classData = data.data; groupScores = data.scores; groupRecords = data.records; classStamps = data.stamps;
     hiddenClasses = data.hiddenClasses; globalStampImage = data.stampImage;
-    individualMissions = data.rouletteMissions.individual; teamMissions = data.rouletteMissions.team;
-    if (!isSpinning) currentMissions = currentMissionsType === 'team' ? teamMissions : individualMissions;
+    championsMissions = data.rouletteMissions.champions || data.rouletteMissions.individual; individualMissions = data.rouletteMissions.individual; teamMissions = data.rouletteMissions.team;
+    if (!isSpinning) currentMissions = currentMissionsType === 'team' ? teamMissions : currentMissionsType === 'champions' ? championsMissions : individualMissions;
     currentGagaTeams.forEach(team => { team.members = team.members.map(member => {
         const student = classData[currentClass]?.find(s => s.no === member.no);
         return student ? { ...student, isKing: member.isKing } : null;
@@ -1296,7 +1296,7 @@ function readStoredMissions(key, fallback) {
 }
 let individualMissions = readStoredMissions('gagaIndividualMissions', defaultIndividualMissions);
 let teamMissions = readStoredMissions('gagaTeamMissions', defaultTeamMissions);
-let currentMissions = individualMissions; 
+let championsMissions = structuredClone(individualMissions); let currentMissions = individualMissions; 
 let currentMissionsType = 'individual';
 let editMissionsTemp = [];
 let editingMissionsType = 'individual', rouletteEditRequested = false;
@@ -1323,13 +1323,14 @@ window.openRouletteModal = function(type, teamMatchupId = null) {
     clearTimeout(rouletteAutoCloseTimer);
     rouletteAutoCloseTimer = null;
     pendingWantedReveal = false;
-    const missions = type === 'team' ? teamMissions : individualMissions;
+    if (type === 'individual' && currentDrawIsChampions) type = 'champions';
+    const missions = type === 'team' ? teamMissions : type === 'champions' ? championsMissions : individualMissions;
     const validation = validateMissions(missions);
     if (!validation.valid) { alert(validation.message); return false; }
     currentMissionsType = type;
     window.currentTeamRouletteBtnId = type === 'team' ? teamMatchupId : null;
     currentMissions = validation.missions;
-    document.getElementById('rouletteModalTitle').innerText = type === 'team' ? "🎡 팀전 미션 룰렛" : "🎡 개인전 미션 룰렛";
+    document.getElementById('rouletteModalTitle').innerText = type === 'team' ? "🎡 팀전 미션 룰렛" : type === "champions" ? "🎡 왕중왕전 미션 룰렛" : "🎡 개인전 미션 룰렛";
     const summary = document.getElementById('roulette-result-summary');
     summary.textContent = '룰렛이 자동으로 돌아갑니다…';
     summary.classList.remove('roulette-winning');
@@ -1361,11 +1362,19 @@ window.closeRouletteModal = function(force = false) {
     syncBackgroundMusic();
     persistMatch();
 };
-window.openRouletteEditModal = function() {
+window.openRouletteEditModal = function(type = currentMissionsType) {
     if (isSpinning) { rouletteEditRequested = true; document.getElementById('roulette-result-summary').textContent = '추첨이 끝나면 편집창이 열립니다.'; return; }
-    window.closeRouletteModal(true);
-    editingMissionsType = currentMissionsType;
-    editMissionsTemp = JSON.parse(JSON.stringify(currentMissionsType === 'team' ? teamMissions : individualMissions));
+    if (document.getElementById('rouletteModal').style.display === 'flex') window.closeRouletteModal(true);
+    if (document.getElementById('rouletteEditModal').style.display === 'flex' && type !== editingMissionsType) {
+        const saved = editingMissionsType === 'team' ? teamMissions : editingMissionsType === 'champions' ? championsMissions : individualMissions;
+        if (JSON.stringify(saved) !== JSON.stringify(editMissionsTemp) && !confirm('저장하지 않은 수정을 취소하고 다른 룰렛을 열까요?')) {
+            document.getElementById('mission-kind').value = editingMissionsType;
+            return;
+        }
+    }
+    editingMissionsType = type;
+    document.getElementById('mission-kind').value = type;
+    editMissionsTemp = structuredClone(type === 'team' ? teamMissions : type === 'champions' ? championsMissions : individualMissions);
     window.renderRouletteEditList(); document.getElementById('rouletteEditModal').style.display = 'flex';
 }
 window.closeRouletteEditModal = function() { document.getElementById('rouletteEditModal').style.display = 'none'; }
@@ -1400,7 +1409,9 @@ window.saveRouletteEdit = function() {
     if (!validation.valid) return alert(validation.message);
     editMissionsTemp = validation.missions;
 
-    if (editingMissionsType === 'team') {
+    if (editingMissionsType === 'champions') {
+        championsMissions = editMissionsTemp;
+    } else if (editingMissionsType === 'team') {
         teamMissions = editMissionsTemp; 
         currentMissions = teamMissions; 
     } else { 
@@ -2495,7 +2506,7 @@ function restoreMatch(state, pause = false) {
                 const previousRotation = currentRouletteRotation;
                 currentMissions = roulette.missions; currentMissionsType = roulette.type;
                 currentRouletteRotation = roulette.rotation;
-                document.getElementById('rouletteModalTitle').textContent = roulette.type === 'team' ? '🎡 팀전 미션 룰렛' : '🎡 개인전 미션 룰렛';
+                document.getElementById('rouletteModalTitle').textContent = roulette.type === 'team' ? '🎡 팀전 미션 룰렛' : roulette.type === 'champions' ? '🎡 왕중왕전 미션 룰렛' : '🎡 개인전 미션 룰렛';
                 window.drawRoulette();
                 const canvas = document.getElementById('rouletteCanvas');
                 if (roulette.spinning && !remoteRouletteSpinning) {

@@ -49,9 +49,9 @@ for (const type of ['individual', 'team']) test(`${type} roulette highlights its
 });
 
 test('editing requested during a spin is queued, then opens an independent mission draft', () => {
-    const modal = { style: {} }, summary = {};
+    const modal = { style: {} }, summary = { style: {display: "flex"} };
     let closed = false;
-    const ctx = vm.createContext({ isSpinning: true, rouletteEditRequested: false, editingMissionsType: '',
+    const ctx = vm.createContext({ structuredClone, isSpinning: true, rouletteEditRequested: false, editingMissionsType: '',
         currentMissionsType: 'team', teamMissions: [{ text: '팀 미션' }], individualMissions: [], editMissionsTemp: [],
         document: { getElementById: id => id === 'rouletteEditModal' ? modal : summary },
         window: { closeRouletteModal(force) { closed = force; }, renderRouletteEditList() {} }
