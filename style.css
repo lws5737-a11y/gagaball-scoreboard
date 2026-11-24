@@ -992,3 +992,9 @@ body.app-header-visible #manage-modal {
     .timer-screen-center { padding: 14px 12px 18px; }
     .timer-screen-controls button { flex: 1 1 42%; }
 }
+.timer-screen.champions-timer {
+    background-image: url('images/champions-timer-landscape.webp');
+}
+@media (orientation: portrait) {
+    .timer-screen.champions-timer { background-image: url('images/champions-timer-portrait.webp'); }
+}
