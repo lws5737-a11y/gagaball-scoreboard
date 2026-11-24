@@ -992,9 +992,11 @@ body.app-header-visible #manage-modal {
     .timer-screen-center { padding: 14px 12px 18px; }
     .timer-screen-controls button { flex: 1 1 42%; }
 }
-.timer-screen.champions-timer {
-    background-image: url('images/champions-timer-landscape.webp');
-}
+.timer-screen[data-match-mode='individual'] { background-image: url('images/individual-timer-landscape.webp'); }
+.timer-screen[data-match-mode='team'] { background-image: url('images/team-timer-landscape.webp'); }
+.timer-screen[data-match-mode='champions'] { background-image: url('images/champions-timer-landscape.webp'); }
 @media (orientation: portrait) {
-    .timer-screen.champions-timer { background-image: url('images/champions-timer-portrait.webp'); }
+    .timer-screen[data-match-mode='individual'] { background-image: url('images/individual-timer-portrait.webp'); }
+    .timer-screen[data-match-mode='team'] { background-image: url('images/team-timer-portrait.webp'); }
+    .timer-screen[data-match-mode='champions'] { background-image: url('images/champions-timer-portrait.webp'); }
 }

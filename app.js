@@ -1980,7 +1980,8 @@ window.openGagaTimer = function(duration, { autoplay = true } = {}) {
     document.getElementById('timer-duration-label').textContent = `${duration}초 경기`;
     document.getElementById('timer-audio-status').textContent = window.gagaRemoteMuted ? 'TV에서 소리 재생' : '';
     document.getElementById('timer-pause-button').textContent = '⏸️ 일시정지';
-    document.getElementById('timerScreen').classList.toggle('champions-timer', currentDrawIsChampions);
+    const teamViewVisible = !document.getElementById('gaga-view-team').classList.contains('hidden');
+    document.getElementById('timerScreen').dataset.matchMode = currentDrawIsChampions ? 'champions' : teamViewVisible ? 'team' : 'individual';
     document.getElementById('timerScreen').style.display = 'block';
     renderTimerScreen();
     if (autoplay && !window.gagaRemoteMuted) activeTimerAudio.play().catch(error => {
