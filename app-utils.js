@@ -87,7 +87,7 @@ export function getRankingGridLayout(viewportWidth, availableHeight, remainingCo
 
 export function avatarPaths(gender) {
     const prefix = gender === '남' ? 'boy' : gender === '여' ? 'girl' : null;
-    return prefix ? Array.from({ length: 50 }, (_, index) =>
+    return prefix ? Array.from({ length: 100 }, (_, index) =>
         `images/avatars/v2/${prefix}_${String(index + 1).padStart(2, '0')}.webp`) : [];
 }
 

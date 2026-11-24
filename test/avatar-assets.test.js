@@ -5,17 +5,17 @@ import test from 'node:test';
 
 const avatarDirectory = new URL('../images/avatars/v2/', import.meta.url);
 
-test('new avatar set has 50 valid WebP files for each gender', async () => {
+test('new avatar set has 100 valid WebP files for each gender', async () => {
     const files = await readdir(avatarDirectory);
     const hashes = new Set();
 
     for (const gender of ['boy', 'girl']) {
-        const expected = Array.from({ length: 50 }, (_, index) =>
+        const expected = Array.from({ length: 100 }, (_, index) =>
             `${gender}_${String(index + 1).padStart(2, '0')}.webp`
         );
         assert.deepEqual(
             files.filter(file => file.startsWith(`${gender}_`) && file.endsWith('.webp')).sort(),
-            expected
+            expected.sort()
         );
 
         for (const filename of expected) {

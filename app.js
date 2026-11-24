@@ -314,8 +314,8 @@ window.addStudent = function() {
     if (classData[currentClass].some(student => Number(student.no) === no)) {
         return alert(`${no}번 학생이 이미 등록되어 있습니다.`);
     }
-    if (classData[currentClass].filter(student => student.gender === gender).length >= 50) {
-        return alert(`${gender}학생 아바타 50종이 모두 사용 중입니다.`);
+    if (classData[currentClass].filter(student => student.gender === gender).length >= 100) {
+        return alert(`${gender}학생 아바타 100종이 모두 사용 중입니다.`);
     }
 
     classData[currentClass].push(mergeStudent(null, { no, name, gender }));
@@ -583,8 +583,8 @@ async function flushSaveData() {
                     JSON.stringify(base[key]?.[name]) !== JSON.stringify(sent[key]?.[name]))) {
                     const roster = merged.data[name];
                     for (const gender of ['남', '여']) {
-                        if (roster.filter(student => student.gender === gender).length > 50) {
-                            throw new Error(name + ' 학급의 ' + gender + '학생은 최대 50명까지 저장할 수 있습니다.');
+                        if (roster.filter(student => student.gender === gender).length > 100) {
+                            throw new Error(name + ' 학급의 ' + gender + '학생은 최대 100명까지 저장할 수 있습니다.');
                         }
                     }
                     assignUniqueClassAvatars(roster);
@@ -2397,8 +2397,8 @@ window.importFromExcel = function() {
     });
 
     if (addedCount > 0) {
-        if (['남', '여'].some(gender => currentStudents.filter(student => student.gender === gender).length > 50)) {
-            return alert('한 학급에서 남학생과 여학생은 각각 최대 50명까지 등록할 수 있습니다. 아바타 중복을 방지하기 위해 명단을 저장하지 않았습니다.');
+        if (['남', '여'].some(gender => currentStudents.filter(student => student.gender === gender).length > 100)) {
+            return alert('한 학급에서 남학생과 여학생은 각각 최대 100명까지 등록할 수 있습니다. 아바타 중복을 방지하기 위해 명단을 저장하지 않았습니다.');
         }
         classData[currentClass] = currentStudents;
         saveData(); document.getElementById('excel-input').value = "";

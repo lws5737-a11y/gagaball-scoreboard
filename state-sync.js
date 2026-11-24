@@ -61,7 +61,7 @@ export function validateBackup(value) {
                 || !Number.isFinite(s.score) || s.score < 0 || !['남', '여', '-'].includes(s.gender)) throw new Error(`${name} 학생 데이터 형식 오류`);
             seen.add(s.no);
         }
-        if (['남', '여'].some(gender => students.filter(s => s.gender === gender).length > 50)) throw new Error(`${name}: 남학생·여학생은 각각 최대 50명입니다.`);
+        if (['남', '여'].some(gender => students.filter(s => s.gender === gender).length > 100)) throw new Error(`${name}: 남학생·여학생은 각각 최대 100명입니다.`);
     }
     return clone(value.school);
 }

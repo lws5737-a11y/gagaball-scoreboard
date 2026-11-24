@@ -84,11 +84,11 @@ test('countdown visuals follow the audio intro and final spoken seconds', () => 
 
 test('assigns distinct new avatars by gender and keeps choices stable', () => {
     const students = [
-        ...Array.from({ length: 25 }, (_, index) => ({ no: index + 1, gender: '남' })),
-        ...Array.from({ length: 25 }, (_, index) => ({ no: index + 26, gender: '여' }))
+        ...Array.from({ length: 100 }, (_, index) => ({ no: index + 1, gender: '남' })),
+        ...Array.from({ length: 100 }, (_, index) => ({ no: index + 101, gender: '여' }))
     ];
     assert.equal(assignUniqueClassAvatars(students, () => 0.5), true);
-    assert.equal(new Set(students.map(student => student.customAvatar)).size, 50);
+    assert.equal(new Set(students.map(student => student.customAvatar)).size, 200);
     for (const student of students) assert.ok(avatarPaths(student.gender).includes(student.customAvatar));
     assert.equal(assignUniqueClassAvatars(students, () => 0.1), false);
 });
