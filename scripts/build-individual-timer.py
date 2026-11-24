@@ -1,4 +1,5 @@
 """Build individual match cues. Requires numpy, imageio-ffmpeg and the existing voice clips."""
+import argparse
 import runpy
 import subprocess
 from pathlib import Path
@@ -10,20 +11,13 @@ root = Path(__file__).resolve().parents[1]
 lib = runpy.run_path(str(root / "scripts/build-colosseum-clash-preview.py"))
 rate = lib["RATE"]
 place = lib["place"]
-beat = 60 / 174
+def read_source(path):
+    raw = subprocess.check_output([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-i", str(path),
+                                   "-ar", str(rate), "-ac", "2", "-f", "f32le", "-"])
+    return np.frombuffer(raw, dtype="<f4").reshape(-1, 2)
 
 
-def note(midi, length, kind):
-    t = np.arange(round(length * rate)) / rate
-    f = 440 * 2 ** ((midi - 69) / 12)
-    phase = 2 * np.pi * f * t
-    weights = {"bass": [1,.38,.18], "lead": [1,.55,.27,.18,.08], "chop": [1,.45,.21,.15]}[kind]
-    wave = sum(w * np.sin((i+1)*phase) for i,w in enumerate(weights))
-    return wave * np.minimum(1,t/.006) * np.exp(-t*(7 if kind=="bass" else 10)) * np.clip((length-t)/.025,0,1)
-
-
-def build(seconds):
-    rng = np.random.default_rng(5737)
+def build(seconds, source):
     end = 3 + seconds
     track = np.zeros(((end*rate)+round(4.5*rate),2),np.float32)
     for start in (0,.78,1.56):
@@ -32,28 +26,23 @@ def build(seconds):
         place(track,reference_beep,start)
         place(track,lib["race_light_signal"](),start,.82)
     place(track,lib["race_go_signal"](),2.30,.92)
-    drums = np.arange(round(.28*rate))/rate
-    kick = .39*np.sin(2*np.pi*(51*drums+2.3*(1-np.exp(-35*drums))))*np.exp(-15*drums)
-    bed = np.zeros((seconds*rate,2),np.float32)
-    for i,when in enumerate(np.arange(0,seconds,beat/2)):
-        bar,step = divmod(i,8)
-        base = [40,40,43,38,40,45,43,38][bar%8]
-        if step in (0,4,7):
-            place(bed,kick,when,1 if step!=7 else .6)
-        noise = rng.normal(size=len(drums))
-        if step in (2,6):
-            place(bed,(.13*noise+.16*np.sin(2*np.pi*182*drums))*np.exp(-24*drums),when)
-        place(bed,.029*np.diff(noise,prepend=0)*np.exp(-drums*(40 if step==7 else 95)),when)
-        if step in (0,3,4,6):
-            place(bed,note(base+(7 if step==6 else 0),beat*.77,"bass"),when,.20)
-        if step in (1,5,7):
-            for interval in (12,19):
-                place(bed,note(base+interval,.13,"chop"),when,.065)
-        if when<seconds-10 and step in (0,2,3,5,6) and bar%8 not in (3,7):
-            pitch=base+24+([0,0,3,7,0,10,7,0] if bar%4<2 else [7,0,10,12,0,7,3,0])[step]
-            riff=note(pitch,beat*.81,"lead")
-            place(bed,riff,when,.14)
-            if when+.095<seconds: place(bed,riff,when+.095,.031)
+    # Keep the music itself. Avoid the source's opening beeps and closing cues.
+    bed = source[round(5.4*rate):round(5.4*rate)+seconds*rate].copy()
+    if seconds == 100:
+        # Repeat an earlier musical phrase, matching the waveform at the join.
+        join = 60*rate
+        overlap = round(.08*rate)
+        mono = bed.mean(axis=1)
+        pattern = mono[join-overlap:join:8]
+        search = mono[32*rate:38*rate:8]
+        energy = np.convolve(search**2, np.ones(len(pattern)), mode="valid")
+        best = np.argmax(np.correlate(search, pattern, mode="valid") / np.sqrt(energy+1e-8))
+        start = 32*rate + int(best)*8
+        fade = np.linspace(0,1,overlap)[:,None]
+        bed[join-overlap:join] = bed[join-overlap:join]*(1-fade) + bed[start:start+overlap]*fade
+        bed[join:] = bed[start+overlap:start+overlap+len(bed)-join].copy()
+    assert len(bed) == seconds*rate
+    bed *= .63
     bed[-round(.06*rate):] *= np.linspace(1,0,round(.06*rate))[:,None]
     place(track,bed,3)
     for i,word in enumerate("ten nine eight seven six five four three two one".split()):
@@ -70,5 +59,8 @@ def build(seconds):
 
 
 if __name__=="__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("source", type=Path)
+    source = read_source(parser.parse_args().source)
     for duration in (60,100):
-        build(duration)
+        build(duration, source)
