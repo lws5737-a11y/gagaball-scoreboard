@@ -1871,11 +1871,16 @@ let lastTimerNumber = '';
 let timerModel = null;
 let pendingRemoteTimerStart = null;
 const timerAudioCache = new Map();
+function timerSoundPath(duration) {
+    const team = !document.getElementById('gaga-view-team').classList.contains('hidden');
+    const prefix = currentDrawIsChampions ? 'champions-' : team ? '' : 'individual-';
+    return `sound/countdown-${prefix}${duration}s.mp3`;
+}
 function prepareTimerAudio() {
     if (window.gagaRemoteMuted) return;
     for (const key of ['spinner', 'goodresult']) audioFiles[key].preload = 'auto';
     for (const duration of [60, 100]) {
-        const path = `sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`;
+        const path = timerSoundPath(duration);
         if (!timerAudioCache.has(path)) { const audio = new Audio(path); audio.preload = 'auto'; timerAudioCache.set(path, audio); }
     }
 }
@@ -1965,7 +1970,7 @@ window.openGagaTimer = function(duration, { autoplay = true } = {}) {
     window.stopMP3('waiting');
     activeTimerDuration = duration;
     timerModel = { id: crypto.randomUUID(), duration, position: 0, startedAt: Date.now(), running: autoplay, champions: currentDrawIsChampions };
-    const path = `sound/countdown-${currentDrawIsChampions ? 'champions-' : ''}${duration}s.mp3`;
+    const path = timerSoundPath(duration);
     activeTimerAudio = window.gagaRemoteMuted ? new Audio() : timerAudioCache.get(path) || new Audio(path);
     activeTimerAudio.currentTime = 0;
     activeTimerAudio.preload = 'auto';
@@ -2558,7 +2563,7 @@ function restoreMatch(state, pause = false) {
                     persistMatch();
                 };
                 audio.play().then(() => begin(false), () => begin(true));
-            } else if (!pendingRemoteTimerStart) {
+            } else if (!pendingRemoteTimerStart && !(!newTimer && !timerModel.running && timerModel.position >= timerModel.duration + 3 && !activeTimerAudio.paused)) {
                 if (Math.abs(activeTimerAudio.currentTime - timerPosition(timerModel)) > .4) activeTimerAudio.currentTime = timerPosition(timerModel);
                 if (timerModel.running && !window.gagaRemoteMuted && activeTimerAudio.paused) activeTimerAudio.play().catch(() => { document.getElementById('timer-audio-status').textContent = '무음 진행 · 소리 켜기를 눌러주세요'; });
                 else if (!timerModel.running || window.gagaRemoteMuted) activeTimerAudio.pause();

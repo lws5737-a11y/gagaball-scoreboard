@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 test('waiting music and both champion timer soundtracks are bundled', async () => {
-    for (const filename of ['pixels-in-motion.mp3', 'countdown-champions-60s.mp3', 'countdown-champions-100s.mp3']) {
+    for (const filename of ['countdown-individual-60s.mp3', 'countdown-individual-100s.mp3', 'pixels-in-motion.mp3', 'countdown-champions-60s.mp3', 'countdown-champions-100s.mp3']) {
         const sound = await readFile(new URL(`../sound/${filename}`, import.meta.url));
         assert.ok(sound.length > 100_000, `${filename} is unexpectedly small`);
         assert.ok(sound.subarray(0, 3).toString() === 'ID3' || sound[0] === 0xff);
@@ -14,7 +14,8 @@ test('champions use their own timers while individual results continue waiting m
     const script = await readFile(new URL('../app.js', import.meta.url), 'utf8');
     assert.match(script, /currentDrawIsChampions = true;[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /window\.executeGagaDraw = function[\s\S]*?currentDrawIsChampions = false/);
-    assert.match(script, /const path = `sound\/countdown-\$\{currentDrawIsChampions \? 'champions-' : ''\}\$\{duration\}s\.mp3`/);
+    assert.match(script, /const path = timerSoundPath\(duration\)/);
+    assert.match(script, /currentDrawIsChampions \? 'champions-' : team \? '' : 'individual-'/);
     assert.match(script, /window\.openGagaTimer = function[\s\S]*?window\.stopMP3\('waiting'\)/);
     assert.match(script, /audioFiles\.waiting\.loop = true/);
     assert.match(script, /draw\.style\.display !== 'flex' \|\| !currentDrawIsChampions/);
