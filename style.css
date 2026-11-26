@@ -998,7 +998,7 @@ body.app-header-visible #manage-modal {
 @media (orientation: portrait) {
     .timer-screen[data-match-mode='individual'] { background-image: url('images/individual-timer-portrait.webp'); }
     .timer-screen[data-match-mode='team'] { background-image: url('images/team-timer-portrait.webp'); }
-    .timer-screen[data-match-mode='champions'] { background-image: url('images/champions-timer-portrait.webp'); }
+
 }
 
 /* The teacher's phone timer uses a plain surface in either orientation. */
