@@ -1000,3 +1000,9 @@ body.app-header-visible #manage-modal {
     .timer-screen[data-match-mode='team'] { background-image: url('images/team-timer-portrait.webp'); }
     .timer-screen[data-match-mode='champions'] { background-image: url('images/champions-timer-portrait.webp'); }
 }
+
+/* The teacher's phone timer uses a plain surface in either orientation. */
+html[data-console='compact'] .timer-screen { background-image:none; background-color:#101827; }
+@media (max-width:600px), (pointer:coarse) and (max-height:600px) {
+    .timer-screen, .timer-screen[data-match-mode] { background-image:none; background-color:#101827; }
+}
